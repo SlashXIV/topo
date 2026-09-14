@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!--
+      required="false" : l'application reste installable sur un appareil sans
+      camera. L'import depuis la galerie suffit a l'utiliser, et Google Play
+      exclurait sinon toute une classe d'appareils sans raison.
+    -->
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
+
+</manifest>
