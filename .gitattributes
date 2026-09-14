@@ -1,0 +1,18 @@
+# Normalisation des fins de ligne : le depot est en LF, quel que soit l'OS du poste.
+* text=auto eol=lf
+
+# Scripts Windows : CRLF obligatoire, sinon cmd.exe les refuse.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Le wrapper Gradle doit rester en LF meme sous Windows (execute par sh en CI).
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Binaires
+*.jar binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.onnx binary
+*.so binary

@@ -1,0 +1,70 @@
+# ---------------------------------------------------------------------------
+#  Gradle
+# ---------------------------------------------------------------------------
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# Specifique a la machine : chemin du SDK Android. Ne doit jamais etre versionne.
+local.properties
+
+# ---------------------------------------------------------------------------
+#  Android
+# ---------------------------------------------------------------------------
+*.apk
+*.aab
+*.ap_
+*.aar
+*.dex
+*.class
+output.json
+release/
+captures/
+
+# Rapports lint / tests
+lint-results*.html
+lint-results*.xml
+lint-results*.txt
+
+# ---------------------------------------------------------------------------
+#  NDK / CMake
+# ---------------------------------------------------------------------------
+.cxx/
+obj/
+.externalNativeBuild/
+cmake-build-*/
+
+# ---------------------------------------------------------------------------
+#  IDE
+# ---------------------------------------------------------------------------
+.idea/
+*.iml
+*.ipr
+*.iws
+.kotlin/
+
+# ---------------------------------------------------------------------------
+#  Modeles ML
+#  Volumineux et binaires : hors git (Git LFS ou artefact de release).
+#  Le schema Room exporte (core/data/schemas/*.json) est au contraire VERSIONNE :
+#  c'est lui qui rend les migrations verifiables.
+# ---------------------------------------------------------------------------
+*.onnx
+*.pt
+*.pth
+*.tflite
+ml/datasets/
+ml/runs/
+ml/.venv/
+__pycache__/
+*.pyc
+
+# ---------------------------------------------------------------------------
+#  Systeme
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+*.hprof
