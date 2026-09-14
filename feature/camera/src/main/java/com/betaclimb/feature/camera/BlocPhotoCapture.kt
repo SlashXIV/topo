@@ -3,6 +3,8 @@ package com.betaclimb.feature.camera
 import android.content.Context
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.core.content.ContextCompat
 import com.betaclimb.core.common.di.IoDispatcher
 import com.betaclimb.core.domain.repository.BlocImageStore
@@ -34,6 +36,28 @@ class BlocPhotoCapture @Inject constructor(
     private val imageStore: BlocImageStore,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) {
+
+    /**
+     * Cas d'usage ImageCapture configure pour BetaClimb.
+     *
+     * La configuration vit ici, aupres de la capture, et non dans le ViewModel :
+     * les tests instrumentes appellent cette meme fabrique et valident donc la
+     * configuration reellement utilisee en production.
+     */
+    fun newImageCapture(): ImageCapture = ImageCapture.Builder()
+        // On privilegie la latence a la qualite maximale : l'image sera de toute
+        // facon sous-echantillonnee pour l'inference, et l'utilisateur photographie
+        // debout au pied d'un bloc, pas en studio.
+        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+        // ResolutionSelector remplace setTargetAspectRatio, deprecie : la strategie
+        // de repli laisse CameraX choisir si le capteur ne sait pas produire du 4:3,
+        // au lieu d'echouer.
+        .setResolutionSelector(
+            ResolutionSelector.Builder()
+                .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+                .build(),
+        )
+        .build()
 
     /**
      * @return le fichier ecrit, dans le repertoire du [BlocImageStore].

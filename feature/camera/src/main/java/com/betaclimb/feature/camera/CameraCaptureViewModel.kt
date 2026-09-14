@@ -1,8 +1,6 @@
 package com.betaclimb.feature.camera
 
 import androidx.camera.core.ImageCapture
-import androidx.camera.core.resolutionselector.AspectRatioStrategy
-import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.betaclimb.core.domain.usecase.SaveCapturedBlocUseCase
@@ -38,20 +36,7 @@ class CameraCaptureViewModel @Inject constructor(
      * alors qu'un `remember` le recreerait a chaque changement de configuration —
      * et une recreation en pleine capture perdrait la photo.
      */
-    val imageCapture: ImageCapture = ImageCapture.Builder()
-        // On privilegie la latence a la qualite maximale : l'image sera de toute
-        // facon sous-echantillonnee pour l'inference, et l'utilisateur photographie
-        // debout au pied d'un bloc, pas en studio.
-        .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-        // ResolutionSelector remplace setTargetAspectRatio, deprecie : la
-        // strategie de repli laisse CameraX choisir si le capteur ne sait pas
-        // produire du 4:3, au lieu d'echouer.
-        .setResolutionSelector(
-            ResolutionSelector.Builder()
-                .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
-                .build(),
-        )
-        .build()
+    val imageCapture: ImageCapture = photoCapture.newImageCapture()
 
     /**
      * Capture puis enregistre le bloc.
