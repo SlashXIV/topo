@@ -3,8 +3,9 @@
 Application Android native **hors-ligne** pour grimpeurs de bloc : photographier un pan de mur,
 identifier les prises, tracer sa sequence de mouvements ("beta") au doigt, tout conserver en local.
 
-> **Etat : Sprints 0 et 1 termines.** Socle natif conforme 16 Ko, base Room en mode WAL et
-> acquisition CameraX, valides sur appareil. 25 tests instrumentes + unitaires verts.
+> **Etat : Sprints 0 a 2 termines.** Socle natif conforme 16 Ko, base Room en mode WAL,
+> acquisition CameraX et canevas d'annotation magnetise, valides sur appareil.
+> 45 tests verts (32 instrumentes sur deux niveaux d'API, 13 unitaires JVM).
 > Le reste est a construire (voir [Feuille de route](#feuille-de-route)).
 
 ---
@@ -169,11 +170,22 @@ scripts/check_alignment.sh \
 ./gradlew :vision:connectedDebugAndroidTest       # preuve d'execution — AVD 16 Ko requis
 ```
 
-L'AVD de validation doit utiliser une image systeme **`..._ps16k`** (page size 16 Ko). Verification :
+### Matrice d'emulateurs
+
+Deux AVD sont necessaires, et pas par confort :
+
+| AVD | Usage | Raison |
+|---|---|---|
+| Image `..._ps16k`, API 37 | `:vision`, `:core:data`, `:feature:camera` | Seule facon de valider l'alignement 16 Ko en execution |
+| API 36 | `:feature:annotator` | Espresso 3.7.0, dernière version publiee, est incompatible avec l'API 37 (`NoSuchMethodException: InputManager.getInstance`), et les tests Compose passent par son mecanisme d'attente |
 
 ```bash
-adb shell getconf PAGE_SIZE   # doit renvoyer 16384
+adb shell getconf PAGE_SIZE   # 16384 sur l'AVD de conformite
+ANDROID_SERIAL=<emulateur> ./gradlew :module:connectedDebugAndroidTest
 ```
+
+Faire tourner le natif sur les deux verifie au passage la retrocompatibilite : la meme `.so`
+alignee 16 Ko se charge sur un noyau a pages de 4 Ko.
 
 ---
 
@@ -185,7 +197,7 @@ L'ordre suit une reduction progressive du risque, et non l'ordre des couches.
 |---|---|---|
 | **S0** | Socle multi-modules, pont JNI, conformite 16 Ko | **termine** |
 | **S1** | Room (WAL), cascades, CameraX, stockage interne | **termine** |
-| S2 | Canvas Compose, prises manuelles, magnetisation du trace | a faire |
+| **S2** | Canvas Compose, prises manuelles, magnetisation du trace | **termine** |
 | S3 | Inference ONNX Runtime / XNNPACK, NMS | depend du modele |
 | S4 | Profiling, R8, audit d'alignement final, AAB | a faire |
 | ∥ | `ml/` : dataset, fine-tuning, quantification INT8, export ONNX | en parallele |
