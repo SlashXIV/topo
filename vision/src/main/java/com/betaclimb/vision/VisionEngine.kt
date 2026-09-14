@@ -1,7 +1,9 @@
 package com.betaclimb.vision
 
 import android.graphics.Bitmap
+import com.betaclimb.core.domain.model.BoundingBox
 import com.betaclimb.core.domain.model.DetectedHold
+import com.betaclimb.core.domain.model.HoldOrigin
 import com.betaclimb.core.domain.repository.HoldDetector
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicLong
@@ -90,12 +92,14 @@ class VisionEngine(
         }
         return (indices step stride).map { i ->
             DetectedHold(
-                centerX = this[i],
-                centerY = this[i + 1],
-                width = this[i + 2],
-                height = this[i + 3],
+                box = BoundingBox(
+                    centerX = this[i],
+                    centerY = this[i + 1],
+                    width = this[i + 2],
+                    height = this[i + 3],
+                ),
                 confidence = this[i + 4],
-                origin = DetectedHold.Origin.MODEL,
+                origin = HoldOrigin.MODEL,
             )
         }
     }
