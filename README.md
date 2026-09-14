@@ -3,8 +3,9 @@
 Application Android native **hors-ligne** pour grimpeurs de bloc : photographier un pan de mur,
 identifier les prises, tracer sa sequence de mouvements ("beta") au doigt, tout conserver en local.
 
-> **Etat : Sprint 0 termine.** Le socle multi-modules, le pont JNI et la conformite 16 Ko sont
-> livres et valides sur materiel. Le reste est a construire (voir [Feuille de route](#feuille-de-route)).
+> **Etat : Sprints 0 et 1 termines.** Socle natif conforme 16 Ko, base Room en mode WAL et
+> acquisition CameraX, valides sur appareil. 25 tests instrumentes + unitaires verts.
+> Le reste est a construire (voir [Feuille de route](#feuille-de-route)).
 
 ---
 
@@ -48,6 +49,34 @@ L'adresse `0x2608c010` est identique des deux cotes : aucune copie n'a eu lieu e
 alloue en Kotlin et le moteur C++.
 
 ---
+
+## Ce que le Sprint 1 prouve
+
+| Propriete | Preuve |
+|---|---|
+| Journalisation WAL active | `PRAGMA journal_mode` retourne `wal` sur la base de production |
+| Cles etrangeres appliquees | `PRAGMA foreign_keys` retourne 1 ; un bloc orphelin est rejete |
+| Cascades dissymetriques | Supprimer une prise CIBLE efface le mouvement ; supprimer sa SOURCE le conserve avec une source nulle |
+| Unicite de la sequence | Deux mouvements ne peuvent pas partager un rang dans un meme bloc |
+| Reactivite | Un `Flow` reemet sur simple ecriture, sans notification manuelle |
+| Volume | 500 prises remplacees en une transaction |
+| Capture reelle | CameraX ecrit un JPEG decodable sur appareil |
+| Rattrapage | Une insertion refusee supprime la photo ; une image illisible n'atteint jamais la base |
+
+Le schema de la base est **exporte en JSON et versionne** (`core/data/schemas/`) : c'est ce qui
+rendra les migrations verifiables plutot que declaratives.
+
+La configuration Room — WAL, executeurs, cles etrangeres — vit dans une unique fonction
+`applyBetaClimbConfiguration()` que le module Hilt **et** les tests instrumentes appellent. Sans
+cela, les tests valideraient une configuration recopiee, libre de diverger de la production.
+
+### Une correction de modelisation
+
+Les specifications prevoyaient une table d'association `MovementHoldCrossRef` entre mouvements et
+prises. Ce n'en etait pas une : un mouvement a au plus une prise source et exactement une prise
+cible — une relation 1-1. Sa cle primaire composee interdisait de toute facon plusieurs cibles.
+Deux colonnes de cle etrangere la remplacent, avec des cascades volontairement dissymetriques
+(cf. `MovementEntity`).
 
 ## Architecture
 
@@ -117,7 +146,8 @@ superieure ne change.
 | NDK / CMake | 28.2.13676358 / 3.31.6, C++17 |
 | UI | Jetpack Compose (BOM 2026.09.00), Material 3 |
 | DI | Hilt 2.60.1 |
-| Persistance | Room 2.8.5 en mode WAL *(Sprint 1)* |
+| Persistance | Room 2.8.5 en mode WAL |
+| Camera | CameraX 1.5.2 |
 | Inference | ONNX Runtime + XNNPACK *(sprint Vision)* |
 
 ---
@@ -154,7 +184,7 @@ L'ordre suit une reduction progressive du risque, et non l'ordre des couches.
 | Sprint | Contenu | Etat |
 |---|---|---|
 | **S0** | Socle multi-modules, pont JNI, conformite 16 Ko | **termine** |
-| S1 | Room (WAL), CameraX, enregistrement et historique des blocs | a faire |
+| **S1** | Room (WAL), cascades, CameraX, stockage interne | **termine** |
 | S2 | Canvas Compose, prises manuelles, magnetisation du trace | a faire |
 | S3 | Inference ONNX Runtime / XNNPACK, NMS | depend du modele |
 | S4 | Profiling, R8, audit d'alignement final, AAB | a faire |
