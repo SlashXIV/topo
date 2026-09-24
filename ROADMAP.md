@@ -47,11 +47,11 @@ explicitement dans le journal des decisions.
 | **S1** | Room en mode WAL, cascades, CameraX, stockage interne | `PRAGMA journal_mode` = `wal` ; 18 tests instrumentes ; capture JPEG reelle sur appareil |
 | **S2** | Canevas Compose, prises manuelles, magnetisation | Magnetisation mesuree a **0,62 us** sur 150 prises ; 7 tests gestuels, dont un valide par mutation |
 
-55 tests verts au total : 37 instrumentes sur deux niveaux d'API, 18 unitaires JVM.
+67 tests verts au total : 33 instrumentes sur deux niveaux d'API, 34 unitaires JVM.
 
-**L'application est utilisable.** La boucle seance -> bloc -> prises -> beta -> historique
-fonctionne de bout en bout sur appareil. La suite porte sur ce qui la rend utile dans la duree :
-le suivi des essais, le rejeu et les statistiques.
+**L'application est utilisable et tient un carnet.** La boucle seance -> bloc -> prises -> beta ->
+historique fonctionne de bout en bout sur appareil, et chaque bloc porte son statut, ses essais et
+son ressenti. La suite porte sur la restitution : rejouer un beta, et lire sa progression.
 
 ---
 
@@ -79,7 +79,7 @@ barre d'etat en affichage bord a bord, et l'ecran d'annotation n'avait aucun ret
 
 ---
 
-### S4 — Carnet du grimpeur
+### S4 — Carnet du grimpeur *(livre)*
 
 **Objectif.** Passer de « j'ai photographie un bloc » a « je suis ma progression dessus ».
 
@@ -94,8 +94,13 @@ paie d'autant moins cher qu'elle arrive tot, et les statistiques (S6) consomment
 donnees. Le schema exporte en JSON depuis le Sprint 1 rend cette migration verifiable plutot que
 declarative.
 
-**Critere d'acceptation.** Une base creee en v1 s'ouvre en v2 sans perte, prouve par un test de
-migration.
+**Critere d'acceptation — atteint.** Trois tests de migration rejouent une base v1 authentique,
+creee par Room depuis le schema JSON versionne au Sprint 1. La migration a en plus ete executee
+sur la vraie base de l'emulateur, remplie au sprint precedent : `user_version` 1 -> 2, et les
+6 prises et le mouvement ont survecu au remplacement de la table.
+
+La regle du flash a ete verifiee a la main : deux essais enregistres, le statut bascule seul en
+« en travail », et declarer un flash est refuse avec un message explicite sans corrompre l'etat.
 
 ---
 
@@ -192,6 +197,8 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | Recherche lineaire plutot que KD-Tree | Mesure : 0,62 us pour 150 prises, soit 0,004 % d'une trame a 60 FPS. Un arbre couterait plus a construire et invalider que la recherche qu'il remplace. |
 | Tables classiques plutot que l'extension spatiale R-Tree | L'implementation SQLite d'Android n'active pas systematiquement R-Tree, et un mur depasse rarement 200 prises. Des index B-Tree suffisent. |
 | Chemins d'image **relatifs** en base | Un chemin absolu change lors d'une restauration d'appareil ; une `content://` externe peut voir sa permission revoquee, ce qui casserait le fonctionnement hors ligne. |
+| Statut a quatre etats plutot qu'un booleen `is_completed` | Un booleen ne distingue pas « jamais essaye » de « travaille sans succes ». Garder les deux cote a cote aurait cree deux sources de verite pour la meme question. |
+| Table reconstruite a la migration plutot qu'un `ALTER` | `DROP COLUMN` date de SQLite 3.35 ; l'API 26 visee embarque la 3.19. Les cles etrangeres sont desactivees pendant l'echange, sinon le `DROP TABLE` emporterait prises et mouvements en cascade. |
 | Deux emulateurs dans la matrice de test | Espresso 3.7.0, derniere version publiee, est incompatible avec l'API 37 (`NoSuchMethodException: InputManager.getInstance`). Les tests Compose tournent donc en API 36, le natif reste sur l'AVD 16 Ko. |
 | Kotlin integre d'AGP 9 | AGP 9 refuse le plugin autonome `org.jetbrains.kotlin.android` avec son nouveau DSL. Effet de bord favorable : `jvmTarget` suit `compileOptions`, une valeur de moins a maintenir. |
 
