@@ -15,9 +15,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.betaclimb.core.ui.theme.BetaColors
 import java.io.File
 
 /**
@@ -28,9 +30,9 @@ import java.io.File
  * pour connaitre sa forme provoquerait une rafale d'allocations au defilement.
  * C'est la raison d'etre des colonnes `image_width` / `image_height`.
  *
- * L'appui long ouvre la suppression. Une corbeille permanente sur chaque vignette
- * encombrerait une grille dont l'action principale est d'ouvrir le bloc, et
- * placerait une action destructrice a portee de pouce dans une liste defilante.
+ * L'appui long ouvre la fiche de progression. Une corbeille permanente sur chaque
+ * vignette encombrerait une grille dont l'action principale est d'ouvrir le bloc,
+ * et placerait une action destructrice a portee de pouce dans une liste defilante.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -39,6 +41,9 @@ fun BlocThumbnail(
     aspectRatio: Float,
     grade: String?,
     modifier: Modifier = Modifier,
+    statusLabel: String? = null,
+    statusColor: Color = BetaColors.StatusProject,
+    attempts: Int = 0,
     isCompleted: Boolean = false,
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
@@ -72,6 +77,30 @@ fun BlocThumbnail(
                         .padding(8.dp),
                 )
             }
+
+            if (statusLabel != null) {
+                Badge(
+                    text = statusLabel,
+                    background = statusColor,
+                    foreground = Color.White,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp),
+                )
+            }
+
+            // Le compteur n'apparait qu'a partir du premier essai : afficher « 0 »
+            // sur chaque bloc jamais touche ne dirait rien et chargerait la grille.
+            if (attempts > 0) {
+                Badge(
+                    text = "$attempts essai${if (attempts > 1) "s" else ""}",
+                    background = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    foreground = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp),
+                )
+            }
         }
     }
 }
@@ -83,23 +112,38 @@ fun GradeChip(
     modifier: Modifier = Modifier,
     isCompleted: Boolean = false,
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(6.dp),
-        color = if (isCompleted) {
+    Badge(
+        text = grade,
+        background = if (isCompleted) {
             MaterialTheme.colorScheme.primary
         } else {
             MaterialTheme.colorScheme.surface.copy(alpha = 0.85f)
         },
+        foreground = if (isCompleted) {
+            MaterialTheme.colorScheme.onPrimary
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        },
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun Badge(
+    text: String,
+    background: Color,
+    foreground: Color,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(6.dp),
+        color = background,
     ) {
         Text(
-            text = grade,
+            text = text,
             style = MaterialTheme.typography.labelMedium,
-            color = if (isCompleted) {
-                MaterialTheme.colorScheme.onPrimary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
+            color = foreground,
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
         )
     }

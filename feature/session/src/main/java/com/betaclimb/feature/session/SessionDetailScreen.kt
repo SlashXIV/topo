@@ -5,8 +5,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -17,6 +20,7 @@ import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -61,14 +65,15 @@ fun SessionDetailScreen(
 
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    var progressBlocId by remember { mutableStateOf<String?>(null) }
     var blocToDelete by remember { mutableStateOf<Bloc?>(null) }
 
-    // PickVisualMedia : selecteur systeme, AUCUNE permission requise. L'application
-    // ne recoit que l'image choisie, jamais l'acces a la photothegue entiere.
     val imageOnlyRequest = remember {
         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
     }
 
+    // PickVisualMedia : selecteur systeme, AUCUNE permission requise. L'application
+    // ne recoit que l'image choisie, jamais l'acces a la photothegue entiere.
     val pickImage = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? ->
@@ -126,40 +131,85 @@ fun SessionDetailScreen(
             )
         },
     ) { padding ->
-        when {
-            uiState.isLoading -> LoadingState(Modifier.padding(padding))
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // Les filtres n'apparaissent qu'a partir du deuxieme bloc : sur une
+            // seance qui en contient un seul, ils n'ont rien a filtrer.
+            if (uiState.totalBlocs > 1) {
+                BlocFilterRow(
+                    selected = uiState.filter,
+                    onSelect = viewModel::selectFilter,
+                )
+            }
 
-            uiState.blocs.isEmpty() -> EmptyState(
-                title = "Aucun bloc",
-                message = "Photographie un bloc ou importe une photo depuis ta galerie.",
-                actionLabel = "Importer depuis la galerie",
-                onAction = { pickImage.launch(imageOnlyRequest) },
-                modifier = Modifier.padding(padding),
-            )
+            when {
+                uiState.isLoading -> LoadingState()
 
-            else -> LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 150.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .testTag(BlocGridTestTag),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(uiState.blocs, key = Bloc::id) { bloc ->
-                    BlocThumbnail(
-                        imageFile = viewModel.imageFileOf(bloc),
-                        // Le ratio vient des colonnes enregistrees a la creation :
-                        // aucune photo n'est decodee pour construire la grille.
-                        aspectRatio = bloc.aspectRatio,
-                        grade = bloc.grade,
-                        isCompleted = bloc.isCompleted,
-                        onClick = { onBlocClick(bloc.id) },
-                        onLongClick = { blocToDelete = bloc },
-                    )
+                uiState.totalBlocs == 0 -> EmptyState(
+                    title = "Aucun bloc",
+                    message = "Photographie un bloc ou importe une photo depuis ta galerie.",
+                    actionLabel = "Importer depuis la galerie",
+                    onAction = { pickImage.launch(imageOnlyRequest) },
+                )
+
+                uiState.blocs.isEmpty() -> EmptyState(
+                    title = "Aucun bloc ne correspond",
+                    message = "Change de filtre pour revoir les autres blocs de la seance.",
+                    actionLabel = "Tout afficher",
+                    onAction = { viewModel.selectFilter(BlocFilter.ALL) },
+                )
+
+                else -> LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 150.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag(BlocGridTestTag),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(uiState.blocs, key = Bloc::id) { bloc ->
+                        BlocThumbnail(
+                            imageFile = viewModel.imageFileOf(bloc),
+                            // Le ratio vient des colonnes enregistrees a la
+                            // creation : aucune photo n'est decodee pour la grille.
+                            aspectRatio = bloc.aspectRatio,
+                            grade = bloc.grade,
+                            statusLabel = bloc.status.shortLabel(),
+                            statusColor = bloc.status.color(),
+                            attempts = bloc.attempts,
+                            isCompleted = bloc.isCompleted,
+                            onClick = { onBlocClick(bloc.id) },
+                            onLongClick = { progressBlocId = bloc.id },
+                        )
+                    }
                 }
             }
+        }
+    }
+
+    // La feuille lit le bloc dans l'etat courant plutot que d'en garder une copie :
+    // un essai ajoute doit s'afficher immediatement, et une copie capturee a
+    // l'ouverture resterait figee.
+    progressBlocId?.let { id ->
+        val bloc = uiState.blocs.firstOrNull { it.id == id }
+        if (bloc == null) {
+            progressBlocId = null
+        } else {
+            BlocProgressSheet(
+                bloc = bloc,
+                statusError = uiState.statusError,
+                onStatusChange = { viewModel.changeStatus(bloc.id, it) },
+                onAttemptAdded = { viewModel.addAttempt(bloc.id) },
+                onFeelingChange = { viewModel.updateFeeling(bloc.id, it) },
+                onDelete = {
+                    blocToDelete = bloc
+                    progressBlocId = null
+                },
+                onDismiss = {
+                    progressBlocId = null
+                    viewModel.acknowledgeStatusError()
+                },
+            )
         }
     }
 
@@ -175,4 +225,33 @@ fun SessionDetailScreen(
             onDismiss = { blocToDelete = null },
         )
     }
+}
+
+@Composable
+private fun BlocFilterRow(
+    selected: BlocFilter,
+    onSelect: (BlocFilter) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        BlocFilter.entries.forEach { filter ->
+            FilterChip(
+                selected = filter == selected,
+                onClick = { onSelect(filter) },
+                label = { Text(filter.label()) },
+            )
+        }
+    }
+}
+
+private fun BlocFilter.label(): String = when (this) {
+    BlocFilter.ALL -> "Tous"
+    BlocFilter.PROJECTS -> "Projets"
+    BlocFilter.WORKING -> "En travail"
+    BlocFilter.SENT -> "Reussis"
 }

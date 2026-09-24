@@ -27,4 +27,12 @@ object BetaColors {
 
     /** Halo de la prise actuellement magnetisee. */
     val SnapHalo = Color(0xFFFFE066)
+
+    // Statuts de progression. Progression volontairement lisible sans lire le
+    // texte : gris (repere) -> ambre (en travail) -> vert (reussi), le flash se
+    // distinguant du reussi par une teinte plus vive.
+    val StatusProject = Color(0xFF6E6E6E)
+    val StatusWorking = Color(0xFFD98C2B)
+    val StatusFlashed = Color(0xFF21A179)
+    val StatusSent = Color(0xFF3F7D55)
 }

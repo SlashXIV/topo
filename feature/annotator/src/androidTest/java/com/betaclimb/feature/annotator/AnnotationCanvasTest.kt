@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import com.betaclimb.core.domain.model.Bloc
 import com.betaclimb.core.domain.model.BlocDetail
+import com.betaclimb.core.domain.model.BlocStatus
 import com.betaclimb.core.domain.model.BoundingBox
 import com.betaclimb.core.domain.model.Hold
 import com.betaclimb.core.domain.model.HoldOrigin
@@ -280,7 +281,10 @@ class AnnotationCanvasTest {
         imageWidth = 1000,
         imageHeight = 1000,
         grade = "7A",
-        isCompleted = false,
+        status = BlocStatus.PROJECT,
+        attempts = 0,
+        sentAt = null,
+        feeling = null,
         createdAt = 0L,
     )
 

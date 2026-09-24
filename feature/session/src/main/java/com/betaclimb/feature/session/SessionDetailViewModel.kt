@@ -3,11 +3,14 @@ package com.betaclimb.feature.session
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.betaclimb.core.domain.model.Bloc
+import com.betaclimb.core.domain.model.BlocStatus
 import com.betaclimb.core.domain.model.Session
 import com.betaclimb.core.domain.repository.BlocImageStore
 import com.betaclimb.core.domain.repository.BlocRepository
 import com.betaclimb.core.domain.repository.SessionRepository
 import com.betaclimb.core.domain.usecase.ImportBlocUseCase
+import com.betaclimb.core.domain.usecase.RecordAttemptUseCase
+import com.betaclimb.core.domain.usecase.SetBlocStatusUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import java.io.InputStream
@@ -16,18 +19,38 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** Filtre de la grille de blocs. */
+enum class BlocFilter {
+    ALL,
+    PROJECTS,
+    WORKING,
+    SENT,
+    ;
+
+    fun matches(bloc: Bloc): Boolean = when (this) {
+        ALL -> true
+        PROJECTS -> bloc.status == BlocStatus.PROJECT
+        WORKING -> bloc.status == BlocStatus.WORKING
+        SENT -> bloc.status.isSent
+    }
+}
+
 data class SessionDetailUiState(
     val session: Session? = null,
+    /** Blocs apres application du filtre — ce que la grille affiche. */
     val blocs: List<Bloc> = emptyList(),
+    /** Nombre total de blocs de la seance, filtre ignore. */
+    val totalBlocs: Int = 0,
+    val filter: BlocFilter = BlocFilter.ALL,
     val isLoading: Boolean = true,
     val importError: String? = null,
+    val statusError: String? = null,
 )
 
 @HiltViewModel
@@ -36,10 +59,14 @@ class SessionDetailViewModel @Inject constructor(
     private val blocRepository: BlocRepository,
     private val imageStore: BlocImageStore,
     private val importBloc: ImportBlocUseCase,
+    private val recordAttempt: RecordAttemptUseCase,
+    private val setBlocStatus: SetBlocStatusUseCase,
 ) : ViewModel() {
 
     private val sessionId = MutableStateFlow<String?>(null)
+    private val filter = MutableStateFlow(BlocFilter.ALL)
     private val importError = MutableStateFlow<String?>(null)
+    private val statusError = MutableStateFlow<String?>(null)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<SessionDetailUiState> = combine(
@@ -47,13 +74,21 @@ class SessionDetailViewModel @Inject constructor(
         // deux flux emettraient en concurrence et l'ecran alternerait entre les deux.
         sessionId.filterNotNull().flatMapLatest(sessionRepository::observeSession),
         sessionId.filterNotNull().flatMapLatest(blocRepository::observeBlocsForSession),
+        filter,
         importError,
-    ) { session, blocs, error ->
+        statusError,
+    ) { session, blocs, activeFilter, importFailure, statusFailure ->
         SessionDetailUiState(
             session = session,
-            blocs = blocs,
+            // Le filtrage se fait ici et non en SQL : la grille d'une seance tient
+            // en quelques dizaines de lignes deja chargees, et une requete par
+            // filtre multiplierait les abonnements Room pour rien.
+            blocs = blocs.filter(activeFilter::matches),
+            totalBlocs = blocs.size,
+            filter = activeFilter,
             isLoading = false,
-            importError = error,
+            importError = importFailure,
+            statusError = statusFailure,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -61,10 +96,13 @@ class SessionDetailViewModel @Inject constructor(
         initialValue = SessionDetailUiState(),
     )
 
-    val currentSessionId: StateFlow<String?> = sessionId.asStateFlow()
-
+    /** Point d'entree tant que la navigation n'est pas cablee au ViewModel. */
     fun bind(sessionId: String) {
         this.sessionId.value = sessionId
+    }
+
+    fun selectFilter(filter: BlocFilter) {
+        this.filter.value = filter
     }
 
     /** Fichier image d'un bloc, pour l'affichage de la vignette. */
@@ -85,8 +123,33 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
+    fun addAttempt(blocId: String) {
+        viewModelScope.launch { recordAttempt(blocId) }
+    }
+
+    fun changeStatus(blocId: String, status: BlocStatus) {
+        viewModelScope.launch {
+            statusError.value = null
+            setBlocStatus(blocId, status)
+                .onFailure { statusError.value = it.message }
+        }
+    }
+
+    fun updateFeeling(blocId: String, feeling: String) {
+        viewModelScope.launch {
+            val bloc = blocRepository.getBloc(blocId) ?: return@launch
+            blocRepository.updateBloc(
+                bloc.copy(feeling = feeling.trim().takeIf(String::isNotEmpty)),
+            )
+        }
+    }
+
     fun acknowledgeImportError() {
         importError.value = null
+    }
+
+    fun acknowledgeStatusError() {
+        statusError.value = null
     }
 
     fun deleteBloc(blocId: String) {
