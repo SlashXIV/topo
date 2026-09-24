@@ -31,6 +31,10 @@ class AndroidComposeConventionPlugin : Plugin<Project> {
             add("implementation", libs.findLibrary("androidx-compose-ui-graphics").get())
             add("implementation", libs.findLibrary("androidx-compose-ui-tooling-preview").get())
             add("implementation", libs.findLibrary("androidx-compose-material3").get())
+        // Les icones ne sont plus transitives depuis material3. Declarees ici et
+        // non module par module : c'est une regle de build, elle vit dans
+        // build-logic. R8 elimine les vecteurs inutilises au packaging.
+        add("implementation", libs.findLibrary("androidx-compose-material-icons-extended").get())
 
             add("debugImplementation", libs.findLibrary("androidx-compose-ui-tooling").get())
             add("debugImplementation", libs.findLibrary("androidx-compose-ui-test-manifest").get())
