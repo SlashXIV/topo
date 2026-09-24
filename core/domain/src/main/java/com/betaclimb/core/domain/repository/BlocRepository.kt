@@ -36,6 +36,16 @@ interface BlocRepository {
         grade: String? = null,
     ): String
 
+    /**
+     * Lecture ponctuelle d'un bloc.
+     *
+     * Distincte des flux d'observation : les cas d'usage qui modifient un bloc ont
+     * besoin de son etat courant une fois, pas d'un abonnement. Collecter un Flow
+     * pour en prendre le premier element ouvrirait puis fermerait un abonnement a
+     * chaque appui sur un bouton.
+     */
+    suspend fun getBloc(blocId: String): Bloc?
+
     suspend fun updateBloc(bloc: Bloc)
 
     /** Supprime le bloc, son annotation (cascade SQLite) et son fichier image. */

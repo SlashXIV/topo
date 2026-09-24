@@ -21,7 +21,12 @@ data class Bloc(
     val imageWidth: Int,
     val imageHeight: Int,
     val grade: String?,
-    val isCompleted: Boolean,
+    val status: BlocStatus,
+    val attempts: Int,
+    /** Instant de la reussite, nul tant que le bloc n'est pas reussi. */
+    val sentAt: Long?,
+    /** Ressenti libre : sensations, cle du passage, ce qui a debloque. */
+    val feeling: String?,
     val createdAt: Long,
 ) {
     init {
@@ -29,9 +34,13 @@ data class Bloc(
         require(imageWidth > 0 && imageHeight > 0) {
             "Dimensions d'image invalides : ${imageWidth}x$imageHeight"
         }
+        require(attempts >= 0) { "Nombre d'essais negatif : $attempts" }
     }
 
     val aspectRatio: Float get() = imageWidth.toFloat() / imageHeight.toFloat()
+
+    /** Conserve pour les usages d'affichage qui ne distinguent que reussi / non reussi. */
+    val isCompleted: Boolean get() = status.isSent
 }
 
 /**
