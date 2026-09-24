@@ -104,7 +104,46 @@ La regle du flash a ete verifiee a la main : deux essais enregistres, le statut 
 
 ---
 
-### S5 — Rejeu anime du beta
+### S5 — Identite : nom et icone *(en cours)*
+
+**Objectif.** Donner au projet une identite coherente avec les autres applications de son auteur,
+avant que l'`applicationId` ne devienne impossible a changer.
+
+**Le nom.** `BetaClimb` est un compose anglais descriptif, la ou `Kalos` et `Popote` sont des mots
+courts, chaleureux, porteurs d'un clin d'oeil que seul un initie decode. L'application devient
+**Topo** : c'est le mot des grimpeurs pour le guide de voies, et l'application fabrique
+litteralement des topos. Le double sens francais — « c'est quoi le topo ? », la marche a suivre —
+decrit exactement ce qu'est un beta. Deux syllabes, finale vocalique : la serie se tient.
+
+**Livrables.**
+
+1. **Renommage complet**, et non cosmetique : `applicationId`, packages `com.betaclimb.*`,
+   namespaces de modules, bibliotheque native `libbetaclimb_vision.so`, nom de base
+   `betaclimb.db`, identifiants des plugins de convention. Un `applicationId` ne se change plus
+   une fois l'application publiee : le faire maintenant coute une heure, le faire au sprint 10
+   coute un chantier.
+2. **Icone vectorielle**, dessinee a la main en SVG puis convertie en `VectorDrawable` :
+   - squircle ardoise `#3A4048`, lettre `T` blanche en graisse lourde, barre orange sous la
+     lettre — la meme orange que le membre « main droite » du trace, pour que l'icone et l'ecran
+     d'annotation parlent la meme langue ;
+   - **prises d'escalade en fond**, en ardoise legerement plus claire : presentes sans etre
+     lisibles, c'est ce qui distingue l'icone d'un simple monogramme.
+3. **Couche `monochrome`** pour les icones thematiques d'Android 13+. Kalos ne l'a pas : c'est
+   l'occasion de faire mieux, et cela coute une variante de la meme geometrie.
+4. **Splash** aligne sur l'icone, comme Kalos le fait deja.
+
+**Choix technique.** Tout en vectoriel, la ou Kalos utilise un PNG pre-padde a 64 % du canvas. Un
+`VectorDrawable` reste net a toutes les densites, pese quelques kilo-octets au lieu d'une famille
+de bitmaps, et se relit — une couleur se change dans le XML, pas dans un exporteur.
+
+**Critere d'acceptation.** L'icone s'affiche correctement au lanceur, en icone thematique et au
+splash sur appareil ; `./gradlew build` vert apres renommage, tous les tests passent sans
+modification autre que les imports, et l'audit d'alignement 16 Ko reste conforme malgre le
+changement de nom de la bibliotheque native.
+
+---
+
+### S6 — Rejeu anime du beta
 
 **Objectif.** Rejouer la sequence mouvement par mouvement, comme une video du passage.
 
@@ -120,7 +159,7 @@ comme le trace : le rejeu ne doit pas recomposer l'arbre a chaque image.
 
 ---
 
-### S6 — Statistiques et progression
+### S7 — Statistiques et progression
 
 **Objectif.** Donner une raison de revenir dans l'application.
 
@@ -134,7 +173,7 @@ comme le trace : le rejeu ne doit pas recomposer l'arbre a chaque image.
 
 ---
 
-### S7 — Export et partage d'une image
+### S8 — Export et partage d'une image
 
 **Objectif.** Envoyer un beta a un partenaire de grimpe.
 
@@ -146,7 +185,7 @@ comme le trace : le rejeu ne doit pas recomposer l'arbre a chaque image.
 
 ---
 
-### S8 — Detection automatique des prises
+### S9 — Detection automatique des prises
 
 **Objectif.** Pre-remplir les prises au lieu de les poser une a une.
 
@@ -170,7 +209,7 @@ audit d'alignement toujours vert.
 
 ---
 
-### S9 — Industrialisation
+### S10 — Industrialisation
 
 **Objectif.** Transformer un code fonctionnel en produit livrable.
 
@@ -197,6 +236,8 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | Recherche lineaire plutot que KD-Tree | Mesure : 0,62 us pour 150 prises, soit 0,004 % d'une trame a 60 FPS. Un arbre couterait plus a construire et invalider que la recherche qu'il remplace. |
 | Tables classiques plutot que l'extension spatiale R-Tree | L'implementation SQLite d'Android n'active pas systematiquement R-Tree, et un mur depasse rarement 200 prises. Des index B-Tree suffisent. |
 | Chemins d'image **relatifs** en base | Un chemin absolu change lors d'une restauration d'appareil ; une `content://` externe peut voir sa permission revoquee, ce qui casserait le fonctionnement hors ligne. |
+| `Topo` plutot que `BetaClimb` | Un compose anglais descriptif ne tient pas la serie ouverte par `Kalos` et `Popote` : des mots courts, chaleureux, avec un clin d'oeil d'initie. `Topo` est le mot des grimpeurs pour le guide de voies, et « c'est quoi le topo ? » decrit exactement ce qu'est un beta. |
+| Icone entierement vectorielle | Kalos utilise un PNG pre-padde a 64 % du canvas. Un VectorDrawable reste net a toutes les densites, pese quelques kilo-octets au lieu d'une famille de bitmaps, et se relit : une couleur se change dans le XML, pas dans un exporteur. |
 | Statut a quatre etats plutot qu'un booleen `is_completed` | Un booleen ne distingue pas « jamais essaye » de « travaille sans succes ». Garder les deux cote a cote aurait cree deux sources de verite pour la meme question. |
 | Table reconstruite a la migration plutot qu'un `ALTER` | `DROP COLUMN` date de SQLite 3.35 ; l'API 26 visee embarque la 3.19. Les cles etrangeres sont desactivees pendant l'echange, sinon le `DROP TABLE` emporterait prises et mouvements en cascade. |
 | Deux emulateurs dans la matrice de test | Espresso 3.7.0, derniere version publiee, est incompatible avec l'API 37 (`NoSuchMethodException: InputManager.getInstance`). Les tests Compose tournent donc en API 36, le natif reste sur l'AVD 16 Ko. |
