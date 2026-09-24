@@ -47,17 +47,17 @@ explicitement dans le journal des decisions.
 | **S1** | Room en mode WAL, cascades, CameraX, stockage interne | `PRAGMA journal_mode` = `wal` ; 18 tests instrumentes ; capture JPEG reelle sur appareil |
 | **S2** | Canevas Compose, prises manuelles, magnetisation | Magnetisation mesuree a **0,62 us** sur 150 prises ; 7 tests gestuels, dont un valide par mutation |
 
-45 tests verts au total : 32 instrumentes sur deux niveaux d'API, 13 unitaires JVM.
+55 tests verts au total : 37 instrumentes sur deux niveaux d'API, 18 unitaires JVM.
 
-**Ce qui manque pour que l'application soit utilisable :** aucun graphe de navigation, et le
-module `:feature:session` est vide. Chaque brique est testee isolement ; personne n'a encore trace
-un beta sur une vraie photo dans l'application. C'est l'objet du Sprint 3.
+**L'application est utilisable.** La boucle seance -> bloc -> prises -> beta -> historique
+fonctionne de bout en bout sur appareil. La suite porte sur ce qui la rend utile dans la duree :
+le suivi des essais, le rejeu et les statistiques.
 
 ---
 
 ## Phases
 
-### S3 — Boucle utilisateur complete *(en cours)*
+### S3 — Boucle utilisateur complete *(livre)*
 
 **Objectif.** Rendre l'application utilisable de bout en bout.
 
@@ -68,9 +68,14 @@ un beta sur une vraie photo dans l'application. C'est l'objet du Sprint 3.
 - Composants partages dans `:core:ui` : etats vide, chargement, erreur ; vignette de bloc.
 - Disparition de l'ecran de diagnostic du Sprint 0 : sa valeur de preuve appartient aux tests.
 
-**Critere d'acceptation.** Sur un appareil, sans passer par un test : creer une seance, ajouter un
-bloc depuis la galerie et un depuis l'appareil photo, poser des prises, tracer un beta magnetise,
-revenir en arriere, retrouver le tout.
+**Critere d'acceptation — atteint.** Parcours execute sur emulateur API 36 : seance creee,
+photo importee depuis la galerie (copiee sous UUID dans le stockage prive, dimensions 1080x2400
+lues sans decodage), quatre prises posees au doigt, beta magnetise trace et enregistre
+(`sequence_order=0`, `limb_type=1`, source et cible pointant sur deux prises reelles), retour
+arriere et donnees retrouvees apres relancement.
+
+Deux defauts trouves par ce parcours et corriges : la barre d'outils d'annotation passait sous la
+barre d'etat en affichage bord a bord, et l'ecran d'annotation n'avait aucun retour.
 
 ---
 
