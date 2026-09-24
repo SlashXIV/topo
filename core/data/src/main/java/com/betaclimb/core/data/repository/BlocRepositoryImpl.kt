@@ -5,6 +5,7 @@ import com.betaclimb.core.data.mapper.toDomain
 import com.betaclimb.core.data.mapper.toEntity
 import com.betaclimb.core.domain.model.Bloc
 import com.betaclimb.core.domain.model.BlocDetail
+import com.betaclimb.core.domain.model.BlocStatus
 import com.betaclimb.core.domain.repository.BlocImageStore
 import com.betaclimb.core.domain.repository.BlocRepository
 import java.util.UUID
@@ -39,12 +40,17 @@ internal class BlocRepositoryImpl @Inject constructor(
             imageWidth = imageWidth,
             imageHeight = imageHeight,
             grade = grade,
-            isCompleted = false,
+            status = BlocStatus.PROJECT,
+            attempts = 0,
+            sentAt = null,
+            feeling = null,
             createdAt = System.currentTimeMillis(),
         )
         blocDao.insert(bloc.toEntity())
         return bloc.id
     }
+
+    override suspend fun getBloc(blocId: String): Bloc? = blocDao.getBloc(blocId)?.toDomain()
 
     override suspend fun updateBloc(bloc: Bloc) {
         blocDao.update(bloc.toEntity())

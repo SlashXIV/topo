@@ -30,7 +30,7 @@ import com.betaclimb.core.data.database.entity.SessionEntity
         HoldEntity::class,
         MovementEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class BetaClimbDatabase : RoomDatabase() {

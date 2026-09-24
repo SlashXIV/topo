@@ -14,6 +14,11 @@ import java.util.concurrent.Executors
  */
 internal fun RoomDatabase.Builder<BetaClimbDatabase>.applyBetaClimbConfiguration():
     RoomDatabase.Builder<BetaClimbDatabase> = this
+    // Migrations explicites, jamais de fallbackToDestructiveMigration : une base
+    // locale est la SEULE copie des donnees de l'utilisateur, il n'y a pas de
+    // serveur pour les recreer. Un schema non migrable doit faire echouer
+    // l'ouverture bruyamment, pas effacer un carnet d'entrainement en silence.
+    .addMigrations(*BETACLIMB_MIGRATIONS)
     // -----------------------------------------------------------------------
     //  Write-Ahead Logging
     //

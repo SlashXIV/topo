@@ -8,6 +8,7 @@ import com.betaclimb.core.data.database.relation.BlocWithBeta
 import com.betaclimb.core.data.database.relation.SessionWithCounts
 import com.betaclimb.core.domain.model.Bloc
 import com.betaclimb.core.domain.model.BlocDetail
+import com.betaclimb.core.domain.model.BlocStatus
 import com.betaclimb.core.domain.model.BoundingBox
 import com.betaclimb.core.domain.model.Hold
 import com.betaclimb.core.domain.model.HoldOrigin
@@ -59,7 +60,10 @@ internal fun BlocEntity.toDomain(): Bloc = Bloc(
     imageWidth = imageWidth,
     imageHeight = imageHeight,
     grade = grade,
-    isCompleted = isCompleted,
+    status = BlocStatus.entries.getOrElse(status) { BlocStatus.PROJECT },
+    attempts = attempts,
+    sentAt = sentAt,
+    feeling = feeling,
     createdAt = createdAt,
 )
 
@@ -70,7 +74,10 @@ internal fun Bloc.toEntity(): BlocEntity = BlocEntity(
     imageWidth = imageWidth,
     imageHeight = imageHeight,
     grade = grade,
-    isCompleted = isCompleted,
+    status = status.ordinal,
+    attempts = attempts,
+    sentAt = sentAt,
+    feeling = feeling,
     createdAt = createdAt,
 )
 

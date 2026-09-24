@@ -19,13 +19,17 @@ interface SessionDao {
      * cote Kotlin.
      *
      * LEFT JOIN et non INNER JOIN : une seance sans bloc doit apparaitre, avec 0.
+     *
+     * Les valeurs 2 et 3 sont les ordinaux de BlocStatus.FLASHED et SENT, repris
+     * de BlocStatus.SQL_SENT_ORDINALS. Room exige une requete litterale, donc la
+     * constante ne peut pas etre interpolee ici : un test verrouille ces ordinaux.
      */
     @Transaction
     @Query(
         """
         SELECT s.*,
                COUNT(b.id) AS bloc_count,
-               COALESCE(SUM(CASE WHEN b.is_completed THEN 1 ELSE 0 END), 0) AS completed_count
+               COALESCE(SUM(CASE WHEN b.status IN (2, 3) THEN 1 ELSE 0 END), 0) AS completed_count
         FROM sessions AS s
         LEFT JOIN blocs AS b ON b.session_id = s.id
         GROUP BY s.id

@@ -27,6 +27,9 @@ interface BlocDao {
     @Query("SELECT * FROM blocs WHERE id = :blocId")
     fun observeBlocDetail(blocId: String): Flow<BlocWithBeta?>
 
+    @Query("SELECT * FROM blocs WHERE id = :blocId")
+    suspend fun getBloc(blocId: String): BlocEntity?
+
     @Query("SELECT image_path FROM blocs WHERE id = :blocId")
     suspend fun getImagePath(blocId: String): String?
 
