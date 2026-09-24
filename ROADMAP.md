@@ -104,7 +104,7 @@ La regle du flash a ete verifiee a la main : deux essais enregistres, le statut 
 
 ---
 
-### S5 — Identite : nom et icone *(en cours)*
+### S5 — Identite : nom et icone *(livre)*
 
 **Objectif.** Donner au projet une identite coherente avec les autres applications de son auteur,
 avant que l'`applicationId` ne devienne impossible a changer.
@@ -136,10 +136,20 @@ decrit exactement ce qu'est un beta. Deux syllabes, finale vocalique : la serie 
 `VectorDrawable` reste net a toutes les densites, pese quelques kilo-octets au lieu d'une famille
 de bitmaps, et se relit — une couleur se change dans le XML, pas dans un exporteur.
 
-**Critere d'acceptation.** L'icone s'affiche correctement au lanceur, en icone thematique et au
-splash sur appareil ; `./gradlew build` vert apres renommage, tous les tests passent sans
-modification autre que les imports, et l'audit d'alignement 16 Ko reste conforme malgre le
-changement de nom de la bibliotheque native.
+**Critere d'acceptation — atteint pour le nom et l'icone.** Renommage complet livre : les 67
+tests passent sans modification autre que les imports, et l'audit 16 Ko reste conforme sur la
+bibliotheque devenue `libtopo_vision.so`. L'icone a ete verifiee au lanceur sur appareil.
+
+Deux corrections viennent de cette verification, et d'elle seule :
+- les prises etaient des galets aux contours lisses ; a la taille d'une icone elles se lisaient
+  comme de simples pastilles percees. Redessinees en triangles arrondis ;
+- elles etaient placees trop pres des bords et le masque circulaire les avalait entierement —
+  le fond apparaissait uni. Rapprochees a environ 31 du centre.
+
+**Reste a faire.** L'ecran de demarrage n'est pas encore aligne sur l'icone, et la couche
+`monochrome` n'a pas pu etre verifiee visuellement : activer les icones thematiques passe par un
+reglage du lanceur, hors de portee d'`adb`. Sa geometrie est celle de l'avant-plan, qui lui est
+verifie.
 
 ---
 
@@ -238,6 +248,8 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | Chemins d'image **relatifs** en base | Un chemin absolu change lors d'une restauration d'appareil ; une `content://` externe peut voir sa permission revoquee, ce qui casserait le fonctionnement hors ligne. |
 | `Topo` plutot que `Topo` | Un compose anglais descriptif ne tient pas la serie ouverte par `Kalos` et `Popote` : des mots courts, chaleureux, avec un clin d'oeil d'initie. `Topo` est le mot des grimpeurs pour le guide de voies, et « c'est quoi le topo ? » decrit exactement ce qu'est un beta. |
 | Icone entierement vectorielle | Kalos utilise un PNG pre-padde a 64 % du canvas. Un VectorDrawable reste net a toutes les densites, pese quelques kilo-octets au lieu d'une famille de bitmaps, et se relit : une couleur se change dans le XML, pas dans un exporteur. |
+| Aucun mipmap PNG herite | `minSdk = 26` garantit les icones adaptatives sur tout le parc vise. Les familles `mipmap-hdpi` a `mipmap-xxxhdpi` que Kalos doit embarquer sont ici inutiles : l'icone entiere tient dans trois fichiers vectoriels, 18 Ko au total. |
+| Prises dessinees en triangles arrondis | Un contour ferme et lisse se lit comme un cercle a la taille d'une icone de lanceur. Verifie sur appareil : la premiere version ressemblait a des pastilles percees. |
 | Statut a quatre etats plutot qu'un booleen `is_completed` | Un booleen ne distingue pas « jamais essaye » de « travaille sans succes ». Garder les deux cote a cote aurait cree deux sources de verite pour la meme question. |
 | Table reconstruite a la migration plutot qu'un `ALTER` | `DROP COLUMN` date de SQLite 3.35 ; l'API 26 visee embarque la 3.19. Les cles etrangeres sont desactivees pendant l'echange, sinon le `DROP TABLE` emporterait prises et mouvements en cascade. |
 | Deux emulateurs dans la matrice de test | Espresso 3.7.0, derniere version publiee, est incompatible avec l'API 37 (`NoSuchMethodException: InputManager.getInstance`). Les tests Compose tournent donc en API 36, le natif reste sur l'AVD 16 Ko. |

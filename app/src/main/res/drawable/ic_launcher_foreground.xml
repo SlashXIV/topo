@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Couche AVANT-PLAN de l'icone adaptative : la lettre et la barre d'accent.
+
+    Zone de securite. Sur les 108x108 du canevas, seuls les 72x72 centraux sont
+    garantis visibles, et le masque le plus agressif ne laisse qu'un cercle de
+    66 de diametre centre en (54,54). Tout tient a l'interieur :
+      angle haut-gauche du T (34,30) -> distance au centre 31,2 < 33
+      angle bas-gauche de la barre (38.5,79) -> distance 29,4 < 33
+
+    La lettre est tracee a la main plutot que convertie depuis une police : le
+    rendu ne depend d'aucune fonte installee, les proportions sont reglees pour
+    ce canevas, et le fichier reste relisable.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- T : barre horizontale de 40 x 11, fut de 12 de large.
+         Le fut s'arrete a 64 et la barre d'accent commence a 74 : avec
+         seulement 6 d'ecart, le trait semblait coller au pied de la lettre. -->
+    <path
+        android:fillColor="@color/icon_letter"
+        android:pathData="M34,30L74,30L74,41L60,41L60,64L48,64L48,41L34,41Z" />
+
+    <!-- Barre d'accent : la signature commune a Kalos et Popote -->
+    <path
+        android:fillColor="@color/icon_accent"
+        android:pathData="M38.5,74L69.5,74A2.5,2.5 0 0,1 69.5,79L38.5,79A2.5,2.5 0 0,1 38.5,74Z" />
+
+</vector>

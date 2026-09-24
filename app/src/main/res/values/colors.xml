@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Palette de l'icone. Declaree en ressources plutot qu'en dur dans les
+        VectorDrawable : le trou de boulon des prises reprend exactement la
+        couleur du fond pour se lire comme un percage, et cette egalite doit
+        rester vraie si le fond change.
+    -->
+    <color name="icon_background">#3A4048</color>
+    <color name="icon_hold">#464E58</color>
+    <color name="icon_letter">#FFFFFFFF</color>
+    <!-- Orange « main droite » du trace d'annotation (BetaColors.RightHand). -->
+    <color name="icon_accent">#F2A65A</color>
+</resources>

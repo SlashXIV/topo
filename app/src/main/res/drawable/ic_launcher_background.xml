@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Couche FOND de l'icone adaptative. Derive de design/icon/topo-icon.svg.
+
+    Entierement vectorielle : nette a toutes les densites, quelques kilo-octets
+    au lieu d'une famille de bitmaps, et une couleur se change ici plutot que
+    dans un exporteur.
+
+    FORME DES PRISES — triangle arrondi, pas un galet. Un contour ferme et lisse
+    se lit comme un simple cercle des qu'on le reduit a la taille d'une icone de
+    lanceur : verifie sur appareil, la premiere version ressemblait a des pastilles
+    percees. Trois sommets nettement marques, meme largement adoucis, suffisent a
+    faire lire une prise de bloc. Le trou de boulon est decentre vers le haut,
+    comme sur une vraie prise.
+
+    PLACEMENT — centres a environ 31 du centre du canevas. Plus loin, le masque
+    circulaire des lanceurs (rayon 36) les avalait entierement ; teste sur
+    appareil, elles etaient tout simplement absentes. A cette distance chacune
+    reste largement visible tout en mordant le bord, ce qui suggere un mur qui
+    continue hors champ.
+
+    Quatre prises et non cinq : la cinquieme encombrait le fond sans rien ajouter.
+    Elles passent derriere la lettre et la barre, qui appartiennent a la couche
+    d'avant-plan et se dessinent par-dessus.
+
+    VectorDrawable n'a pas d'equivalent de <use> : la geometrie est repetee dans
+    chaque groupe, avec une rotation et une echelle differentes.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <path
+        android:fillColor="@color/icon_background"
+        android:pathData="M0,0h108v108h-108z" />
+
+    <!-- Prise haut-droite -->
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:rotation="20"
+        android:scaleX="0.95"
+        android:scaleY="0.95"
+        android:translateX="67"
+        android:translateY="24">
+        <path
+            android:fillColor="@color/icon_hold"
+            android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
+        <path
+            android:fillColor="@color/icon_background"
+            android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
+    </group>
+
+    <!-- Prise gauche -->
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:rotation="-60"
+        android:scaleX="0.85"
+        android:scaleY="0.85"
+        android:translateX="11"
+        android:translateY="42">
+        <path
+            android:fillColor="@color/icon_hold"
+            android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
+        <path
+            android:fillColor="@color/icon_background"
+            android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
+    </group>
+
+    <!-- Prise bas-gauche -->
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:rotation="150"
+        android:scaleX="0.9"
+        android:scaleY="0.9"
+        android:translateX="27"
+        android:translateY="69">
+        <path
+            android:fillColor="@color/icon_hold"
+            android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
+        <path
+            android:fillColor="@color/icon_background"
+            android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
+    </group>
+
+    <!-- Prise bas-droite -->
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:rotation="-110"
+        android:translateX="64"
+        android:translateY="64">
+        <path
+            android:fillColor="@color/icon_hold"
+            android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
+        <path
+            android:fillColor="@color/icon_background"
+            android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
+    </group>
+
+</vector>
