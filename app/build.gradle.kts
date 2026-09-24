@@ -2,6 +2,9 @@ plugins {
     id("betaclimb.android.application")
     id("betaclimb.android.compose")
     id("betaclimb.android.hilt")
+    // Routes de navigation typees : Navigation Compose serialise les objets de
+    // route, ce qui supprime les chaines de format et leur analyse manuelle.
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -37,6 +40,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.hilt.navigation.compose)
 
     testImplementation(libs.junit)

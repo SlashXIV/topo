@@ -10,8 +10,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,9 +41,11 @@ import com.betaclimb.core.ui.theme.BetaColors
  * sprint dedie. Le `blocId` est donc passe en parametre, ce qui a l'avantage de
  * garder l'ecran affichable isolement dans une preview ou un test.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnnotatorScreen(
     blocId: String,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AnnotatorViewModel = hiltViewModel(),
 ) {
@@ -46,28 +55,42 @@ fun AnnotatorScreen(
     val detail = uiState.blocDetail
     val imageFile = uiState.imageFile
 
-    Column(modifier = modifier.fillMaxSize()) {
-        AnnotationToolbar(
-            mode = uiState.mode,
-            selectedLimb = uiState.selectedLimb,
-            onModeChange = viewModel::selectMode,
-            onLimbChange = viewModel::selectLimb,
-            onUndo = viewModel::undoLastMovement,
-            onClear = viewModel::clearBeta,
-        )
+    Scaffold(
+        modifier = modifier,
+        topBar = {
+            TopAppBar(
+                title = { Text(detail?.bloc?.grade ?: "Annotation") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            AnnotationToolbar(
+                mode = uiState.mode,
+                selectedLimb = uiState.selectedLimb,
+                onModeChange = viewModel::selectMode,
+                onLimbChange = viewModel::selectLimb,
+                onUndo = viewModel::undoLastMovement,
+                onClear = viewModel::clearBeta,
+            )
 
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            if (detail != null && imageFile != null) {
-                AnnotationCanvas(
-                    blocDetail = detail,
-                    imageFile = imageFile,
-                    mode = uiState.mode,
-                    selectedLimb = uiState.selectedLimb,
-                    onHoldRequested = viewModel::addHoldAt,
-                    onTraceCompleted = viewModel::completeTrace,
-                )
-            } else {
-                Text("Chargement du bloc...", style = MaterialTheme.typography.bodyMedium)
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                if (detail != null && imageFile != null) {
+                    AnnotationCanvas(
+                        blocDetail = detail,
+                        imageFile = imageFile,
+                        mode = uiState.mode,
+                        selectedLimb = uiState.selectedLimb,
+                        onHoldRequested = viewModel::addHoldAt,
+                        onTraceCompleted = viewModel::completeTrace,
+                    )
+                } else {
+                    Text("Chargement du bloc...", style = MaterialTheme.typography.bodyMedium)
+                }
             }
         }
     }
