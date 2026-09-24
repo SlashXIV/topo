@@ -1,11 +1,11 @@
 plugins {
-    id("betaclimb.android.library")
-    id("betaclimb.android.compose")
-    id("betaclimb.android.hilt")
+    id("topo.android.library")
+    id("topo.android.compose")
+    id("topo.android.hilt")
 }
 
 android {
-    namespace = "com.betaclimb.feature.camera"
+    namespace = "com.topo.feature.camera"
 }
 
 dependencies {

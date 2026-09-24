@@ -1,4 +1,4 @@
-# Feuille de route — BetaClimb
+# Feuille de route — Topo
 
 Document de reference du projet. Il consolide les decisions prises au fil des sprints et detaille
 chaque phase. Mis a jour a la fin de chaque sprint.
@@ -109,7 +109,7 @@ La regle du flash a ete verifiee a la main : deux essais enregistres, le statut 
 **Objectif.** Donner au projet une identite coherente avec les autres applications de son auteur,
 avant que l'`applicationId` ne devienne impossible a changer.
 
-**Le nom.** `BetaClimb` est un compose anglais descriptif, la ou `Kalos` et `Popote` sont des mots
+**Le nom.** `Topo` est un compose anglais descriptif, la ou `Kalos` et `Popote` sont des mots
 courts, chaleureux, porteurs d'un clin d'oeil que seul un initie decode. L'application devient
 **Topo** : c'est le mot des grimpeurs pour le guide de voies, et l'application fabrique
 litteralement des topos. Le double sens francais — « c'est quoi le topo ? », la marche a suivre —
@@ -117,9 +117,9 @@ decrit exactement ce qu'est un beta. Deux syllabes, finale vocalique : la serie 
 
 **Livrables.**
 
-1. **Renommage complet**, et non cosmetique : `applicationId`, packages `com.betaclimb.*`,
-   namespaces de modules, bibliotheque native `libbetaclimb_vision.so`, nom de base
-   `betaclimb.db`, identifiants des plugins de convention. Un `applicationId` ne se change plus
+1. **Renommage complet**, et non cosmetique : `applicationId`, packages `com.topo.*`,
+   namespaces de modules, bibliotheque native `libtopo_vision.so`, nom de base
+   `topo.db`, identifiants des plugins de convention. Un `applicationId` ne se change plus
    une fois l'application publiee : le faire maintenant coute une heure, le faire au sprint 10
    coute un chantier.
 2. **Icone vectorielle**, dessinee a la main en SVG puis convertie en `VectorDrawable` :
@@ -236,7 +236,7 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | Recherche lineaire plutot que KD-Tree | Mesure : 0,62 us pour 150 prises, soit 0,004 % d'une trame a 60 FPS. Un arbre couterait plus a construire et invalider que la recherche qu'il remplace. |
 | Tables classiques plutot que l'extension spatiale R-Tree | L'implementation SQLite d'Android n'active pas systematiquement R-Tree, et un mur depasse rarement 200 prises. Des index B-Tree suffisent. |
 | Chemins d'image **relatifs** en base | Un chemin absolu change lors d'une restauration d'appareil ; une `content://` externe peut voir sa permission revoquee, ce qui casserait le fonctionnement hors ligne. |
-| `Topo` plutot que `BetaClimb` | Un compose anglais descriptif ne tient pas la serie ouverte par `Kalos` et `Popote` : des mots courts, chaleureux, avec un clin d'oeil d'initie. `Topo` est le mot des grimpeurs pour le guide de voies, et « c'est quoi le topo ? » decrit exactement ce qu'est un beta. |
+| `Topo` plutot que `Topo` | Un compose anglais descriptif ne tient pas la serie ouverte par `Kalos` et `Popote` : des mots courts, chaleureux, avec un clin d'oeil d'initie. `Topo` est le mot des grimpeurs pour le guide de voies, et « c'est quoi le topo ? » decrit exactement ce qu'est un beta. |
 | Icone entierement vectorielle | Kalos utilise un PNG pre-padde a 64 % du canvas. Un VectorDrawable reste net a toutes les densites, pese quelques kilo-octets au lieu d'une famille de bitmaps, et se relit : une couleur se change dans le XML, pas dans un exporteur. |
 | Statut a quatre etats plutot qu'un booleen `is_completed` | Un booleen ne distingue pas « jamais essaye » de « travaille sans succes ». Garder les deux cote a cote aurait cree deux sources de verite pour la meme question. |
 | Table reconstruite a la migration plutot qu'un `ALTER` | `DROP COLUMN` date de SQLite 3.35 ; l'API 26 visee embarque la 3.19. Les cles etrangeres sont desactivees pendant l'echange, sinon le `DROP TABLE` emporterait prises et mouvements en cascade. |

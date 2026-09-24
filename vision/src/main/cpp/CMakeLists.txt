@@ -1,21 +1,21 @@
 # ============================================================================
-#  BetaClimb — moteur de vision natif (NDK / C++17)
+#  Topo — moteur de vision natif (NDK / C++17)
 # ============================================================================
 cmake_minimum_required(VERSION 3.22.1)
-project(betaclimb_vision LANGUAGES CXX)
+project(topo_vision LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_library(betaclimb_vision SHARED
+add_library(topo_vision SHARED
         jni_bridge.cpp
         vision_processor.cpp
 )
 
-target_include_directories(betaclimb_vision PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(topo_vision PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_compile_options(betaclimb_vision PRIVATE
+target_compile_options(topo_vision PRIVATE
         -Wall
         -Wextra
         -Werror
@@ -30,7 +30,7 @@ target_compile_options(betaclimb_vision PRIVATE
         -fdata-sections
 )
 
-target_compile_options(betaclimb_vision PRIVATE
+target_compile_options(topo_vision PRIVATE
         $<$<CONFIG:Release>:-O3>
         $<$<CONFIG:Debug>:-O0 -g>
 )
@@ -54,7 +54,7 @@ target_compile_options(betaclimb_vision PRIVATE
 #
 #  Verification : scripts/check_alignment.sh  ->  tous les LOAD en "align 2**14".
 # ---------------------------------------------------------------------------
-target_link_options(betaclimb_vision PRIVATE
+target_link_options(topo_vision PRIVATE
         "-Wl,-z,max-page-size=16384"
         "-Wl,-z,common-page-size=16384"
         # Elimine le code mort (complement de -ffunction-sections/-fdata-sections).
@@ -69,7 +69,7 @@ target_link_options(betaclimb_vision PRIVATE
         "-Wl,--no-undefined"
 )
 
-target_link_libraries(betaclimb_vision
+target_link_libraries(topo_vision
         android
         log
         # jnigraphics : AndroidBitmap_lockPixels / AndroidBitmap_getInfo.
@@ -90,9 +90,9 @@ target_link_libraries(betaclimb_vision
 #  add_library(onnxruntime SHARED IMPORTED)
 #  set_target_properties(onnxruntime PROPERTIES
 #          IMPORTED_LOCATION ${ONNXRUNTIME_ROOT}/jni/${ANDROID_ABI}/libonnxruntime.so)
-#  target_include_directories(betaclimb_vision PRIVATE ${ONNXRUNTIME_ROOT}/headers)
-#  target_link_libraries(betaclimb_vision onnxruntime)
+#  target_include_directories(topo_vision PRIVATE ${ONNXRUNTIME_ROOT}/headers)
+#  target_link_libraries(topo_vision onnxruntime)
 # ---------------------------------------------------------------------------
 
-message(STATUS "[BetaClimb] ABI=${ANDROID_ABI} | STL=${ANDROID_STL} | "
+message(STATUS "[Topo] ABI=${ANDROID_ABI} | STL=${ANDROID_STL} | "
         "flexible-page-sizes=${ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES} | build=${CMAKE_BUILD_TYPE}")

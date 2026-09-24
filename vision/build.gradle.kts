@@ -5,12 +5,12 @@
 // l'application ne depend que de l'interface HoldDetector du domaine et ignore
 // totalement qu'une bibliotheque native existe.
 plugins {
-    id("betaclimb.android.library")
-    id("betaclimb.android.native")
+    id("topo.android.library")
+    id("topo.android.native")
 }
 
 android {
-    namespace = "com.betaclimb.vision"
+    namespace = "com.topo.vision"
 }
 
 dependencies {

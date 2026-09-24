@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ---------------------------------------------------------------------------
-#  BetaClimb - audit de conformite 16 Ko (Android 15+)
+#  Topo - audit de conformite 16 Ko (Android 15+)
 #
 #  Deux verifications, toutes deux necessaires :
 #

@@ -1,4 +1,4 @@
-# Conventions du projet BetaClimb
+# Conventions du projet Topo
 
 ## Commits
 

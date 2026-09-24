@@ -1,5 +1,5 @@
 pluginManagement {
-    // Le build composite build-logic fournit les plugins de convention "betaclimb.*".
+    // Le build composite build-logic fournit les plugins de convention "topo.*".
     includeBuild("build-logic")
     repositories {
         google()
@@ -17,7 +17,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BetaClimb"
+rootProject.name = "Topo"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 

@@ -1,10 +1,10 @@
 plugins {
-    id("betaclimb.android.library")
-    id("betaclimb.android.hilt")
+    id("topo.android.library")
+    id("topo.android.hilt")
 }
 
 android {
-    namespace = "com.betaclimb.core.data"
+    namespace = "com.topo.core.data"
 }
 
 // Le schema de la base est EXPORTE en JSON et versionne dans git. C'est ce qui rend

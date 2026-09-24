@@ -1,11 +1,11 @@
 plugins {
-    id("betaclimb.android.library")
-    id("betaclimb.android.compose")
-    id("betaclimb.android.hilt")
+    id("topo.android.library")
+    id("topo.android.compose")
+    id("topo.android.hilt")
 }
 
 android {
-    namespace = "com.betaclimb.feature.annotator"
+    namespace = "com.topo.feature.annotator"
 }
 
 dependencies {

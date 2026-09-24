@@ -2,9 +2,9 @@
 
 #include <android/log.h>
 
-namespace betaclimb {
+namespace topo {
 namespace {
-constexpr const char* kTag = "BetaClimbVision";
+constexpr const char* kTag = "TopoVision";
 }  // namespace
 
 /**
@@ -43,4 +43,4 @@ std::vector<Detection> VisionProcessor::Detect(const uint8_t* pixels,
     return {};
 }
 
-}  // namespace betaclimb
+}  // namespace topo

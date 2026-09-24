@@ -1,9 +1,9 @@
 plugins {
-    id("betaclimb.android.library")
+    id("topo.android.library")
 }
 
 android {
-    namespace = "com.betaclimb.core.common"
+    namespace = "com.topo.core.common"
 }
 
 dependencies {

@@ -1,4 +1,4 @@
-# BetaClimb
+# Topo
 
 Application Android native **hors-ligne** pour grimpeurs de bloc : photographier un pan de mur,
 identifier les prises, tracer sa sequence de mouvements ("beta") au doigt, tout conserver en local.
@@ -28,22 +28,22 @@ $ scripts/check_alignment.sh app/build/outputs/apk/debug/app-debug.apk
 Source : app-debug.apk (bibliotheques empaquetees)
 
   arm64-v8a    libandroidx.graphics.path.so   3 LOAD, tous en 2**14 — CONFORME
-  arm64-v8a    libbetaclimb_vision.so         3 LOAD, tous en 2**14 — CONFORME
+  arm64-v8a    libtopo_vision.so         3 LOAD, tous en 2**14 — CONFORME
   arm64-v8a    libc++_shared.so               4 LOAD, tous en 2**14 — CONFORME
   x86_64       libandroidx.graphics.path.so   3 LOAD, tous en 2**14 — CONFORME
-  x86_64       libbetaclimb_vision.so         3 LOAD, tous en 2**14 — CONFORME
+  x86_64       libtopo_vision.so         3 LOAD, tous en 2**14 — CONFORME
   x86_64       libc++_shared.so               4 LOAD, tous en 2**14 — CONFORME
 
 Packaging : APK aligne 16 Ko — CONFORME
 ```
 
 ```
-$ adb logcat -s BetaClimbJNI BetaClimbVision
-I BetaClimbJNI    : 4 methodes natives enregistrees
-I BetaClimbVision : VisionProcessor cree (sans modele)
-D BetaClimbJNI    : DirectBuffer @0x2608c010 capacite=16384 (64x64, stride=256) - zero copie
-D BetaClimbVision : Detect(pixels=0x2608c010, 64x64, stride=256, format=1)
-I BetaClimbJNI    : Moteur natif detruit
+$ adb logcat -s TopoJNI TopoVision
+I TopoJNI    : 4 methodes natives enregistrees
+I TopoVision : VisionProcessor cree (sans modele)
+D TopoJNI    : DirectBuffer @0x2608c010 capacite=16384 (64x64, stride=256) - zero copie
+D TopoVision : Detect(pixels=0x2608c010, 64x64, stride=256, format=1)
+I TopoJNI    : Moteur natif detruit
 ```
 
 L'adresse `0x2608c010` est identique des deux cotes : aucune copie n'a eu lieu entre le buffer
@@ -68,7 +68,7 @@ Le schema de la base est **exporte en JSON et versionne** (`core/data/schemas/`)
 rendra les migrations verifiables plutot que declaratives.
 
 La configuration Room — WAL, executeurs, cles etrangeres — vit dans une unique fonction
-`applyBetaClimbConfiguration()` que le module Hilt **et** les tests instrumentes appellent. Sans
+`applyTopoConfiguration()` que le module Hilt **et** les tests instrumentes appellent. Sans
 cela, les tests valideraient une configuration recopiee, libre de diverger de la production.
 
 ### Une correction de modelisation

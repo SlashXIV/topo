@@ -1,5 +1,5 @@
 // ============================================================================
-//  BetaClimb - pont JNI Kotlin <-> C++
+//  Topo - pont JNI Kotlin <-> C++
 //
 //  CONTRAT DE TRAVERSEE (lire avant toute modification)
 //  ---------------------------------------------------
@@ -27,7 +27,7 @@
 //     Closeable) et plusieurs moteurs peuvent coexister.
 //
 //  4. Enregistrement par RegisterNatives dans JNI_OnLoad plutot que par symboles
-//     exportes Java_com_betaclimb_... : les signatures sont validees au
+//     exportes Java_com_topo_... : les signatures sont validees au
 //     chargement (et non au premier appel), la .so n'exporte aucun symbole de
 //     fonction, et un renommage cote Kotlin echoue bruyamment tout de suite.
 // ============================================================================
@@ -45,8 +45,8 @@
 
 namespace {
 
-constexpr const char* kTag = "BetaClimbJNI";
-constexpr const char* kBridgeClass = "com/betaclimb/vision/NativeBridge";
+constexpr const char* kTag = "TopoJNI";
+constexpr const char* kBridgeClass = "com/topo/vision/NativeBridge";
 
 void ThrowJava(JNIEnv* env, const char* class_name, const char* message) {
     jclass clazz = env->FindClass(class_name);
@@ -84,17 +84,17 @@ private:
     int status_ = ANDROID_BITMAP_RESULT_BAD_PARAMETER;
 };
 
-betaclimb::VisionProcessor* FromHandle(JNIEnv* env, jlong handle) {
+topo::VisionProcessor* FromHandle(JNIEnv* env, jlong handle) {
     if (handle == 0L) {
         ThrowJava(env, "java/lang/IllegalStateException",
                   "Handle natif nul : moteur deja libere ou jamais cree");
         return nullptr;
     }
-    return reinterpret_cast<betaclimb::VisionProcessor*>(handle);
+    return reinterpret_cast<topo::VisionProcessor*>(handle);
 }
 
 /** Aplatit les detections en un unique jfloatArray (cf. contrat, point 1). */
-jfloatArray ToFlatArray(JNIEnv* env, const std::vector<betaclimb::Detection>& detections) {
+jfloatArray ToFlatArray(JNIEnv* env, const std::vector<topo::Detection>& detections) {
     const jsize length = static_cast<jsize>(detections.size() * 5);
     jfloatArray result = env->NewFloatArray(length);
     if (result == nullptr) {
@@ -123,7 +123,7 @@ jfloatArray ToFlatArray(JNIEnv* env, const std::vector<betaclimb::Detection>& de
 
 jlong NativeCreate(JNIEnv* env, jobject /* thiz */) {
     (void)env;
-    auto processor = std::make_unique<betaclimb::VisionProcessor>();
+    auto processor = std::make_unique<topo::VisionProcessor>();
     __android_log_print(ANDROID_LOG_INFO, kTag, "Moteur natif cree");
     return reinterpret_cast<jlong>(processor.release());
 }
@@ -133,7 +133,7 @@ void NativeDestroy(JNIEnv* env, jobject /* thiz */, jlong handle) {
     if (handle == 0L) {
         return;  // Idempotent : un double close() ne doit pas crasher.
     }
-    delete reinterpret_cast<betaclimb::VisionProcessor*>(handle);
+    delete reinterpret_cast<topo::VisionProcessor*>(handle);
     __android_log_print(ANDROID_LOG_INFO, kTag, "Moteur natif detruit");
 }
 
@@ -181,7 +181,7 @@ jfloatArray NativeDetectFromDirectBuffer(JNIEnv* env,
 
     const auto detections = processor->Detect(static_cast<const uint8_t*>(address),
                                               width, height, row_stride,
-                                              betaclimb::PixelFormat::kYuv420);
+                                              topo::PixelFormat::kYuv420);
     return ToFlatArray(env, detections);
 }
 
@@ -227,7 +227,7 @@ jfloatArray NativeDetectFromBitmap(JNIEnv* env,
                                               static_cast<int32_t>(info.width),
                                               static_cast<int32_t>(info.height),
                                               static_cast<int32_t>(info.stride),
-                                              betaclimb::PixelFormat::kRgba8888);
+                                              topo::PixelFormat::kRgba8888);
     return ToFlatArray(env, detections);
 }
 

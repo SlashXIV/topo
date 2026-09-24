@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-namespace betaclimb {
+namespace topo {
 
 /**
  * Une prise detectee.
@@ -67,6 +67,6 @@ private:
     std::unique_ptr<Impl> impl_;
 };
 
-}  // namespace betaclimb
+}  // namespace topo
 
 #endif  // BETACLIMB_VISION_PROCESSOR_H

@@ -4,7 +4,7 @@ plugins {
     `kotlin-dsl`
 }
 
-group = "com.betaclimb.buildlogic"
+group = "com.topo.buildlogic"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -27,27 +27,27 @@ dependencies {
 gradlePlugin {
     plugins {
         register("androidApplication") {
-            id = "betaclimb.android.application"
+            id = "topo.android.application"
             implementationClass = "AndroidApplicationConventionPlugin"
         }
         register("androidLibrary") {
-            id = "betaclimb.android.library"
+            id = "topo.android.library"
             implementationClass = "AndroidLibraryConventionPlugin"
         }
         register("androidCompose") {
-            id = "betaclimb.android.compose"
+            id = "topo.android.compose"
             implementationClass = "AndroidComposeConventionPlugin"
         }
         register("androidHilt") {
-            id = "betaclimb.android.hilt"
+            id = "topo.android.hilt"
             implementationClass = "AndroidHiltConventionPlugin"
         }
         register("androidNative") {
-            id = "betaclimb.android.native"
+            id = "topo.android.native"
             implementationClass = "AndroidNativeConventionPlugin"
         }
         register("jvmLibrary") {
-            id = "betaclimb.jvm.library"
+            id = "topo.jvm.library"
             implementationClass = "JvmLibraryConventionPlugin"
         }
     }
