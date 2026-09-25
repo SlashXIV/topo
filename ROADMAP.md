@@ -47,7 +47,7 @@ explicitement dans le journal des decisions.
 | **S1** | Room en mode WAL, cascades, CameraX, stockage interne | `PRAGMA journal_mode` = `wal` ; 18 tests instrumentes ; capture JPEG reelle sur appareil |
 | **S2** | Canevas Compose, prises manuelles, magnetisation | Magnetisation mesuree a **0,62 us** sur 150 prises ; 7 tests gestuels, dont un valide par mutation |
 
-83 tests verts au total : 33 instrumentes sur deux niveaux d'API, 50 unitaires JVM.
+103 tests verts au total : 38 instrumentes, 65 unitaires JVM.
 
 **L'application est utilisable, tient un carnet et rejoue les sequences.** La boucle seance ->
 bloc -> prises -> beta -> historique fonctionne de bout en bout sur appareil, chaque bloc porte
@@ -178,7 +178,41 @@ l'appareil et restent donc significatifs.
 
 ---
 
-### S7 — Statistiques et progression
+### S7 — Cotation : couleurs et niveaux *(livre)*
+
+**Objectif.** Rendre la difficulte enregistrable et surtout COMPARABLE, condition sans laquelle
+les statistiques de progression sont impossibles.
+
+**Le constat de depart.** La colonne `grade` existait depuis le Sprint 1, `GradeChip` savait
+l'afficher, mais `createBloc` passait toujours `null` et aucun ecran ne permettait de la saisir :
+un champ mort. Aucun bloc ne pouvait porter de difficulte.
+
+**Livrables.**
+- Deux echelles chiffrees ORDONNEES, francaise et V, au choix dans les reglages.
+- Un circuit de couleurs dont l'ordre, defini par l'utilisateur, EST la difficulte.
+- Un bloc porte les deux : la salle etiquette une couleur, le grimpeur estime un niveau.
+- Ecran de reglages avec editeur de circuit.
+- Migration v2 -> v3, amorcant un circuit par defaut et la ligne de reglages.
+
+**Le point d'architecture.** Une cotation en texte libre est inexploitable : « 7A » et « 7a »
+deviennent deux niveaux et rien ne se trie. Les deux systemes se ramenent a la meme abstraction —
+une liste ordonnee — et un bloc en tire un RANG, seule notion que les statistiques auront a
+consommer, quel que soit le systeme affiche.
+
+**Ergonomie, tiree du test appareil.** Reordonnancement par fleches et non par glisser-deposer :
+le glissement necessaire au trace d'un beta etait passe inapercu jusqu'a ce qu'une ligne de texte
+l'annonce. Un geste que rien ne signale est un geste que personne ne fait. Chaque ligne porte son
+rang, les fleches sont desactivees aux extremites, et un second appui sur une valeur deja choisie
+la retire.
+
+**Critere d'acceptation — atteint.** Migration executee sur la base reelle du Xiaomi :
+`user_version` 2 -> 3, seance, bloc, 9 prises et 7 mouvements conserves, essais et ressenti
+intacts, circuit et reglages amorces. Trois tests de migration, dont un verifiant que supprimer
+une couleur met `color_id` a NULL **sans** supprimer le bloc.
+
+---
+
+### S8 — Statistiques et progression
 
 **Objectif.** Donner une raison de revenir dans l'application.
 
@@ -192,7 +226,7 @@ l'appareil et restent donc significatifs.
 
 ---
 
-### S8 — Export et partage d'une image
+### S9 — Export et partage d'une image
 
 **Objectif.** Envoyer un beta a un partenaire de grimpe.
 
@@ -204,7 +238,7 @@ l'appareil et restent donc significatifs.
 
 ---
 
-### S9 — Detection automatique des prises
+### S10 — Detection automatique des prises
 
 **Objectif.** Pre-remplir les prises au lieu de les poser une a une.
 
@@ -228,7 +262,7 @@ audit d'alignement toujours vert.
 
 ---
 
-### S10 — Industrialisation
+### S11 — Industrialisation
 
 **Objectif.** Transformer un code fonctionnel en produit livrable.
 
@@ -258,6 +292,9 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | `Topo` plutot que `Topo` | Un compose anglais descriptif ne tient pas la serie ouverte par `Kalos` et `Popote` : des mots courts, chaleureux, avec un clin d'oeil d'initie. `Topo` est le mot des grimpeurs pour le guide de voies, et « c'est quoi le topo ? » decrit exactement ce qu'est un beta. |
 | Icone entierement vectorielle | Kalos utilise un PNG pre-padde a 64 % du canvas. Un VectorDrawable reste net a toutes les densites, pese quelques kilo-octets au lieu d'une famille de bitmaps, et se relit : une couleur se change dans le XML, pas dans un exporteur. |
 | Aucun mipmap PNG herite | `minSdk = 26` garantit les icones adaptatives sur tout le parc vise. Les familles `mipmap-hdpi` a `mipmap-xxxhdpi` que Kalos doit embarquer sont ici inutiles : l'icone entiere tient dans trois fichiers vectoriels, 18 Ko au total. |
+| Cotation tiree d'une liste figee, jamais saisie librement | « 7A » et « 7a » deviendraient deux niveaux et rien ne se trierait : une cotation libre rend toute statistique de progression impossible. |
+| Reglages en base plutot qu'en DataStore | SQLite est l'unique source de verite du projet. Un second magasin apporterait sa propre histoire de sauvegarde et de migration pour deux enumerations, la ou une table suit le mecanisme deja teste. |
+| Reordonnancement par fleches, pas par glisser-deposer | Le test sur appareil a montre qu'un geste que rien ne signale n'est pas decouvert : le glissement du trace etait reste inconnu jusqu'a ce qu'une ligne de texte l'annonce. |
 | Progression du rejeu comptee en mouvements | Une fraction de 0 a 1 aurait oblige a remultiplier par le nombre de mouvements partout, et aurait rendu le pas a pas dependant de la longueur de la sequence. |
 | Prises dessinees en triangles arrondis | Un contour ferme et lisse se lit comme un cercle a la taille d'une icone de lanceur. Verifie sur appareil : la premiere version ressemblait a des pastilles percees. |
 | Statut a quatre etats plutot qu'un booleen `is_completed` | Un booleen ne distingue pas « jamais essaye » de « travaille sans succes ». Garder les deux cote a cote aurait cree deux sources de verite pour la meme question. |
