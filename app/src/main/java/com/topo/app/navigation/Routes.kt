@@ -23,3 +23,6 @@ data class CaptureRoute(val sessionId: String)
 
 @Serializable
 data class AnnotatorRoute(val blocId: String)
+
+@Serializable
+data object SettingsRoute

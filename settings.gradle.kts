@@ -31,5 +31,6 @@ include(":core:data")
 include(":feature:camera")
 include(":feature:annotator")
 include(":feature:session")
+include(":feature:settings")
 
 include(":vision")

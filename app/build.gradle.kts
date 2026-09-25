@@ -35,6 +35,7 @@ dependencies {
     implementation(projects.feature.camera)
     implementation(projects.feature.annotator)
     implementation(projects.feature.session)
+    implementation(projects.feature.settings)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
