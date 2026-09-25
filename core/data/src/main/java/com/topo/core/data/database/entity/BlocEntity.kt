@@ -19,6 +19,11 @@ import androidx.room.PrimaryKey
  * la decoder juste pour connaitre ses dimensions serait un candidat direct a
  * l'OutOfMemoryError.
  *
+ * SCHEMA v3 — la difficulte devient exploitable : `grade` porte une etiquette
+ * canonique d'echelle plutot que du texte libre, et `color_id` rattache le bloc
+ * au circuit de la salle. Les deux coexistent : la salle etiquette « vert », le
+ * grimpeur estime 6B, ce sont deux informations differentes.
+ *
  * SCHEMA v2 — `is_completed` a ete REMPLACE par `status`, et non double par lui.
  * Un booleen ne distinguait pas « jamais essaye » de « travaille sans succes »,
  * precisement la distinction qui fait l'interet d'un carnet. Garder les deux aurait
@@ -35,10 +40,23 @@ import androidx.room.PrimaryKey
             // pas par du code metier : c'est atomique et impossible a oublier.
             onDelete = ForeignKey.CASCADE,
         ),
+        ForeignKey(
+            entity = CircuitColorEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["color_id"],
+            // SET NULL et surtout pas CASCADE : effacer une etiquette de circuit
+            // ne doit pas effacer les ascensions qui la portaient. Le bloc perd
+            // sa couleur, pas son existence.
+            onDelete = ForeignKey.SET_NULL,
+        ),
     ],
     // Index obligatoire sur une cle etrangere : sans lui, chaque suppression de
     // seance provoque un balayage complet de la table des blocs.
-    indices = [Index(value = ["session_id"]), Index(value = ["created_at"])],
+    indices = [
+        Index(value = ["session_id"]),
+        Index(value = ["created_at"]),
+        Index(value = ["color_id"]),
+    ],
 )
 data class BlocEntity(
     @PrimaryKey
@@ -57,9 +75,23 @@ data class BlocEntity(
     @ColumnInfo(name = "image_height")
     val imageHeight: Int,
 
-    /** Cotation libre ("7A", "V5"), nulle tant que l'utilisateur ne l'a pas saisie. */
+    /**
+     * Etiquette de cotation, tiree de l'echelle designee par [gradeScale].
+     *
+     * SCHEMA v3 — ce n'est plus du texte libre. La colonne existait depuis la v1
+     * sans jamais etre alimentee ; elle porte desormais une valeur canonique,
+     * seule forme exploitable par un tri de progression.
+     */
     @ColumnInfo(name = "grade")
     val grade: String?,
+
+    /** Ordinal de `GradeScale` auquel appartient [grade]. */
+    @ColumnInfo(name = "grade_scale")
+    val gradeScale: Int?,
+
+    /** Couleur du circuit, independante de la cotation : un bloc peut porter les deux. */
+    @ColumnInfo(name = "color_id")
+    val colorId: String?,
 
     /** Ordinal de `BlocStatus`. Ne jamais reordonner l'enumeration. */
     @ColumnInfo(name = "status")

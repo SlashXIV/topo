@@ -266,6 +266,8 @@ class TopoDatabaseTest {
         imageWidth = 3000,
         imageHeight = 4000,
         grade = "7A",
+        gradeScale = null,
+        colorId = null,
         // 3 = BlocStatus.SENT, 0 = PROJECT.
         status = if (completed) 3 else 0,
         attempts = 0,

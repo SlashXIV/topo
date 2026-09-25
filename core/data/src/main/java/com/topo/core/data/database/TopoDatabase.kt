@@ -3,13 +3,17 @@ package com.topo.core.data.database
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.topo.core.data.dao.BlocDao
+import com.topo.core.data.dao.CircuitColorDao
 import com.topo.core.data.dao.HoldDao
 import com.topo.core.data.dao.MovementDao
 import com.topo.core.data.dao.SessionDao
+import com.topo.core.data.dao.SettingsDao
 import com.topo.core.data.database.entity.BlocEntity
+import com.topo.core.data.database.entity.CircuitColorEntity
 import com.topo.core.data.database.entity.HoldEntity
 import com.topo.core.data.database.entity.MovementEntity
 import com.topo.core.data.database.entity.SessionEntity
+import com.topo.core.data.database.entity.SettingsEntity
 
 /**
  * Base locale de Topo. Unique source de verite de l'application.
@@ -29,8 +33,10 @@ import com.topo.core.data.database.entity.SessionEntity
         BlocEntity::class,
         HoldEntity::class,
         MovementEntity::class,
+        CircuitColorEntity::class,
+        SettingsEntity::class,
     ],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class TopoDatabase : RoomDatabase() {
@@ -39,6 +45,8 @@ abstract class TopoDatabase : RoomDatabase() {
     abstract fun blocDao(): BlocDao
     abstract fun holdDao(): HoldDao
     abstract fun movementDao(): MovementDao
+    abstract fun circuitColorDao(): CircuitColorDao
+    abstract fun settingsDao(): SettingsDao
 
     companion object {
         const val NAME = "topo.db"

@@ -5,7 +5,9 @@ import androidx.room.Room
 import com.topo.core.data.dao.BlocDao
 import com.topo.core.data.dao.HoldDao
 import com.topo.core.data.dao.MovementDao
+import com.topo.core.data.dao.CircuitColorDao
 import com.topo.core.data.dao.SessionDao
+import com.topo.core.data.dao.SettingsDao
 import com.topo.core.data.database.TopoDatabase
 import com.topo.core.data.database.applyTopoConfiguration
 import dagger.Module
@@ -43,4 +45,10 @@ internal object DatabaseModule {
 
     @Provides
     fun provideMovementDao(database: TopoDatabase): MovementDao = database.movementDao()
+
+    @Provides
+    fun provideCircuitColorDao(database: TopoDatabase): CircuitColorDao = database.circuitColorDao()
+
+    @Provides
+    fun provideSettingsDao(database: TopoDatabase): SettingsDao = database.settingsDao()
 }

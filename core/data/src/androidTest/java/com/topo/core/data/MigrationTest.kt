@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.topo.core.data.database.TopoDatabase
 import com.topo.core.data.database.MIGRATION_1_2
+import com.topo.core.data.database.MIGRATION_2_3
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -151,5 +152,114 @@ class MigrationTest {
             "index_blocs_session_id",
             "index_blocs_created_at",
         )
+    }
+
+    // --- v2 -> v3 : la cotation ------------------------------------------
+
+    /**
+     * Ici de simples `ALTER TABLE ADD COLUMN` remplacent la reconstruction de
+     * table de la v1 -> v2, puisque rien n'est supprime. `runMigrationsAndValidate`
+     * tranche la question ouverte au moment de l'ecriture : une colonne ajoutee
+     * avec clause `REFERENCES` produit-elle bien le schema que Room attend ?
+     */
+    @Test
+    fun migrating_from_v2_adds_difficulty_without_touching_existing_data() {
+        helper.createDatabase(databaseName, 2).use { db ->
+            db.execSQL(
+                "INSERT INTO sessions (id, date, location_name, notes) " +
+                    "VALUES ('s1', 1700000000000, 'Arkose', NULL)",
+            )
+            db.execSQL(
+                "INSERT INTO blocs (id, session_id, image_path, image_width, image_height, " +
+                    "grade, status, attempts, sent_at, feeling, created_at) " +
+                    "VALUES ('b1', 's1', 'mur.jpg', 3072, 4096, NULL, 1, 3, NULL, 'cool', 1700000001000)",
+            )
+            db.execSQL(
+                "INSERT INTO holds (id, bloc_id, bbox_x_center, bbox_y_center, bbox_width, " +
+                    "bbox_height, confidence_score, origin) " +
+                    "VALUES ('h1', 'b1', 0.2, 0.5, 0.08, 0.08, 1.0, 0)",
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(databaseName, 3, true, MIGRATION_1_2, MIGRATION_2_3)
+
+        db.query("SELECT grade_scale, color_id, attempts, feeling FROM blocs").use { cursor ->
+            cursor.moveToFirst()
+            assertThat(cursor.isNull(0)).isTrue()
+            assertThat(cursor.isNull(1)).isTrue()
+            // Le carnet du sprint precedent survit intact.
+            assertThat(cursor.getInt(2)).isEqualTo(3)
+            assertThat(cursor.getString(3)).isEqualTo("cool")
+        }
+        db.query("SELECT COUNT(*) FROM holds").use { cursor ->
+            cursor.moveToFirst()
+            assertThat(cursor.getInt(0)).isEqualTo(1)
+        }
+    }
+
+    /**
+     * Sans amorcage, la fonctionnalite s'ouvrirait sur une liste vide : il
+     * faudrait deviner qu'un circuit doit etre construit avant de pouvoir coter
+     * quoi que ce soit.
+     */
+    @Test
+    fun migrating_seeds_a_default_circuit_and_the_settings_row() {
+        helper.createDatabase(databaseName, 2).close()
+
+        val db = helper.runMigrationsAndValidate(databaseName, 3, true, MIGRATION_1_2, MIGRATION_2_3)
+
+        db.query("SELECT COUNT(*) FROM circuit_colors").use { cursor ->
+            cursor.moveToFirst()
+            assertThat(cursor.getInt(0)).isGreaterThan(0)
+        }
+        db.query("SELECT rank FROM circuit_colors ORDER BY rank").use { cursor ->
+            var expected = 0
+            while (cursor.moveToNext()) {
+                // Rangs contigus depuis 0 : un trou ferait mentir la position
+                // affichee sur la difficulte reelle.
+                assertThat(cursor.getInt(0)).isEqualTo(expected)
+                expected++
+            }
+        }
+        db.query("SELECT difficulty_display, grade_scale FROM settings WHERE id = 0").use { cursor ->
+            assertThat(cursor.count).isEqualTo(1)
+            cursor.moveToFirst()
+            assertThat(cursor.getInt(0)).isEqualTo(0)
+            assertThat(cursor.getInt(1)).isEqualTo(0)
+        }
+    }
+
+    /**
+     * Le point que la cascade ne doit SURTOUT pas faire ici.
+     *
+     * Effacer une etiquette de circuit ne doit pas effacer les ascensions qui la
+     * portaient : le bloc perd sa couleur, pas son existence. C'est le pendant
+     * inverse de la cascade sur la prise cible d'un mouvement.
+     */
+    @Test
+    fun deleting_a_colour_clears_the_reference_without_deleting_the_bloc() {
+        helper.createDatabase(databaseName, 2).use { db ->
+            db.execSQL(
+                "INSERT INTO sessions (id, date, location_name, notes) " +
+                    "VALUES ('s1', 1700000000000, 'Arkose', NULL)",
+            )
+            db.execSQL(
+                "INSERT INTO blocs (id, session_id, image_path, image_width, image_height, " +
+                    "grade, status, attempts, sent_at, feeling, created_at) " +
+                    "VALUES ('b1', 's1', 'mur.jpg', 3072, 4096, NULL, 0, 0, NULL, NULL, 1700000001000)",
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(databaseName, 3, true, MIGRATION_1_2, MIGRATION_2_3)
+        db.execSQL("PRAGMA foreign_keys = ON")
+        db.execSQL("UPDATE blocs SET color_id = 'vert' WHERE id = 'b1'")
+
+        db.execSQL("DELETE FROM circuit_colors WHERE id = 'vert'")
+
+        db.query("SELECT COUNT(*), SUM(color_id IS NULL) FROM blocs").use { cursor ->
+            cursor.moveToFirst()
+            assertThat(cursor.getInt(0)).isEqualTo(1)
+            assertThat(cursor.getInt(1)).isEqualTo(1)
+        }
     }
 }

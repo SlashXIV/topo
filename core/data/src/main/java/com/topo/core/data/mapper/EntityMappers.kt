@@ -8,7 +8,13 @@ import com.topo.core.data.database.relation.BlocWithBeta
 import com.topo.core.data.database.relation.SessionWithCounts
 import com.topo.core.domain.model.Bloc
 import com.topo.core.domain.model.BlocDetail
+import com.topo.core.data.database.entity.CircuitColorEntity
+import com.topo.core.data.database.entity.SettingsEntity
+import com.topo.core.domain.model.AppSettings
 import com.topo.core.domain.model.BlocStatus
+import com.topo.core.domain.model.CircuitColor
+import com.topo.core.domain.model.DifficultyDisplay
+import com.topo.core.domain.model.GradeScale
 import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.Hold
 import com.topo.core.domain.model.HoldOrigin
@@ -60,6 +66,8 @@ internal fun BlocEntity.toDomain(): Bloc = Bloc(
     imageWidth = imageWidth,
     imageHeight = imageHeight,
     grade = grade,
+    gradeScale = gradeScale?.let { GradeScale.entries.getOrNull(it) },
+    colorId = colorId,
     status = BlocStatus.entries.getOrElse(status) { BlocStatus.PROJECT },
     attempts = attempts,
     sentAt = sentAt,
@@ -74,6 +82,8 @@ internal fun Bloc.toEntity(): BlocEntity = BlocEntity(
     imageWidth = imageWidth,
     imageHeight = imageHeight,
     grade = grade,
+    gradeScale = gradeScale?.ordinal,
+    colorId = colorId,
     status = status.ordinal,
     attempts = attempts,
     sentAt = sentAt,
@@ -131,4 +141,32 @@ internal fun Movement.toEntity(): MovementEntity = MovementEntity(
     limbType = limb.ordinal,
     sourceHoldId = sourceHoldId,
     targetHoldId = targetHoldId,
+)
+
+// --- Cotation ---------------------------------------------------------------
+
+internal fun CircuitColorEntity.toDomain(): CircuitColor = CircuitColor(
+    id = id,
+    name = name,
+    argb = argb,
+    rank = rank,
+)
+
+internal fun CircuitColor.toEntity(): CircuitColorEntity = CircuitColorEntity(
+    id = id,
+    name = name,
+    argb = argb,
+    rank = rank,
+)
+
+internal fun SettingsEntity.toDomain(): AppSettings = AppSettings(
+    difficultyDisplay = DifficultyDisplay.entries.getOrElse(difficultyDisplay) {
+        AppSettings.Default.difficultyDisplay
+    },
+    gradeScale = GradeScale.entries.getOrElse(gradeScale) { AppSettings.Default.gradeScale },
+)
+
+internal fun AppSettings.toEntity(): SettingsEntity = SettingsEntity(
+    difficultyDisplay = difficultyDisplay.ordinal,
+    gradeScale = gradeScale.ordinal,
 )

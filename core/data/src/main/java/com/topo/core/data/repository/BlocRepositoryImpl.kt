@@ -40,6 +40,8 @@ internal class BlocRepositoryImpl @Inject constructor(
             imageWidth = imageWidth,
             imageHeight = imageHeight,
             grade = grade,
+            gradeScale = null,
+            colorId = null,
             status = BlocStatus.PROJECT,
             attempts = 0,
             sentAt = null,

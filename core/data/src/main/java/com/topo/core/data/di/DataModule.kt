@@ -4,12 +4,16 @@ import com.topo.core.common.di.DefaultDispatcher
 import com.topo.core.common.di.IoDispatcher
 import com.topo.core.data.repository.BetaRepositoryImpl
 import com.topo.core.data.repository.BlocRepositoryImpl
+import com.topo.core.data.repository.CircuitColorRepositoryImpl
 import com.topo.core.data.repository.SessionRepositoryImpl
+import com.topo.core.data.repository.SettingsRepositoryImpl
 import com.topo.core.data.storage.InternalBlocImageStore
 import com.topo.core.domain.repository.BetaRepository
 import com.topo.core.domain.repository.BlocImageStore
 import com.topo.core.domain.repository.BlocRepository
+import com.topo.core.domain.repository.CircuitColorRepository
 import com.topo.core.domain.repository.SessionRepository
+import com.topo.core.domain.repository.SettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -45,6 +49,14 @@ internal abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindBlocImageStore(impl: InternalBlocImageStore): BlocImageStore
+
+    @Binds
+    @Singleton
+    abstract fun bindSettingsRepository(impl: SettingsRepositoryImpl): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCircuitColorRepository(impl: CircuitColorRepositoryImpl): CircuitColorRepository
 }
 
 @Module

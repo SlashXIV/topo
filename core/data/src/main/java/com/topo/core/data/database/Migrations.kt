@@ -99,5 +99,90 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
     }
 }
 
+/**
+ * v2 -> v3 : la cotation devient exploitable.
+ *
+ * Ajoute le circuit de couleurs, les reglages, et rattache un bloc aux deux
+ * systemes de difficulte.
+ *
+ * POURQUOI DE SIMPLES ALTER TABLE ICI
+ * -----------------------------------
+ * Contrairement a la v1 -> v2, rien n'est supprime : on ajoute. `ALTER TABLE
+ * ADD COLUMN` suffit donc, sans reconstruire la table ni desactiver les cles
+ * etrangeres. SQLite autorise l'ajout d'une colonne portant une clause
+ * `REFERENCES` a la condition que sa valeur par defaut soit NULL — c'est le cas
+ * de `color_id`.
+ *
+ * AMORCAGE
+ * --------
+ * La migration insere un circuit par defaut et la ligne de reglages. Sans cela
+ * la fonctionnalite s'ouvrirait sur une liste vide, c'est-a-dire sur une
+ * impasse : l'utilisateur devrait deviner qu'il faut d'abord construire un
+ * circuit avant de pouvoir coter quoi que ce soit.
+ *
+ * Les couleurs retenues sont celles qu'on croise le plus souvent en salle, du
+ * plus facile au plus dur. L'ordre n'est qu'un point de depart : il est fait
+ * pour etre remanie, chaque salle ayant le sien.
+ */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `circuit_colors` (
+                `id` TEXT NOT NULL,
+                `name` TEXT NOT NULL,
+                `argb` INTEGER NOT NULL,
+                `rank` INTEGER NOT NULL,
+                PRIMARY KEY(`id`)
+            )
+            """.trimIndent(),
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_circuit_colors_rank` " +
+                "ON `circuit_colors` (`rank`)",
+        )
+
+        db.execSQL(
+            """
+            CREATE TABLE IF NOT EXISTS `settings` (
+                `id` INTEGER NOT NULL,
+                `difficulty_display` INTEGER NOT NULL,
+                `grade_scale` INTEGER NOT NULL,
+                PRIMARY KEY(`id`)
+            )
+            """.trimIndent(),
+        )
+
+        db.execSQL("ALTER TABLE `blocs` ADD COLUMN `grade_scale` INTEGER")
+        db.execSQL(
+            "ALTER TABLE `blocs` ADD COLUMN `color_id` TEXT " +
+                "REFERENCES `circuit_colors`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL",
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_blocs_color_id` ON `blocs` (`color_id`)")
+
+        // 0 = DifficultyDisplay.COLOR, 0 = GradeScale.FRENCH.
+        db.execSQL(
+            "INSERT OR IGNORE INTO `settings` (id, difficulty_display, grade_scale) " +
+                "VALUES (0, 0, 0)",
+        )
+
+        DEFAULT_CIRCUIT.forEachIndexed { rank, (name, argb) ->
+            db.execSQL(
+                "INSERT OR IGNORE INTO `circuit_colors` (id, name, argb, rank) VALUES (?, ?, ?, ?)",
+                arrayOf<Any>(name.lowercase(), name, argb, rank),
+            )
+        }
+    }
+}
+
+/** Circuit propose au premier lancement, du plus facile au plus dur. */
+private val DEFAULT_CIRCUIT = listOf(
+    "Jaune" to 0xFFF2C14E.toInt(),
+    "Vert" to 0xFF5FAD56.toInt(),
+    "Bleu" to 0xFF2E86AB.toInt(),
+    "Rouge" to 0xFFD1495B.toInt(),
+    "Noir" to 0xFF2B2A28.toInt(),
+)
+
 /** Toutes les migrations, dans l'ordre. */
-val TOPO_MIGRATIONS = arrayOf(MIGRATION_1_2)
+val TOPO_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
