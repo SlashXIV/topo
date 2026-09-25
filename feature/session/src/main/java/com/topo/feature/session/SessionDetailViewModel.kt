@@ -3,10 +3,15 @@ package com.topo.feature.session
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.topo.core.domain.model.Bloc
+import com.topo.core.domain.model.AppSettings
 import com.topo.core.domain.model.BlocStatus
+import com.topo.core.domain.model.CircuitColor
+import com.topo.core.domain.model.GradeScale
 import com.topo.core.domain.model.Session
 import com.topo.core.domain.repository.BlocImageStore
 import com.topo.core.domain.repository.BlocRepository
+import com.topo.core.domain.repository.CircuitColorRepository
+import com.topo.core.domain.repository.SettingsRepository
 import com.topo.core.domain.repository.SessionRepository
 import com.topo.core.domain.usecase.ImportBlocUseCase
 import com.topo.core.domain.usecase.RecordAttemptUseCase
@@ -51,6 +56,8 @@ data class SessionDetailUiState(
     val isLoading: Boolean = true,
     val importError: String? = null,
     val statusError: String? = null,
+    val settings: AppSettings = AppSettings.Default,
+    val circuit: List<CircuitColor> = emptyList(),
 )
 
 @HiltViewModel
@@ -59,6 +66,8 @@ class SessionDetailViewModel @Inject constructor(
     private val blocRepository: BlocRepository,
     private val imageStore: BlocImageStore,
     private val importBloc: ImportBlocUseCase,
+    settingsRepository: SettingsRepository,
+    circuitColorRepository: CircuitColorRepository,
     private val recordAttempt: RecordAttemptUseCase,
     private val setBlocStatus: SetBlocStatusUseCase,
 ) : ViewModel() {
@@ -68,6 +77,22 @@ class SessionDetailViewModel @Inject constructor(
     private val importError = MutableStateFlow<String?>(null)
     private val statusError = MutableStateFlow<String?>(null)
 
+    /**
+     * Flux regroupes.
+     *
+     * `combine` n'offre de surcharge TYPEE que jusqu'a cinq flux : au-dela il
+     * bascule sur un `Array<Any?>` qui perd tous les types. Plutot que de
+     * transtyper a l'aveugle, les flux apparentes sont assembles deux a deux —
+     * ce qui donne au passage des noms a des paires qui vont ensemble.
+     */
+    private val errors = combine(importError, statusError, ::Errors)
+
+    private val difficultyContext = combine(
+        settingsRepository.observeSettings(),
+        circuitColorRepository.observeColors(),
+        ::DifficultyContext,
+    )
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<SessionDetailUiState> = combine(
         // flatMapLatest : changer de seance abandonne l'abonnement precedent, sinon
@@ -75,9 +100,9 @@ class SessionDetailViewModel @Inject constructor(
         sessionId.filterNotNull().flatMapLatest(sessionRepository::observeSession),
         sessionId.filterNotNull().flatMapLatest(blocRepository::observeBlocsForSession),
         filter,
-        importError,
-        statusError,
-    ) { session, blocs, activeFilter, importFailure, statusFailure ->
+        errors,
+        difficultyContext,
+    ) { session, blocs, activeFilter, failures, difficulty ->
         SessionDetailUiState(
             session = session,
             // Le filtrage se fait ici et non en SQL : la grille d'une seance tient
@@ -87,8 +112,10 @@ class SessionDetailViewModel @Inject constructor(
             totalBlocs = blocs.size,
             filter = activeFilter,
             isLoading = false,
-            importError = importFailure,
-            statusError = statusFailure,
+            importError = failures.import,
+            statusError = failures.status,
+            settings = difficulty.settings,
+            circuit = difficulty.circuit,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -144,6 +171,30 @@ class SessionDetailViewModel @Inject constructor(
         }
     }
 
+    /** Affecte ou retire la couleur de circuit d'un bloc. */
+    fun setBlocColor(blocId: String, colorId: String?) {
+        viewModelScope.launch {
+            val bloc = blocRepository.getBloc(blocId) ?: return@launch
+            blocRepository.updateBloc(bloc.copy(colorId = colorId))
+        }
+    }
+
+    /**
+     * Affecte ou retire la cotation chiffree d'un bloc.
+     *
+     * L'echelle est enregistree avec l'etiquette : « 6A » ne veut rien dire sans
+     * savoir a quelle echelle il appartient, et le rang de difficulte ne peut
+     * pas se calculer sans elle.
+     */
+    fun setBlocGrade(blocId: String, grade: String?, scale: GradeScale) {
+        viewModelScope.launch {
+            val bloc = blocRepository.getBloc(blocId) ?: return@launch
+            blocRepository.updateBloc(
+                bloc.copy(grade = grade, gradeScale = grade?.let { scale }),
+            )
+        }
+    }
+
     fun acknowledgeImportError() {
         importError.value = null
     }
@@ -156,3 +207,12 @@ class SessionDetailViewModel @Inject constructor(
         viewModelScope.launch { blocRepository.deleteBloc(blocId) }
     }
 }
+
+/** Les deux sources d'erreur de l'ecran, regroupees pour tenir dans un `combine` type. */
+private data class Errors(val import: String?, val status: String?)
+
+/** Ce qu'il faut pour afficher et saisir une difficulte. */
+private data class DifficultyContext(
+    val settings: AppSettings,
+    val circuit: List<CircuitColor>,
+)

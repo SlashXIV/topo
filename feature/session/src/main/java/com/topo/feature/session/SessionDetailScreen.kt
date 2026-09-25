@@ -40,7 +40,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.graphics.Color
 import com.topo.core.domain.model.Bloc
+import com.topo.core.domain.model.DifficultyDisplay
 import com.topo.core.ui.component.BlocThumbnail
 import com.topo.core.ui.component.ConfirmDialog
 import com.topo.core.ui.component.EmptyState
@@ -168,12 +170,20 @@ fun SessionDetailScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     items(uiState.blocs, key = Bloc::id) { bloc ->
+                        // Resolution ici plutot que dans la vignette : le
+                        // composant partage n'a pas a connaitre les reglages ni
+                        // le circuit.
+                        val color = bloc.colorId
+                            ?.takeIf { uiState.settings.difficultyDisplay == DifficultyDisplay.COLOR }
+                            ?.let { id -> uiState.circuit.firstOrNull { it.id == id } }
                         BlocThumbnail(
                             imageFile = viewModel.imageFileOf(bloc),
                             // Le ratio vient des colonnes enregistrees a la
                             // creation : aucune photo n'est decodee pour la grille.
                             aspectRatio = bloc.aspectRatio,
                             grade = bloc.grade,
+                            circuitColor = color?.let { Color(it.argb) },
+                            circuitName = color?.name,
                             statusLabel = bloc.status.shortLabel(),
                             statusColor = bloc.status.color(),
                             attempts = bloc.attempts,
@@ -197,6 +207,10 @@ fun SessionDetailScreen(
         } else {
             BlocProgressSheet(
                 bloc = bloc,
+                settings = uiState.settings,
+                circuit = uiState.circuit,
+                onColorChange = { viewModel.setBlocColor(bloc.id, it) },
+                onGradeChange = { viewModel.setBlocGrade(bloc.id, it, uiState.settings.gradeScale) },
                 statusError = uiState.statusError,
                 onStatusChange = { viewModel.changeStatus(bloc.id, it) },
                 onAttemptAdded = { viewModel.addAttempt(bloc.id) },

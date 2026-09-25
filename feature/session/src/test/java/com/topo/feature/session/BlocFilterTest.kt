@@ -2,6 +2,7 @@ package com.topo.feature.session
 
 import com.topo.core.domain.model.Bloc
 import com.topo.core.domain.model.BlocStatus
+import com.topo.core.domain.model.GradeScale
 import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
@@ -54,6 +55,8 @@ class BlocFilterTest {
         imageWidth = 3000,
         imageHeight = 4000,
         grade = "7A",
+        gradeScale = GradeScale.FRENCH,
+        colorId = null,
         status = status,
         attempts = 0,
         sentAt = null,

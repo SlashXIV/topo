@@ -41,6 +41,9 @@ fun BlocThumbnail(
     aspectRatio: Float,
     grade: String?,
     modifier: Modifier = Modifier,
+    /** Couleur du circuit, si le bloc en porte une. */
+    circuitColor: Color? = null,
+    circuitName: String? = null,
     statusLabel: String? = null,
     statusColor: Color = BetaColors.StatusProject,
     attempts: Int = 0,
@@ -68,7 +71,19 @@ fun BlocThumbnail(
                 contentScale = ContentScale.Crop,
             )
 
-            if (grade != null) {
+            // La pastille de tete porte ce que les reglages mettent en avant.
+            // L'appelant decide : la vignette ne connait pas les preferences,
+            // elle affiche ce qu'on lui donne.
+            if (circuitColor != null) {
+                Badge(
+                    text = circuitName.orEmpty(),
+                    background = circuitColor,
+                    foreground = circuitColor.readableForeground(),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp),
+                )
+            } else if (grade != null) {
                 GradeChip(
                     grade = grade,
                     isCompleted = isCompleted,
@@ -147,4 +162,17 @@ private fun Badge(
             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
         )
     }
+}
+
+/**
+ * Noir ou blanc selon la clarte du fond.
+ *
+ * Un circuit contient souvent du blanc ET du noir : une couleur de texte fixe
+ * rendrait l'une des deux pastilles illisible. La luminance perceptuelle
+ * (coefficients ITU-R BT.601) sert de seuil plutot que la moyenne des canaux,
+ * qui sous-estime le vert.
+ */
+private fun Color.readableForeground(): Color {
+    val luminance = 0.299f * red + 0.587f * green + 0.114f * blue
+    return if (luminance > 0.6f) Color(0xFF1B1B1B) else Color.White
 }
