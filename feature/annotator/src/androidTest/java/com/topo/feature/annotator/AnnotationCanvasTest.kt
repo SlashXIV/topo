@@ -170,6 +170,7 @@ class AnnotationCanvasTest {
                 mode = AnnotationMode.TRACE_BETA,
                 selectedLimb = Limb.RIGHT_HAND,
                 onHoldRequested = { _, _ -> },
+                onHoldRemoved = {},
                 onTraceCompleted = { chain = it },
                 modifier = Modifier.size(CanvasSize),
             )
@@ -216,12 +217,69 @@ class AnnotationCanvasTest {
                 mode = AnnotationMode.TRACE_BETA,
                 selectedLimb = Limb.RIGHT_HAND,
                 onHoldRequested = { _, _ -> },
+                onHoldRemoved = {},
                 onTraceCompleted = {},
                 modifier = Modifier.size(CanvasSize),
             )
         }
 
         composeRule.onNodeWithTag(CanvasTestTag).assertExists()
+    }
+
+    /**
+     * Correction d'une prise mal visee.
+     *
+     * Signale par un premier essai sur appareil : une prise posee a cote etait
+     * definitive, les boutons « annuler » de la barre d'outils ne portant que sur
+     * les mouvements. L'appui sur une prise existante la retire donc desormais.
+     */
+    @Test
+    fun tapping_an_existing_hold_removes_it_instead_of_adding_another() {
+        var removed: String? = null
+        var added = 0
+
+        setCanvas(
+            holds = listOf(leftHold),
+            mode = AnnotationMode.ADD_HOLD,
+            onHoldRequested = { _, _ -> added++ },
+            onHoldRemoved = { removed = it },
+        )
+
+        composeRule.onNodeWithTag(CanvasTestTag).performTouchInput {
+            click(percentOffset(0.2f, 0.5f))
+        }
+        composeRule.waitForIdle()
+
+        assertThat(removed).isEqualTo("gauche")
+        assertThat(added).isEqualTo(0)
+    }
+
+    /**
+     * Le rayon de selection est plus petit que celui de magnetisation : sans
+     * cela, poser une prise pres d'une autre deviendrait impossible, chaque appui
+     * proche effacant la voisine au lieu d'ajouter.
+     */
+    @Test
+    fun tapping_near_but_outside_a_hold_still_adds_one() {
+        var removed: String? = null
+        var added = 0
+
+        setCanvas(
+            holds = listOf(leftHold),
+            mode = AnnotationMode.ADD_HOLD,
+            onHoldRequested = { _, _ -> added++ },
+            onHoldRemoved = { removed = it },
+        )
+
+        // 0,28 sur un canevas de 400 dp = 32 dp de la prise : au-dela des 22 dp
+        // de selection, en deca des 40 dp de magnetisation.
+        composeRule.onNodeWithTag(CanvasTestTag).performTouchInput {
+            click(percentOffset(0.28f, 0.5f))
+        }
+        composeRule.waitForIdle()
+
+        assertThat(removed).isNull()
+        assertThat(added).isEqualTo(1)
     }
 
     // --- Utilitaires -------------------------------------------------------
@@ -256,6 +314,7 @@ class AnnotationCanvasTest {
         holds: List<Hold>,
         mode: AnnotationMode,
         onHoldRequested: (Float, Float) -> Unit = { _, _ -> },
+        onHoldRemoved: (String) -> Unit = {},
         onTraceCompleted: (List<String>) -> Unit = {},
     ) {
         composeRule.setContent {
@@ -265,6 +324,7 @@ class AnnotationCanvasTest {
                 mode = mode,
                 selectedLimb = Limb.RIGHT_HAND,
                 onHoldRequested = onHoldRequested,
+                onHoldRemoved = onHoldRemoved,
                 onTraceCompleted = onTraceCompleted,
                 modifier = Modifier.size(CanvasSize),
             )

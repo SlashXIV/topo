@@ -50,6 +50,16 @@ enum class AnnotationMode {
 /** Rayon d'attraction par defaut, en dp : environ la pulpe d'un doigt. */
 val DefaultSnapRadius = 40.dp
 
+/**
+ * Rayon de selection d'une prise au doigt, pour la retirer.
+ *
+ * Plus petit que [DefaultSnapRadius], et c'est delibere : au rayon de
+ * magnetisation, poser une prise pres d'une autre deviendrait impossible car
+ * chaque appui effacerait la voisine. 22 dp couvre le cercle dessine (14 dp de
+ * rayon) avec un peu de tolerance.
+ */
+private val HoldTapRadius = 22.dp
+
 const val CanvasTestTag = "annotation-canvas"
 
 /**
@@ -73,6 +83,7 @@ fun AnnotationCanvas(
     mode: AnnotationMode,
     selectedLimb: Limb,
     onHoldRequested: (normalizedX: Float, normalizedY: Float) -> Unit,
+    onHoldRemoved: (holdId: String) -> Unit,
     onTraceCompleted: (holdIds: List<String>) -> Unit,
     modifier: Modifier = Modifier,
     snapRadius: androidx.compose.ui.unit.Dp = DefaultSnapRadius,
@@ -105,6 +116,7 @@ fun AnnotationCanvas(
             findSnapTarget = findSnapTarget,
             playback = playback,
             onHoldRequested = onHoldRequested,
+            onHoldRemoved = onHoldRemoved,
             onTraceCompleted = onTraceCompleted,
             modifier = Modifier.fillMaxSize(),
         )
@@ -121,6 +133,7 @@ private fun BetaTraceLayer(
     findSnapTarget: FindSnapTargetUseCase,
     playback: BetaPlaybackState?,
     onHoldRequested: (Float, Float) -> Unit,
+    onHoldRemoved: (String) -> Unit,
     onTraceCompleted: (List<String>) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -148,6 +161,7 @@ private fun BetaTraceLayer(
     val currentMode by rememberUpdatedState(mode)
     val currentSnapRadius by rememberUpdatedState(snapRadius)
     val currentOnHoldRequested by rememberUpdatedState(onHoldRequested)
+    val currentOnHoldRemoved by rememberUpdatedState(onHoldRemoved)
     val currentOnTraceCompleted by rememberUpdatedState(onTraceCompleted)
 
     val currentMovements by rememberUpdatedState(blocDetail.movements)
@@ -159,10 +173,30 @@ private fun BetaTraceLayer(
             // pointerInput(Unit) : la coroutine de detection n'est JAMAIS redemarree.
             // Toutes les valeurs variables passent par rememberUpdatedState.
             .pointerInput(Unit) {
+                val tapDensity = Density(this.density, this.fontScale)
+
                 detectTapGestures { offset ->
                     // Le rejeu n'accepte aucun geste : un appui pendant la lecture
                     // poserait une prise sans que l'utilisateur l'ait voulu.
-                    if (currentMode == AnnotationMode.ADD_HOLD) {
+                    if (currentMode != AnnotationMode.ADD_HOLD) return@detectTapGestures
+
+                    // Un appui SUR une prise la retire, un appui a cote en pose une.
+                    // C'est le seul moyen de corriger une prise mal visee, et il ne
+                    // coute aucun bouton supplementaire dans une barre d'outils
+                    // deja dense.
+                    //
+                    // Le rayon de selection est volontairement plus petit que celui
+                    // de magnetisation : avec 40 dp, poser une prise a cote d'une
+                    // autre deviendrait impossible, chaque appui proche effacant la
+                    // voisine au lieu d'ajouter.
+                    val hit = snapAt(
+                        offset, size.width, size.height,
+                        currentHolds, findSnapTarget,
+                        with(tapDensity) { HoldTapRadius.toPx() },
+                    )
+                    if (hit != null) {
+                        currentOnHoldRemoved(hit)
+                    } else {
                         currentOnHoldRequested(
                             offset.x / size.width,
                             offset.y / size.height,

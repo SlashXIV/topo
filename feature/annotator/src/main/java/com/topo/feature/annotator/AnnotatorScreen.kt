@@ -2,6 +2,8 @@ package com.topo.feature.annotator
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -102,10 +104,22 @@ fun AnnotatorScreen(
             AnnotationToolbar(
                 mode = uiState.mode,
                 selectedLimb = uiState.selectedLimb,
+                holdCount = detail?.holds?.size ?: 0,
+                movementCount = movementCount,
                 onModeChange = viewModel::selectMode,
                 onLimbChange = viewModel::selectLimb,
-                onUndo = viewModel::undoLastMovement,
-                onClear = viewModel::clearBeta,
+                // Les actions destructrices portent sur ce que l'utilisateur est
+                // en train de faire. Auparavant elles visaient toujours les
+                // mouvements : en mode « poser les prises », appuyer sur
+                // « annuler » ne produisait donc rien du tout, sans le dire.
+                onUndo = when (uiState.mode) {
+                    AnnotationMode.ADD_HOLD -> viewModel::undoLastHold
+                    else -> viewModel::undoLastMovement
+                },
+                onClear = when (uiState.mode) {
+                    AnnotationMode.ADD_HOLD -> viewModel::clearHolds
+                    else -> viewModel::clearBeta
+                },
             )
 
             if (uiState.mode == AnnotationMode.REPLAY) {
@@ -140,6 +154,7 @@ fun AnnotatorScreen(
                         mode = uiState.mode,
                         selectedLimb = uiState.selectedLimb,
                         onHoldRequested = viewModel::addHoldAt,
+                        onHoldRemoved = viewModel::removeHold,
                         onTraceCompleted = viewModel::completeTrace,
                         // Hors mode rejeu, le canevas ignore la progression et
                         // trace la sequence entiere : c'est le mode edition.
@@ -153,62 +168,120 @@ fun AnnotatorScreen(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AnnotationToolbar(
     mode: AnnotationMode,
     selectedLimb: Limb,
+    holdCount: Int,
+    movementCount: Int,
     onModeChange: (AnnotationMode) -> Unit,
     onLimbChange: (Limb) -> Unit,
     onUndo: () -> Unit,
     onClear: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = mode == AnnotationMode.ADD_HOLD,
-                onClick = { onModeChange(AnnotationMode.ADD_HOLD) },
-                label = { Text("Poser les prises") },
-            )
-            FilterChip(
-                selected = mode == AnnotationMode.TRACE_BETA,
-                onClick = { onModeChange(AnnotationMode.TRACE_BETA) },
-                label = { Text("Tracer le beta") },
-            )
-            FilterChip(
-                selected = mode == AnnotationMode.REPLAY,
-                onClick = { onModeChange(AnnotationMode.REPLAY) },
-                label = { Text("Rejouer") },
-            )
-        }
-
-        Row(
-            modifier = Modifier.padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Limb.entries.forEach { limb ->
+    Column(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        // FlowRow et non Row : les trois puces occupaient exactement la largeur
+        // d'un ecran de 411 dp. Sur un 394 dp — un Xiaomi 15T Pro, par exemple —
+        // la derniere sortait de l'ecran avec sa zone tactile, et le mode devenait
+        // litteralement inatteignable. Un passage a la ligne vaut mieux qu'un
+        // defilement horizontal : rien ne signale qu'une rangee se fait defiler.
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AnnotationMode.entries.forEach { candidate ->
                 FilterChip(
-                    selected = limb == selectedLimb,
-                    onClick = { onLimbChange(limb) },
-                    leadingIcon = {
-                        Box(
-                            Modifier
-                                .size(12.dp)
-                                .clip(CircleShape)
-                                .background(limb.swatch()),
-                        )
-                    },
-                    label = { Text(limb.label()) },
+                    selected = candidate == mode,
+                    onClick = { onModeChange(candidate) },
+                    label = { Text(candidate.label()) },
                 )
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = onUndo) { Text("Annuler le dernier") }
-            TextButton(onClick = onClear) { Text("Effacer le beta") }
+        // Mode d'emploi du mode courant.
+        //
+        // Ajoute apres un premier essai sur appareil : l'utilisateur a choisi un
+        // membre puis APPUYE sur une prise, alors que le trace se fait en faisant
+        // glisser le doigt. Rien ne le disait, et le geste attendu n'a aucune
+        // affordance visuelle — c'est precisement ce qu'une ligne de texte resout
+        // mieux qu'une icone.
+        Text(
+            text = mode.hint(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 2.dp),
+        )
+
+        // La palette de membres ne sert qu'au trace : l'afficher ailleurs occupe
+        // de la hauteur au detriment de la photo, sans rien piloter.
+        if (mode == AnnotationMode.TRACE_BETA) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Limb.entries.forEach { limb ->
+                    FilterChip(
+                        selected = limb == selectedLimb,
+                        onClick = { onLimbChange(limb) },
+                        leadingIcon = {
+                            Box(
+                                Modifier
+                                    .size(12.dp)
+                                    .clip(CircleShape)
+                                    .background(limb.swatch()),
+                            )
+                        },
+                        label = { Text(limb.label()) },
+                    )
+                }
+            }
+        }
+
+        if (mode != AnnotationMode.REPLAY) {
+            // Desactives quand il n'y a rien a annuler. Un bouton actif qui ne
+            // produit rien laisse croire a une panne : c'est exactement ce qui
+            // s'est passe en mode trace, sans aucun mouvement enregistre.
+            val hasSomethingToUndo = when (mode) {
+                AnnotationMode.ADD_HOLD -> holdCount > 0
+                else -> movementCount > 0
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onUndo, enabled = hasSomethingToUndo) {
+                    Text(mode.undoLabel())
+                }
+                TextButton(onClick = onClear, enabled = hasSomethingToUndo) {
+                    Text(mode.clearLabel())
+                }
+            }
         }
     }
+}
+
+private fun AnnotationMode.label(): String = when (this) {
+    AnnotationMode.ADD_HOLD -> "Prises"
+    AnnotationMode.TRACE_BETA -> "Tracer"
+    AnnotationMode.REPLAY -> "Rejouer"
+}
+
+/** Mode d'emploi, une phrase par mode. Le geste attendu passe en premier. */
+private fun AnnotationMode.hint(): String = when (this) {
+    AnnotationMode.ADD_HOLD ->
+        "Appuie sur le mur pour poser une prise, sur une prise pour la retirer."
+    AnnotationMode.TRACE_BETA ->
+        "Choisis un membre, puis FAIS GLISSER ton doigt d'une prise a l'autre : " +
+            "le trait s'aimante aux prises."
+    AnnotationMode.REPLAY ->
+        "Rejoue la sequence mouvement par mouvement."
+}
+
+/** Libelles explicites : l'action porte sur ce que le mode courant manipule. */
+private fun AnnotationMode.undoLabel(): String = when (this) {
+    AnnotationMode.ADD_HOLD -> "Annuler la derniere prise"
+    else -> "Annuler le dernier mouvement"
+}
+
+private fun AnnotationMode.clearLabel(): String = when (this) {
+    AnnotationMode.ADD_HOLD -> "Effacer les prises"
+    else -> "Effacer le beta"
 }
 
 private fun Limb.label(): String = when (this) {

@@ -117,6 +117,28 @@ class AnnotatorViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Retire une prise.
+     *
+     * Les mouvements qui en dependent sont traites par SQLite : ceux qui y
+     * ARRIVENT disparaissent avec elle, ceux qui en PARTENT deviennent des
+     * mouvements de depart. Aucun nettoyage manuel ici, donc aucun risque
+     * d'oubli lors d'une evolution du schema.
+     */
+    fun removeHold(holdId: String) {
+        viewModelScope.launch { betaRepository.deleteHold(holdId) }
+    }
+
+    fun undoLastHold() {
+        val last = uiState.value.blocDetail?.holds?.lastOrNull() ?: return
+        viewModelScope.launch { betaRepository.deleteHold(last.id) }
+    }
+
+    fun clearHolds() {
+        val currentBlocId = blocId.value ?: return
+        viewModelScope.launch { betaRepository.replaceHolds(currentBlocId, emptyList()) }
+    }
+
     fun undoLastMovement() {
         val currentBlocId = blocId.value ?: return
         val existing = uiState.value.blocDetail?.movements.orEmpty()
