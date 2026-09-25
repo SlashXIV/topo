@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.topo.core.domain.model.Bloc
 import com.topo.core.domain.model.BlocDetail
 import com.topo.core.domain.model.BlocStatus
+import com.topo.core.domain.model.GradeScale
 import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.Hold
 import com.topo.core.domain.model.HoldOrigin
@@ -341,6 +342,8 @@ class AnnotationCanvasTest {
         imageWidth = 1000,
         imageHeight = 1000,
         grade = "7A",
+        gradeScale = GradeScale.FRENCH,
+        colorId = null,
         status = BlocStatus.PROJECT,
         attempts = 0,
         sentAt = null,
