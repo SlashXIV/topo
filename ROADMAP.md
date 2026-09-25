@@ -47,11 +47,12 @@ explicitement dans le journal des decisions.
 | **S1** | Room en mode WAL, cascades, CameraX, stockage interne | `PRAGMA journal_mode` = `wal` ; 18 tests instrumentes ; capture JPEG reelle sur appareil |
 | **S2** | Canevas Compose, prises manuelles, magnetisation | Magnetisation mesuree a **0,62 us** sur 150 prises ; 7 tests gestuels, dont un valide par mutation |
 
-67 tests verts au total : 33 instrumentes sur deux niveaux d'API, 34 unitaires JVM.
+83 tests verts au total : 33 instrumentes sur deux niveaux d'API, 50 unitaires JVM.
 
-**L'application est utilisable et tient un carnet.** La boucle seance -> bloc -> prises -> beta ->
-historique fonctionne de bout en bout sur appareil, et chaque bloc porte son statut, ses essais et
-son ressenti. La suite porte sur la restitution : rejouer un beta, et lire sa progression.
+**L'application est utilisable, tient un carnet et rejoue les sequences.** La boucle seance ->
+bloc -> prises -> beta -> historique fonctionne de bout en bout sur appareil, chaque bloc porte
+son statut, ses essais et son ressenti, et le beta se rejoue mouvement par mouvement. La suite
+porte sur la lecture de la progression, puis le partage.
 
 ---
 
@@ -146,14 +147,16 @@ Deux corrections viennent de cette verification, et d'elle seule :
 - elles etaient placees trop pres des bords et le masque circulaire les avalait entierement —
   le fond apparaissait uni. Rapprochees a environ 31 du centre.
 
-**Reste a faire.** L'ecran de demarrage n'est pas encore aligne sur l'icone, et la couche
-`monochrome` n'a pas pu etre verifiee visuellement : activer les icones thematiques passe par un
-reglage du lanceur, hors de portee d'`adb`. Sa geometrie est celle de l'avant-plan, qui lui est
-verifie.
+**Ecran de demarrage** livre avec le sprint suivant : meme avant-plan sur le meme fond que
+l'icone, porte jusqu'a l'API 26 par `androidx.core:core-splashscreen`.
+
+**Reste a faire.** La couche `monochrome` n'a pas pu etre verifiee visuellement : activer les
+icones thematiques passe par un reglage du lanceur, hors de portee d'`adb`. Sa geometrie est
+celle de l'avant-plan, qui lui est verifie.
 
 ---
 
-### S6 — Rejeu anime du beta
+### S6 — Rejeu anime du beta *(livre)*
 
 **Objectif.** Rejouer la sequence mouvement par mouvement, comme une video du passage.
 
@@ -165,7 +168,13 @@ verifie.
 **Contrainte.** L'animation s'appuie sur `Animatable` et reste confinee a la phase de dessin,
 comme le trace : le rejeu ne doit pas recomposer l'arbre a chaque image.
 
-**Critere d'acceptation.** Un rejeu de cinquante mouvements sans saccade, profile au moniteur GPU.
+**Critere d'acceptation — atteint.** Rejeu de 50 mouvements profile sur appareil via
+`dumpsys gfxinfo` : **2102 trames en 35 s, soit 60 images par seconde soutenues, une seule trame
+saccadee (0,05 %) et aucune vsync manquee**.
+
+Mesure faite sur emulateur : les durees de trame absolues y sont grevees par le rendu logiciel,
+mais « vsync manquee » et « trame saccadee » sont evalues contre la frequence reelle de
+l'appareil et restent donc significatifs.
 
 ---
 
@@ -249,6 +258,7 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | `Topo` plutot que `Topo` | Un compose anglais descriptif ne tient pas la serie ouverte par `Kalos` et `Popote` : des mots courts, chaleureux, avec un clin d'oeil d'initie. `Topo` est le mot des grimpeurs pour le guide de voies, et « c'est quoi le topo ? » decrit exactement ce qu'est un beta. |
 | Icone entierement vectorielle | Kalos utilise un PNG pre-padde a 64 % du canvas. Un VectorDrawable reste net a toutes les densites, pese quelques kilo-octets au lieu d'une famille de bitmaps, et se relit : une couleur se change dans le XML, pas dans un exporteur. |
 | Aucun mipmap PNG herite | `minSdk = 26` garantit les icones adaptatives sur tout le parc vise. Les familles `mipmap-hdpi` a `mipmap-xxxhdpi` que Kalos doit embarquer sont ici inutiles : l'icone entiere tient dans trois fichiers vectoriels, 18 Ko au total. |
+| Progression du rejeu comptee en mouvements | Une fraction de 0 a 1 aurait oblige a remultiplier par le nombre de mouvements partout, et aurait rendu le pas a pas dependant de la longueur de la sequence. |
 | Prises dessinees en triangles arrondis | Un contour ferme et lisse se lit comme un cercle a la taille d'une icone de lanceur. Verifie sur appareil : la premiere version ressemblait a des pastilles percees. |
 | Statut a quatre etats plutot qu'un booleen `is_completed` | Un booleen ne distingue pas « jamais essaye » de « travaille sans succes ». Garder les deux cote a cote aurait cree deux sources de verite pour la meme question. |
 | Table reconstruite a la migration plutot qu'un `ALTER` | `DROP COLUMN` date de SQLite 3.35 ; l'API 26 visee embarque la 3.19. Les cles etrangeres sont desactivees pendant l'echange, sinon le `DROP TABLE` emporterait prises et mouvements en cascade. |
