@@ -22,7 +22,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,6 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import com.topo.core.domain.model.Limb
 import com.topo.core.ui.theme.BetaColors
 
@@ -55,6 +60,31 @@ fun AnnotatorScreen(
     val detail = uiState.blocDetail
     val imageFile = uiState.imageFile
 
+    // -----------------------------------------------------------------------
+    //  Rejeu
+    //
+    //  L'etat survit aux changements de mode : basculer vers « poser les prises »
+    //  puis revenir ne doit pas rembobiner la sequence.
+    // -----------------------------------------------------------------------
+    val playback = remember { BetaPlaybackState(movementCount = 0) }
+    val movementCount = detail?.movements?.size ?: 0
+    playback.movementCount = movementCount
+
+    val scope = rememberCoroutineScope()
+
+    // Porteur remember, et non une simple variable locale : une `var` declaree
+    // dans le corps d'un composable est reinitialisee a chaque recomposition, et
+    // la reference au job de lecture serait perdue — la pause n'aurait alors plus
+    // rien a annuler. Un holder plutot qu'un mutableStateOf : changer de job ne
+    // doit rien recomposer, c'est `isPlaying` qui porte l'etat visible.
+    val playbackJob = remember { PlaybackJobHolder() }
+
+    // Quitter l'ecran arrete l'animation : une coroutine de lecture laissee
+    // vivante continuerait a faire tourner l'horloge de Compose.
+    DisposableEffect(Unit) {
+        onDispose { playbackJob.current?.cancel() }
+    }
+
     Scaffold(
         modifier = modifier,
         topBar = {
@@ -78,6 +108,30 @@ fun AnnotatorScreen(
                 onClear = viewModel::clearBeta,
             )
 
+            if (uiState.mode == AnnotationMode.REPLAY) {
+                PlaybackControls(
+                    playback = playback,
+                    enabled = movementCount > 0,
+                    onPlayPause = {
+                        if (playback.isPlaying) {
+                            playbackJob.current?.cancel()
+                            playback.pause()
+                        } else {
+                            playbackJob.current?.cancel()
+                            playbackJob.current = scope.launch { playback.play() }
+                        }
+                    },
+                    onStep = { delta ->
+                        playbackJob.current?.cancel()
+                        scope.launch { playback.step(delta) }
+                    },
+                    onRestart = {
+                        playbackJob.current?.cancel()
+                        scope.launch { playback.reset() }
+                    },
+                )
+            }
+
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 if (detail != null && imageFile != null) {
                     AnnotationCanvas(
@@ -87,6 +141,9 @@ fun AnnotatorScreen(
                         selectedLimb = uiState.selectedLimb,
                         onHoldRequested = viewModel::addHoldAt,
                         onTraceCompleted = viewModel::completeTrace,
+                        // Hors mode rejeu, le canevas ignore la progression et
+                        // trace la sequence entiere : c'est le mode edition.
+                        playback = playback.takeIf { uiState.mode == AnnotationMode.REPLAY },
                     )
                 } else {
                     Text("Chargement du bloc...", style = MaterialTheme.typography.bodyMedium)
@@ -117,6 +174,11 @@ private fun AnnotationToolbar(
                 selected = mode == AnnotationMode.TRACE_BETA,
                 onClick = { onModeChange(AnnotationMode.TRACE_BETA) },
                 label = { Text("Tracer le beta") },
+            )
+            FilterChip(
+                selected = mode == AnnotationMode.REPLAY,
+                onClick = { onModeChange(AnnotationMode.REPLAY) },
+                label = { Text("Rejouer") },
             )
         }
 
@@ -161,4 +223,9 @@ private fun Limb.swatch(): Color = when (this) {
     Limb.RIGHT_HAND -> BetaColors.RightHand
     Limb.LEFT_FOOT -> BetaColors.LeftFoot
     Limb.RIGHT_FOOT -> BetaColors.RightFoot
+}
+
+/** Reference mutable vers la coroutine de lecture, hors du systeme de snapshots. */
+private class PlaybackJobHolder {
+    var current: Job? = null
 }

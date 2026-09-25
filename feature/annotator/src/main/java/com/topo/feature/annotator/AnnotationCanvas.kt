@@ -42,6 +42,9 @@ enum class AnnotationMode {
 
     /** Un balayage trace la sequence de mouvements, magnetisee sur les prises. */
     TRACE_BETA,
+
+    /** La sequence se rejoue mouvement par mouvement. Les gestes sont inertes. */
+    REPLAY,
 }
 
 /** Rayon d'attraction par defaut, en dp : environ la pulpe d'un doigt. */
@@ -75,6 +78,7 @@ fun AnnotationCanvas(
     snapRadius: androidx.compose.ui.unit.Dp = DefaultSnapRadius,
     traceState: BetaTraceState = remember { BetaTraceState() },
     findSnapTarget: FindSnapTargetUseCase = remember { FindSnapTargetUseCase() },
+    playback: BetaPlaybackState? = null,
 ) {
     Box(
         modifier = modifier
@@ -99,6 +103,7 @@ fun AnnotationCanvas(
             snapRadius = snapRadius,
             traceState = traceState,
             findSnapTarget = findSnapTarget,
+            playback = playback,
             onHoldRequested = onHoldRequested,
             onTraceCompleted = onTraceCompleted,
             modifier = Modifier.fillMaxSize(),
@@ -114,6 +119,7 @@ private fun BetaTraceLayer(
     snapRadius: androidx.compose.ui.unit.Dp,
     traceState: BetaTraceState,
     findSnapTarget: FindSnapTargetUseCase,
+    playback: BetaPlaybackState?,
     onHoldRequested: (Float, Float) -> Unit,
     onTraceCompleted: (List<String>) -> Unit,
     modifier: Modifier = Modifier,
@@ -154,6 +160,8 @@ private fun BetaTraceLayer(
             // Toutes les valeurs variables passent par rememberUpdatedState.
             .pointerInput(Unit) {
                 detectTapGestures { offset ->
+                    // Le rejeu n'accepte aucun geste : un appui pendant la lecture
+                    // poserait une prise sans que l'utilisateur l'ait voulu.
                     if (currentMode == AnnotationMode.ADD_HOLD) {
                         currentOnHoldRequested(
                             offset.x / size.width,
@@ -239,11 +247,18 @@ private fun BetaTraceLayer(
                     // jamais la composition.
                     drawHolds(currentHolds, holdStroke, holdRadius)
 
+                    // playback.progress.value est lu ICI et nulle part ailleurs.
+                    // Une animation emet une valeur par trame : la lire en
+                    // composition provoquerait 60 a 120 recompositions par
+                    // seconde de tout le sous-arbre.
                     drawMovements(
                         movements = currentMovements,
                         holdsById = holdsById,
                         handStroke = movementStroke,
                         footStroke = footStroke,
+                        frame = playback?.let {
+                            playbackFrameAt(it.progress.value, currentMovements.size)
+                        },
                     )
 
                     drawLiveTrace(
@@ -281,36 +296,69 @@ private fun DrawScope.drawHolds(holds: List<Hold>, stroke: Stroke, radius: Float
     }
 }
 
+/**
+ * Dessine la sequence enregistree.
+ *
+ * Sans [frame], toute la sequence est tracee : c'est le mode edition. Avec, seuls
+ * les mouvements deja joues apparaissent, et celui en cours est interpole entre
+ * sa prise de depart et sa prise d'arrivee — le trait pousse vers la prise, comme
+ * une main qui va la chercher.
+ */
 private fun DrawScope.drawMovements(
     movements: List<Movement>,
     holdsById: Map<String, Hold>,
     handStroke: Stroke,
     footStroke: Stroke,
+    frame: PlaybackFrame? = null,
 ) {
+    val lastFullyDrawn = frame?.completedMovements ?: movements.size
+
     for (index in movements.indices) {
+        if (index >= lastFullyDrawn && index != frame?.activeIndex) continue
+
         val movement = movements[index]
         val target = holdsById[movement.targetHoldId] ?: continue
         val targetCenter = target.box.toOffset(size)
         val color = movement.limb.color()
+        val isActive = index == frame?.activeIndex
+        val advance = if (isActive) frame.activeProgress else 1f
 
         val source = movement.sourceHoldId?.let(holdsById::get)
         if (source == null) {
-            // Mouvement de depart : pas de segment, seulement un marqueur plein.
-            drawCircle(color = color, radius = handStroke.width * 1.6f, center = targetCenter)
+            // Mouvement de depart : pas de segment, seulement un marqueur qui
+            // grandit jusqu'a sa taille finale.
+            drawCircle(
+                color = color,
+                radius = handStroke.width * 1.6f * advance,
+                center = targetCenter,
+            )
             continue
         }
 
+        val start = source.box.toOffset(size)
+        val end = lerp(start, targetCenter, advance)
+
         drawLine(
             color = color,
-            start = source.box.toOffset(size),
-            end = targetCenter,
+            start = start,
+            end = end,
             strokeWidth = handStroke.width,
             cap = handStroke.cap,
             pathEffect = if (movement.limb.isHand) null else footStroke.pathEffect,
         )
-        drawCircle(color = color, radius = handStroke.width, center = targetCenter)
+        // Le marqueur d'arrivee n'apparait qu'une fois la prise atteinte : le
+        // voir avant donnerait l'impression que le mouvement est deja fini.
+        if (!isActive) {
+            drawCircle(color = color, radius = handStroke.width, center = targetCenter)
+        }
     }
 }
+
+/** Interpolation lineaire entre deux points du canevas. */
+private fun lerp(start: Offset, end: Offset, fraction: Float): Offset = Offset(
+    x = start.x + (end.x - start.x) * fraction,
+    y = start.y + (end.y - start.y) * fraction,
+)
 
 /**
  * Trace en cours : la polyligne des prises deja magnetisees, prolongee jusqu'au
