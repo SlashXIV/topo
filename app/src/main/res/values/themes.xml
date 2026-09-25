@@ -1,4 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!--
+        Theme de l'ecran de demarrage.
+
+        C'est le theme declare au manifeste : Android l'utilise pour peindre la
+        fenetre AVANT que la moindre ligne de code ne s'execute. MainActivity
+        bascule ensuite sur Theme.Topo via installSplashScreen().
+
+        L'ecran de demarrage reprend exactement l'avant-plan de l'icone sur le
+        fond de l'icone : le lancement prolonge visuellement la tuile du lanceur
+        au lieu d'afficher un ecran blanc sans rapport.
+
+        La bibliotheque androidx.core:core-splashscreen porte ce comportement
+        jusqu'a l'API 26 ; sans elle il serait reserve a l'API 31+.
+    -->
+    <style name="Theme.Topo.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/icon_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.Topo</item>
+    </style>
+
     <style name="Theme.Topo" parent="android:Theme.Material.Light.NoActionBar" />
+
 </resources>
