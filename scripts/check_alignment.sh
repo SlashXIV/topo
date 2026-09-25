@@ -46,6 +46,11 @@ if [[ -n "$apk" ]]; then
   fi
   workdir="$(mktemp -d)"
   trap 'rm -rf "$workdir"' EXIT
+  # Sous Git Bash, llvm-objdump est un binaire Windows natif : il ne comprend
+  # pas les chemins POSIX de mktemp. La conversion doit etre explicite, sinon
+  # l'audit signale des bibliotheques illisibles alors qu'elles sont la —
+  # un faux negatif d'autant plus trompeur qu'il ressemble a un vrai echec.
+  objdump_path() { command -v cygpath >/dev/null 2>&1 && cygpath -w "$1" || echo "$1"; }
   unzip -q -o "$apk" 'lib/*/*.so' -d "$workdir" || true
   echo "Source : $apk (bibliotheques empaquetees)"
   mapfile -t libs < <(find "$workdir/lib" -name '*.so' 2>/dev/null | sort)
@@ -66,7 +71,9 @@ for so in "${libs[@]}"; do
 
   # awk sur le PREMIER champ : un grep sur "LOAD" matcherait aussi le chemin du
   # fichier (par exemple un projet situe dans un dossier "Downloads").
-  aligns="$("$OBJDUMP" -p "$so" | awk '$1 == "LOAD" { print $NF }')"
+  target="$so"
+  if declare -F objdump_path >/dev/null; then target="$(objdump_path "$so")"; fi
+  aligns="$("$OBJDUMP" -p "$target" | awk '$1 == "LOAD" { print $NF }')"
 
   if [[ -z "$aligns" ]]; then
     printf '  %-12s %-30s AUCUN SEGMENT LOAD LISIBLE\n' "$abi" "$name" >&2
