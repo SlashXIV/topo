@@ -3,6 +3,7 @@ package com.topo.core.domain
 import com.topo.core.domain.model.Bloc
 import com.topo.core.domain.model.BlocDetail
 import com.topo.core.domain.model.BlocStatus
+import com.topo.core.domain.model.GradeScale
 import com.topo.core.domain.repository.BlocImageStore
 import com.topo.core.domain.repository.BlocRepository
 import java.io.File
@@ -103,6 +104,8 @@ internal fun testBloc(
     imageWidth = 3000,
     imageHeight = 4000,
     grade = "7A",
+    gradeScale = GradeScale.FRENCH,
+    colorId = null,
     status = status,
     attempts = attempts,
     sentAt = sentAt,

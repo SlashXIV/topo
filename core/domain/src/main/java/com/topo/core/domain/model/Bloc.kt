@@ -20,7 +20,11 @@ data class Bloc(
     val imagePath: String,
     val imageWidth: Int,
     val imageHeight: Int,
+    /** Etiquette de cotation, tiree de [gradeScale]. */
     val grade: String?,
+    val gradeScale: GradeScale?,
+    /** Couleur du circuit. Independante de la cotation : un bloc peut porter les deux. */
+    val colorId: String?,
     val status: BlocStatus,
     val attempts: Int,
     /** Instant de la reussite, nul tant que le bloc n'est pas reussi. */
@@ -38,6 +42,15 @@ data class Bloc(
     }
 
     val aspectRatio: Float get() = imageWidth.toFloat() / imageHeight.toFloat()
+
+    /**
+     * Rang de difficulte de la cotation chiffree, s'il y en a une.
+     *
+     * C'est cette valeur, et l'equivalent cote couleur ([CircuitColor.rank]),
+     * que les statistiques de progression consommeront : deux systemes
+     * d'affichage, une seule notion comparable.
+     */
+    val gradeRank: Int? get() = gradeScale?.let { scale -> grade?.let(scale::rankOf) }
 
     /** Conserve pour les usages d'affichage qui ne distinguent que reussi / non reussi. */
     val isCompleted: Boolean get() = status.isSent
