@@ -284,6 +284,31 @@ pour repli une recompilation depuis les sources.
 **Critere d'acceptation.** Inference de bout en bout sous 100 ms sur appareil physique ARM64, et
 audit d'alignement toujours vert.
 
+**Audit prealable — conforme (ONNX Runtime 1.30.0).** AAR precompile de Maven Central inspecte a
+`llvm-objdump -p` avant tout code :
+
+```
+arm64-v8a  libonnxruntime.so        3 LOAD, tous en 2**14
+arm64-v8a  libonnxruntime4j_jni.so  2 LOAD, tous en 2**14
+x86_64     libonnxruntime.so        3 LOAD, tous en 2**14
+x86_64     libonnxruntime4j_jni.so  2 LOAD, tous en 2**14
+```
+
+Le repli par recompilation n'est donc pas necessaire pour l'alignement. XNNPACK est compile dans
+le binaire. L'AAR ne fournit pas de module Prefab, mais embarque les en-tetes C : l'import CMake
+se fait par cible importee.
+
+**Point ouvert revele par l'audit : le poids.** `libonnxruntime.so` pese **33 Mo** en arm64-v8a
+(11,8 Mo compresse), soit six fois le modele vise, et nos `.so` sont stockees non compressees
+dans l'APK — c'est la condition de l'alignement 16 Ko. Une construction reduite aux seuls
+operateurs du modele (build minimal d'ONNX Runtime, format ORT) ramenerait ce poids a quelques
+Mo, mais impose de compiler depuis les sources : elle releve de S11.
+
+**Modele de substitution.** Faute de modele entraine, le pipeline est construit sur un YOLO nano
+generique (COCO). Ultralytics est sous licence AGPL-3.0 : ce modele reste confine aux ressources
+de TEST et n'entre jamais dans l'APK livre. La licence du modele definitif est un point bloquant
+avant toute publication.
+
 ---
 
 ### S11 — Industrialisation
@@ -322,6 +347,7 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | PNG plutot que JPEG pour l'export | Le trace est fait d'aplats et d'aretes franches, exactement ce que JPEG degrade en halos. |
 | Fichier partage purge a l'export SUIVANT | L'application receptrice lit le fichier a un moment inconnu : le supprimer juste apres le selecteur ferait une course. Le repertoire ne contient ainsi jamais plus d'une image. |
 | Bitmaps materiels de Coil desactives sous l'API 28 | La capture d'un calque y rejoue le dessin sur un canevas logiciel, qui refuse de lire un bitmap materiel. |
+| AAR precompile d'ONNX Runtime plutot qu'une recompilation | Audite a l'objdump avant adoption : conforme 16 Ko sur les deux ABI. Recompiler couterait une chaine de build C++ entiere pour une propriete deja acquise ; la question se reposera pour le poids, pas pour l'alignement. |
 | Agregation en Kotlin, pas en SQL | Contrairement aux compteurs de seances, ces regles sont metier et changeront plus souvent que le schema ; en SQL elles seraient dispersees dans des requetes intestables. |
 | Cotation tiree d'une liste figee, jamais saisie librement | « 7A » et « 7a » deviendraient deux niveaux et rien ne se trierait : une cotation libre rend toute statistique de progression impossible. |
 | Reglages en base plutot qu'en DataStore | SQLite est l'unique source de verite du projet. Un second magasin apporterait sa propre histoire de sauvegarde et de migration pour deux enumerations, la ou une table suit le mecanisme deja teste. |
