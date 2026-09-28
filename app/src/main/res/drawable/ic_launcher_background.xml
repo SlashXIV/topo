@@ -27,18 +27,19 @@
     vissent en M10 — mais sur la plus petite elle mangerait le triangle.
 
     PLACEMENT — jaune a mi-hauteur a gauche pointe en bas, bleu en haut a droite
-    pointe en haut, vert en bas a droite pointe a droite, rouge en bas a gauche
-    pointe en bas.
+    pointe en haut, vert en bas a droite pointe a droite, rouge sous le trait
+    orange pointe en bas.
 
     La zone a tenir libre n'est PAS le rectangle englobant de la lettre. Un T est
     creux : sous sa barre horizontale (y 44) il ne reste que la hampe, x 49.5..58.5,
-    et les flancs bas sont donc largement libres. C'est ce qui laisse la place au
-    vert et au rouge. Les trois obstacles reels, marge de 2 unites comprise :
+    et les flancs bas sont donc largement libres. C'est ce qui permet au jaune de
+    remonter vers le centre au lieu de longer le bord. Les trois obstacles reels,
+    marge de 2 unites comprise :
       - barre du T    x 38..70      y 33..46
       - hampe du T    x 47.5..60.5  y 46..66
       - trait orange  x 36.5..71.5  y 68..74
 
-    TAILLES — 0.92 / 0.85 / 0.78 / 0.70. Quatre prises identiques posees en
+    TAILLES — 0.92 / 0.85 / 0.72 / 0.70. Quatre prises identiques posees en
     couronne se lisent comme un motif decoratif ; c'est l'ecart d'echelle, autant
     que l'orientation, qui les fait lire comme un mur equipe.
 
@@ -70,8 +71,8 @@
         android:rotation="190"
         android:scaleX="0.92"
         android:scaleY="0.92"
-        android:translateX="12"
-        android:translateY="36">
+        android:translateX="21"
+        android:translateY="44">
         <path
             android:fillColor="@color/icon_hold_yellow"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
@@ -132,15 +133,15 @@
             android:pathData="M10.5,10.85L13.5,10.85A0.35,0.35 0 0,1 13.5,11.55L10.5,11.55A0.35,0.35 0 0,1 10.5,10.85Z" />
     </group>
 
-    <!-- Rouge, en bas a gauche, pointe en bas. -->
+    <!-- Rouge, sous le trait, pointe en bas. -->
     <group
         android:pivotX="12"
         android:pivotY="12"
         android:rotation="172"
-        android:scaleX="0.78"
-        android:scaleY="0.78"
-        android:translateX="15"
-        android:translateY="58">
+        android:scaleX="0.72"
+        android:scaleY="0.72"
+        android:translateX="40"
+        android:translateY="70">
         <path
             android:fillColor="@color/icon_hold_red"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />

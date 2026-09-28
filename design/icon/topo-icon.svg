@@ -32,7 +32,7 @@
       - hampe du T    x 47.5..60.5  y 46..66
       - trait orange  x 36.5..71.5  y 68..74
 
-    Les quatre echelles (0.92 / 0.85 / 0.78 / 0.70) ne sont pas decoratives :
+    Les quatre echelles (0.92 / 0.85 / 0.72 / 0.70) ne sont pas decoratives :
     quatre prises identiques posees en couronne se lisent comme un motif, et c'est
     l'ecart de taille autant que l'orientation qui les fait lire comme un mur.
 
@@ -94,11 +94,11 @@
 
     <!-- Quatre prises. Orientation et taille varient volontairement : jaune a
          mi-hauteur a gauche pointe en bas, bleu en haut a droite pointe en haut,
-         vert en bas a droite pointe a droite, rouge en bas a gauche pointe en bas. -->
-    <use href="#hold" transform="translate(12,36) rotate(190,12,12) scale(0.92)" color="#F2C14E"/>
+         vert en bas a droite pointe a droite, rouge sous le trait pointe en bas. -->
+    <use href="#hold" transform="translate(21,44) rotate(190,12,12) scale(0.92)" color="#F2C14E"/>
     <use href="#hold" transform="translate(58,15) rotate(8,12,12)   scale(0.7)"  color="#2E86AB"/>
     <use href="#hold" transform="translate(60,46) rotate(96,12,12)  scale(0.85)" color="#5FAD56"/>
-    <use href="#hold" transform="translate(15,58) rotate(172,12,12) scale(0.78)" color="#D1495B"/>
+    <use href="#hold" transform="translate(40,70) rotate(172,12,12) scale(0.72)" color="#D1495B"/>
 
     <!-- Lettre T, calee par mesure sur les deux autres applications de l'auteur :
          Popote 56x66 px, Kalos 44x54 px, Topo AVANT 84x71 px. Reduite a 28x29
