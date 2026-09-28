@@ -24,6 +24,31 @@ ml/.venv/Scripts/python -m pip install ultralytics onnxruntime pillow numpy
 ml/.venv/Scripts/python ml/export_placeholder.py
 ```
 
+## Modele de prises
+
+```bash
+export ROBOFLOW_API_KEY=...          # compte gratuit Roboflow ; jamais dans un fichier
+ml/.venv/Scripts/python ml/fetch_datasets.py   # telecharge et fusionne en une classe
+ml/.venv/Scripts/python ml/train.py            # GPU, evaluation sur test, export FP32 + INT8
+```
+
+L'entrainement utilise le GPU s'il est disponible : installer PyTorch depuis l'index CUDA
+(`--index-url https://download.pytorch.org/whl/cu128`), la roue par defaut etant CPU.
+
+### Jeux de donnees et attribution
+
+Tous sous licence [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/), fusionnes en une
+seule classe « prise » (prises et volumes confondus), decoupages d'origine conserves :
+
+| Jeu | Auteur | Version | Images sources |
+|---|---|---|---|
+| [Climbing Holds and Volumes](https://universe.roboflow.com/blackcreed-xpgxh/climbing-holds-and-volumes) | Blackcreed | 14 | 1 717 |
+| [Climbing Holds Detector](https://universe.roboflow.com/gabriel-murry-hbznu/climbing-holds-detector) | Gabriel Murry | 4 | 86 |
+| [Hold Detector](https://universe.roboflow.com/climb-ai/hold-detector-rnvkl) | Climb AI | 2 | 47 |
+
+Ecarte : [Climbing Holds (Brage)](https://universe.roboflow.com/brage-drnsc/climbing-holds-mavv2),
+annote de facon clairsemee — une prise non etiquetee est apprise comme du fond.
+
 ## Chaine cible
 
 1. Dataset de prises d'escalade annotees (boites englobantes).
