@@ -24,15 +24,17 @@
       - leurs centres sont a moins de 33 du centre du canevas. Plus loin, le
         masque circulaire des lanceurs les avalait entierement.
 
-    La zone a tenir libre n'est PAS le rectangle englobant de la lettre. Un T est
-    creux : sous sa barre horizontale (y 44) il ne reste que la hampe, x 49.5..58.5,
-    et les flancs bas sont donc largement libres. Les trois obstacles reels, marge
-    de 2 unites comprise :
-      - barre du T    x 38..70      y 33..46
-      - hampe du T    x 47.5..60.5  y 46..66
-      - trait orange  x 36.5..71.5  y 68..74
+    ZONE D'EXCLUSION : une seule boite, x 36.5..71.5 y 33..74 — l'englobant de la
+    lettre ET du trait, marge de 2 unites comprise. Aucune prise n'y entre. Epouser
+    le contour reel du T, qui est creux, permettrait de serrer les prises plus
+    pres ; mais le monogramme est l'identite de l'application, il doit respirer.
 
-    Les quatre echelles (0.92 / 0.85 / 0.72 / 0.70) ne sont pas decoratives :
+    En contrepartie les prises debordent du cercle du masque. Un peu de debord est
+    souhaitable ; trop, et le triangle se reduit a un coin de couleur. Les positions
+    sont mesurees et non estimees : contour rasterise, intersecte avec le cercle de
+    rayon 36, au moins 80 % de surface conservee et la vis a moins de 34 du centre.
+
+    Les quatre echelles (0.82 / 0.74 / 0.71 / 0.68) ne sont pas decoratives :
     quatre prises identiques posees en couronne se lisent comme un motif, et c'est
     l'ecart de taille autant que l'orientation qui les fait lire comme un mur.
 
@@ -92,13 +94,13 @@
     <!-- Fond -->
     <rect width="108" height="108" fill="#3A4048"/>
 
-    <!-- Quatre prises. Orientation et taille varient volontairement : jaune a
-         mi-hauteur a gauche pointe en bas, bleu en haut a droite pointe en haut,
-         vert en bas a droite pointe a droite, rouge sous le trait pointe en bas. -->
-    <use href="#hold" transform="translate(21,44) rotate(190,12,12) scale(0.92)" color="#F2C14E"/>
-    <use href="#hold" transform="translate(58,15) rotate(8,12,12)   scale(0.7)"  color="#2E86AB"/>
-    <use href="#hold" transform="translate(60,46) rotate(96,12,12)  scale(0.85)" color="#5FAD56"/>
-    <use href="#hold" transform="translate(40,70) rotate(172,12,12) scale(0.72)" color="#D1495B"/>
+    <!-- Une prise par quadrant. La pointe du jaune est orientee vers le centre :
+         c'est la plus grosse, elle doit ramener le regard sur la lettre plutot
+         que le tirer vers le bord. -->
+    <use href="#hold" transform="translate(16,25) rotate(135,12,12) scale(0.82)" color="#F2C14E"/>
+    <use href="#hold" transform="translate(60,14) rotate(8,12,12)   scale(0.68)" color="#2E86AB"/>
+    <use href="#hold" transform="translate(55,71) rotate(96,12,12)  scale(0.74)" color="#5FAD56"/>
+    <use href="#hold" transform="translate(15,59) rotate(200,12,12) scale(0.71)" color="#D1495B"/>
 
     <!-- Lettre T, calee par mesure sur les deux autres applications de l'auteur :
          Popote 56x66 px, Kalos 44x54 px, Topo AVANT 84x71 px. Reduite a 28x29
