@@ -46,13 +46,20 @@ explicitement dans le journal des decisions.
 | **S0** | Socle multi-modules, pont JNI, conformite 16 Ko | Tous les segments LOAD en `2**14` ; 6 tests sur noyau `PAGE_SIZE=16384` |
 | **S1** | Room en mode WAL, cascades, CameraX, stockage interne | `PRAGMA journal_mode` = `wal` ; 18 tests instrumentes ; capture JPEG reelle sur appareil |
 | **S2** | Canevas Compose, prises manuelles, magnetisation | Magnetisation mesuree a **0,62 us** sur 150 prises ; 7 tests gestuels, dont un valide par mutation |
+| **S3** | Boucle utilisateur complete, navigation type-safe | Parcours seance -> bloc -> prises -> beta execute sur emulateur, donnees retrouvees apres relancement |
+| **S4** | Carnet du grimpeur, migration v1 -> v2 | 3 tests de migration sur une base v1 authentique ; migration executee sur la base reelle |
+| **S5** | Identite : nom Topo, icone vectorielle, splash | Renommage sans regression ; icone verifiee au lanceur sur appareil |
+| **S6** | Rejeu anime du beta | 50 mouvements a **60 i/s soutenues**, 0,05 % de trames saccadees (`dumpsys gfxinfo`) |
+| **S7** | Cotation : echelles ordonnees et circuit de couleurs | Migration v2 -> v3 executee sur la base reelle du Xiaomi |
+| **S8** | Statistiques et progression | Regles d'agregation couvertes par les tests JVM du domaine |
+| **S9** | Export et partage d'une image du beta | PNG relu via le `FileProvider` ; selecteur systeme ouvert sur emulateur, export complet sur appareil |
 
-111 tests verts au total : 38 instrumentes, 73 unitaires JVM.
+122 tests verts au total : 49 instrumentes, 73 unitaires JVM.
 
-**L'application est utilisable, tient un carnet et rejoue les sequences.** La boucle seance ->
-bloc -> prises -> beta -> historique fonctionne de bout en bout sur appareil, chaque bloc porte
-son statut, ses essais et son ressenti, et le beta se rejoue mouvement par mouvement. La suite
-porte sur la lecture de la progression, puis le partage.
+**L'application est complete sans modele.** La boucle seance -> bloc -> prises -> beta ->
+historique fonctionne de bout en bout sur appareil ; chaque bloc porte son statut, sa cotation et
+son ressenti, le beta se rejoue et se partage en image. La suite est la detection automatique des
+prises, seule phase qui depende d'un livrable externe.
 
 ---
 
@@ -219,14 +226,14 @@ une couleur met `color_id` a NULL **sans** supprimer le bloc.
 **Livrables.**
 - Volume par seance, repartition par cotation, evolution du meilleur niveau.
 - Taux de flash, blocs en projet.
-- Agregations **calculees en SQL**, jamais en chargeant toutes les lignes pour les compter en
-  Kotlin — le patron est deja pose par `observeSessionsWithCounts`.
+- Agregations calculees dans le domaine, en Kotlin — et non en SQL comme le prevoyait le plan
+  initial : voir le journal des decisions.
 
 **Dependance.** S4, dont cette phase consomme les statuts et les essais.
 
 ---
 
-### S9 — Export et partage d'une image
+### S9 — Export et partage d'une image *(livre)*
 
 **Objectif.** Envoyer un beta a un partenaire de grimpe.
 
@@ -235,6 +242,23 @@ une couleur met `color_id` a NULL **sans** supprimer le bloc.
 - Partage par `FileProvider` et `ACTION_SEND`.
 - Aucune synchronisation, aucun compte : l'image quitte l'application par le selecteur systeme,
   et rien d'autre ne sort du telephone.
+
+**Le point d'architecture.** Le canevas enregistre son propre rendu dans un `GraphicsLayer`, puis
+s'affiche depuis lui : l'image exportee sort du meme code de dessin que l'ecran, sans second
+moteur. Consequence voulue, l'image est ce que l'ecran montre — en rejeu, une sequence arretee a
+mi-parcours se partage telle quelle, pour montrer le mouvement qui coince.
+
+**Critere d'acceptation — atteint.** Sur emulateur API 36 : bouton « Partager », selecteur
+systeme ouvert avec l'apercu de l'image, PNG de 1080 x 1440 ecrit dans `cacheDir/shared`. Sur le
+Xiaomi, un export de 1280 x 1707 relu complet. Trois tests instrumentes relisent le PNG par le
+`ContentResolver`, comme le ferait l'application receptrice, et un quatrieme verifie que le calque
+d'export contient le trace jusqu'au bord inferieur de l'image.
+
+**A surveiller.** Sur emulateur, 2 exports sur 6 ont ete tronques : contenu correct au-dessus
+d'une ligne horizontale, transparent en dessous, a une hauteur differente a chaque fois. Le
+defaut n'a pas ete reproduit en isolement (40 captures sur 40 completes) ni observe sur appareil
+physique. Hypothese non verifiee : une relecture du tampon materiel concurrente d'un rendu en
+cours, propre au GPU emule. A reverifier sur appareil si un utilisateur le signale.
 
 ---
 
@@ -289,11 +313,15 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | Recherche lineaire plutot que KD-Tree | Mesure : 0,62 us pour 150 prises, soit 0,004 % d'une trame a 60 FPS. Un arbre couterait plus a construire et invalider que la recherche qu'il remplace. |
 | Tables classiques plutot que l'extension spatiale R-Tree | L'implementation SQLite d'Android n'active pas systematiquement R-Tree, et un mur depasse rarement 200 prises. Des index B-Tree suffisent. |
 | Chemins d'image **relatifs** en base | Un chemin absolu change lors d'une restauration d'appareil ; une `content://` externe peut voir sa permission revoquee, ce qui casserait le fonctionnement hors ligne. |
-| `Topo` plutot que `Topo` | Un compose anglais descriptif ne tient pas la serie ouverte par `Kalos` et `Popote` : des mots courts, chaleureux, avec un clin d'oeil d'initie. `Topo` est le mot des grimpeurs pour le guide de voies, et « c'est quoi le topo ? » decrit exactement ce qu'est un beta. |
+| `Topo` plutot que `BetaClimb` | Un compose anglais descriptif ne tient pas la serie ouverte par `Kalos` et `Popote` : des mots courts, chaleureux, avec un clin d'oeil d'initie. `Topo` est le mot des grimpeurs pour le guide de voies, et « c'est quoi le topo ? » decrit exactement ce qu'est un beta. |
 | Icone entierement vectorielle | Kalos utilise un PNG pre-padde a 64 % du canvas. Un VectorDrawable reste net a toutes les densites, pese quelques kilo-octets au lieu d'une famille de bitmaps, et se relit : une couleur se change dans le XML, pas dans un exporteur. |
 | Aucun mipmap PNG herite | `minSdk = 26` garantit les icones adaptatives sur tout le parc vise. Les familles `mipmap-hdpi` a `mipmap-xxxhdpi` que Kalos doit embarquer sont ici inutiles : l'icone entiere tient dans trois fichiers vectoriels, 18 Ko au total. |
 | Couleurs et cotations comptees SEPAREMENT | Un rang de couleur (0 a 4) et un rang de cotation (0 a 23) ne mesurent pas sur la meme regle. Les melanger donnerait un « niveau moyen » sans signification. |
 | Taux de flash rapporte aux reussites, pas a tous les blocs | Rapporte au total, le taux chuterait a chaque projet ouvert et penaliserait le fait d'essayer des blocs durs. |
+| Export par le calque du canevas, pas par un rendu dedie | Une seule implementation du dessin : l'image partagee ne peut pas diverger de l'ecran. Le prix est une resolution d'export egale a celle de l'affichage, suffisante pour un ecran de messagerie. |
+| PNG plutot que JPEG pour l'export | Le trace est fait d'aplats et d'aretes franches, exactement ce que JPEG degrade en halos. |
+| Fichier partage purge a l'export SUIVANT | L'application receptrice lit le fichier a un moment inconnu : le supprimer juste apres le selecteur ferait une course. Le repertoire ne contient ainsi jamais plus d'une image. |
+| Bitmaps materiels de Coil desactives sous l'API 28 | La capture d'un calque y rejoue le dessin sur un canevas logiciel, qui refuse de lire un bitmap materiel. |
 | Agregation en Kotlin, pas en SQL | Contrairement aux compteurs de seances, ces regles sont metier et changeront plus souvent que le schema ; en SQL elles seraient dispersees dans des requetes intestables. |
 | Cotation tiree d'une liste figee, jamais saisie librement | « 7A » et « 7a » deviendraient deux niveaux et rien ne se trierait : une cotation libre rend toute statistique de progression impossible. |
 | Reglages en base plutot qu'en DataStore | SQLite est l'unique source de verite du projet. Un second magasin apporterait sa propre histoire de sauvegarde et de migration pour deux enumerations, la ou une table suit le mecanisme deja teste. |
@@ -315,7 +343,7 @@ Ce que le projet ne fera pas, et pourquoi.
   une infrastructure, une politique de confidentialite et une authentification — sans rien
   apporter a l'usage au pied du mur.
 - **Reseau social, partage de betas entre utilisateurs.** Autre produit, autres contraintes.
-  L'export d'une image (S7) couvre le besoin reel de montrer une sequence a quelqu'un.
+  L'export d'une image (S9) couvre le besoin reel de montrer une sequence a quelqu'un.
 - **Reconnaissance de cotation par OCR.** Envisageable un jour, mais sans valeur tant que la
   detection des prises n'est pas fiable.
 - **Segmentation fine des prises (masques polygonaux).** Les boites englobantes suffisent a la

@@ -3,10 +3,12 @@
 Application Android native **hors-ligne** pour grimpeurs de bloc : photographier un pan de mur,
 identifier les prises, tracer sa sequence de mouvements ("beta") au doigt, tout conserver en local.
 
-> **Etat : Sprints 0 a 2 termines.** Socle natif conforme 16 Ko, base Room en mode WAL,
-> acquisition CameraX et canevas d'annotation magnetise, valides sur appareil.
-> 45 tests verts (32 instrumentes sur deux niveaux d'API, 13 unitaires JVM).
-> Le reste est a construire (voir [Feuille de route](#feuille-de-route)).
+> **Etat : Sprints 0 a 9 termines — l'application est complete sans modele.** Seances, blocs,
+> prises posees a la main, beta trace et rejoue, carnet de progression, cotation, statistiques
+> et partage d'une image, le tout hors ligne et valide sur appareil.
+> 122 tests verts (49 instrumentes sur deux niveaux d'API, 73 unitaires JVM).
+> Reste la detection automatique des prises, puis l'industrialisation
+> (voir [Feuille de route](#feuille-de-route)).
 
 ---
 
@@ -193,13 +195,17 @@ alignee 16 Ko se charge sur un noyau a pages de 4 Ko.
 
 L'ordre suit une reduction progressive du risque, et non l'ordre des couches.
 
+Le detail de chaque phase, ses criteres d'acceptation et le journal des decisions vivent dans
+[`ROADMAP.md`](ROADMAP.md).
+
 | Sprint | Contenu | Etat |
 |---|---|---|
-| **S0** | Socle multi-modules, pont JNI, conformite 16 Ko | **termine** |
-| **S1** | Room (WAL), cascades, CameraX, stockage interne | **termine** |
-| **S2** | Canvas Compose, prises manuelles, magnetisation du trace | **termine** |
-| S3 | Inference ONNX Runtime / XNNPACK, NMS | depend du modele |
-| S4 | Profiling, R8, audit d'alignement final, AAB | a faire |
+| **S0 – S2** | Socle natif 16 Ko, Room WAL, CameraX, canevas magnetise | **termine** |
+| **S3 – S4** | Boucle utilisateur complete, carnet du grimpeur, migration v2 | **termine** |
+| **S5 – S6** | Identite Topo (nom, icone, splash), rejeu anime du beta | **termine** |
+| **S7 – S9** | Cotation, statistiques, export et partage d'une image | **termine** |
+| S10 | Detection des prises : ONNX Runtime / XNNPACK, NMS | en cours — audit 16 Ko d'abord |
+| S11 | Profiling, R8, baseline profile, audit final, AAB | a faire |
 | ∥ | `ml/` : dataset, fine-tuning, quantification INT8, export ONNX | en parallele |
 
 Le modele de detection arrive tard **volontairement** : c'est la seule dependance externe du
