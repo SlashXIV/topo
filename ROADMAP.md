@@ -54,7 +54,10 @@ explicitement dans le journal des decisions.
 | **S8** | Statistiques et progression | Regles d'agregation couvertes par les tests JVM du domaine |
 | **S9** | Export et partage d'une image du beta | PNG relu via le `FileProvider` ; selecteur systeme ouvert sur emulateur, export complet sur appareil |
 
-122 tests verts au total : 49 instrumentes, 73 unitaires JVM.
+128 tests verts au total : 55 instrumentes, 73 unitaires JVM.
+
+**S10 en cours** : chaine d'inference native livree et verifiee sur modele de substitution ;
+restent le modele de prises lui-meme et la mesure de latence sur appareil ARM64.
 
 **L'application est complete sans modele.** La boucle seance -> bloc -> prises -> beta ->
 historique fonctionne de bout en bout sur appareil ; chaque bloc porte son statut, sa cotation et
@@ -262,7 +265,7 @@ cours, propre au GPU emule. A reverifier sur appareil si un utilisateur le signa
 
 ---
 
-### S10 — Detection automatique des prises
+### S10 — Detection automatique des prises *(chaine livree, modele attendu)*
 
 **Objectif.** Pre-remplir les prises au lieu de les poser une a une.
 
@@ -309,6 +312,33 @@ generique (COCO). Ultralytics est sous licence AGPL-3.0 : ce modele reste confin
 de TEST et n'entre jamais dans l'APK livre. La licence du modele definitif est un point bloquant
 avant toute publication.
 
+**Livre — la chaine complete, sur modele de substitution.**
+- Session ONNX Runtime sur XNNPACK, modele charge depuis un buffer direct (asset projete en
+  memoire, jamais recopie dans le heap Java) et format de sortie verifie au chargement.
+- Letterbox ecrit directement dans le tenseur CHW depuis les pixels verrouilles du `Bitmap`.
+- Decodage et NMS natifs, une seule traversee JNI par inference.
+- `HoldDetector` fourni par Hilt : sans modele sous `assets/models/holds.onnx`, il reste non
+  pret et ne retourne rien — **aucune couche superieure n'a change**.
+
+**Preuves.** 12 tests instrumentes verts sur le noyau 16 Ko (API 37), dont les 6 historiques du
+pont JNI. La reference de detection est calculee par un miroir NumPy du code natif
+(`ml/export_placeholder.py`) : 5 detections sur 5 retrouvees, IoU > 0,95. Valide par mutation —
+inverser les canaux RGB fait echouer le test. L'audit 16 Ko de l'APK final reste vert sur les
+14 bibliotheques embarquees, `libonnxruntime.so` comprise.
+
+**Une correction trouvee par les tests.** ONNX Runtime signale un modele corrompu par une
+exception generique (`ORT_INVALID_PROTOBUF`) : sans traduction de son code d'erreur, un modele
+invalide aurait ete presente comme une panne du moteur.
+
+**Reste a faire.**
+- **Latence sur appareil ARM64** : 80 ms de mediane de bout en bout sur l'emulateur x86_64, dont
+  environ 30 ms de pretraitement compile en `-O0` (build debug). Indicatif seulement ; le critere
+  des 100 ms se mesure sur le telephone, en release.
+- **Le modele de prises** (voir `ml/`), et la licence du modele definitif.
+- **Le poids** : APK debug passe de 25 a 94 Mo avec les deux ABI. Build reduit d'ONNX Runtime a
+  planifier en S11.
+- Le bouton « detecter les prises » dans l'annotateur, une fois un modele utile disponible.
+
 ---
 
 ### S11 — Industrialisation
@@ -347,6 +377,10 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | PNG plutot que JPEG pour l'export | Le trace est fait d'aplats et d'aretes franches, exactement ce que JPEG degrade en halos. |
 | Fichier partage purge a l'export SUIVANT | L'application receptrice lit le fichier a un moment inconnu : le supprimer juste apres le selecteur ferait une course. Le repertoire ne contient ainsi jamais plus d'une image. |
 | Bitmaps materiels de Coil desactives sous l'API 28 | La capture d'un calque y rejoue le dessin sur un canevas logiciel, qui refuse de lire un bitmap materiel. |
+| NMS toutes classes confondues | Le modele de prises n'a qu'une classe ; sur le modele de substitution, deux boites superposees de classes differentes restent une seule prise pour le grimpeur. |
+| XNNPACK avec le pool d'ORT reduit a un thread | XNNPACK gere ses propres threads : deux pools concurrents se disputeraient les coeurs. C'est la configuration prescrite par la documentation d'ONNX Runtime. |
+| Chemin `DirectByteBuffer` en RGBA_8888, plus en YUV | CameraX sait livrer du RGBA directement ; un plan de luminance seul ne porte aucune couleur sur laquelle inferer. |
+| Modele de substitution jamais versionne | Sous AGPL-3.0. Regenere par script ; les tests qui en dependent sont signales ignores, jamais verts, quand il manque. |
 | AAR precompile d'ONNX Runtime plutot qu'une recompilation | Audite a l'objdump avant adoption : conforme 16 Ko sur les deux ABI. Recompiler couterait une chaine de build C++ entiere pour une propriete deja acquise ; la question se reposera pour le poids, pas pour l'alignement. |
 | Agregation en Kotlin, pas en SQL | Contrairement aux compteurs de seances, ces regles sont metier et changeront plus souvent que le schema ; en SQL elles seraient dispersees dans des requetes intestables. |
 | Cotation tiree d'une liste figee, jamais saisie librement | « 7A » et « 7a » deviendraient deux niveaux et rien ne se trierait : une cotation libre rend toute statistique de progression impossible. |
