@@ -29,6 +29,13 @@ room = "2.8.5"
 camerax = "1.5.2"
 coil = "2.7.0"
 
+# --- Inference (Sprint 10) ---
+# 1.30.0 : AAR precompile audite a l'objdump avant adoption — tous les segments
+# LOAD de libonnxruntime.so en 2**14 sur arm64-v8a et x86_64. A REAUDITER a
+# chaque montee de version : l'historique de conformite 16 Ko de ce binaire
+# n'est pas une garantie pour la suivante.
+onnxruntime = "1.30.0"
+
 # --- DI ---
 hilt = "2.60.1"
 hiltNavigationCompose = "1.3.0"
@@ -85,6 +92,9 @@ androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycl
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+
+# --- Inference (Sprint 10) ---
+onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
 
 # --- Hilt ---
 javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }
