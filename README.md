@@ -211,3 +211,16 @@ Le detail de chaque phase, ses criteres d'acceptation et le journal des decision
 
 Le modele de detection arrive tard **volontairement** : c'est la seule dependance externe du
 projet, et l'application est concue pour etre complete sans lui.
+
+---
+
+## Licence
+
+Topo est distribue sous **GNU Affero General Public License v3.0** (voir [`LICENSE`](LICENSE)).
+
+Le choix suit celui du modele de detection : il est entraine avec Ultralytics, sous AGPL-3.0,
+et embarque dans l'APK. Placer l'application sous la meme licence rend l'ensemble coherent sans
+licence commerciale, pour un projet destine a rester ouvert.
+
+Les jeux de donnees d'entrainement du modele sont credites dans [`ml/README.md`](ml/README.md),
+conformement a leurs licences.
