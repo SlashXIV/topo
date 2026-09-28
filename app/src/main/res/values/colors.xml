@@ -2,13 +2,28 @@
 <resources>
     <!--
         Palette de l'icone. Declaree en ressources plutot qu'en dur dans les
-        VectorDrawable : le trou de boulon des prises reprend exactement la
-        couleur du fond pour se lire comme un percage, et cette egalite doit
-        rester vraie si le fond change.
+        VectorDrawable : une teinte se change ici, pas dans quatre chemins.
     -->
     <color name="icon_background">#3A4048</color>
-    <color name="icon_hold">#464E58</color>
     <color name="icon_letter">#FFFFFFFF</color>
     <!-- Orange « main droite » du trace d'annotation (BetaColors.RightHand). -->
     <color name="icon_accent">#F2A65A</color>
+
+    <!--
+        Prises colorees, reprises du circuit par defaut de l'application : un mur
+        equipe porte des prises de couleur, pas des galets gris. Les memes teintes
+        que celles proposees au premier lancement, pour que l'icone annonce ce
+        qu'on trouve dans l'app.
+    -->
+    <color name="icon_hold_yellow">#F2C14E</color>
+    <color name="icon_hold_green">#5FAD56</color>
+    <color name="icon_hold_blue">#2E86AB</color>
+    <color name="icon_hold_red">#D1495B</color>
+
+    <!--
+        Trou de boulon : noir translucide plutot qu'une couleur par prise. Il
+        s'assombrit sur n'importe quelle teinte, donc une seule valeur suffit la
+        ou il en aurait fallu quatre.
+    -->
+    <color name="icon_hold_bolt">#55000000</color>
 </resources>

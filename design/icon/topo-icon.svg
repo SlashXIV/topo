@@ -23,7 +23,10 @@
 
     Palette :
       ardoise fond    #3A4048
-      ardoise prises  #464E58   (a peine plus claire : presentes, pas lisibles)
+      prises          #F2C14E jaune, #5FAD56 vert, #2E86AB bleu, #D1495B rouge
+                      (les teintes du circuit par defaut de l'application)
+      trou de boulon  #55000000 (noir translucide : une seule valeur assombrit
+                      n'importe quelle teinte)
       lettre          #FFFFFF
       barre           #F2A65A   (l'orange « main droite » du trace d'annotation,
                                  pour que l'icone et l'ecran parlent la meme langue)
@@ -56,9 +59,9 @@
                C2.3,15.5 2.6,14.5 3.2,13.7
                L9.1,4.0
                C9.8,2.9 11.1,2.2 12.5,2.2 Z"
-            fill="#464E58"/>
+            fill="currentColor"/>
       <path d="M14.0,11.2 A2.0,2.0 0 1,1 10.0,11.2 A2.0,2.0 0 1,1 14.0,11.2 Z"
-            fill="#3A4048"/>
+            fill="#55000000"/>
     </g>
   </defs>
 
@@ -69,21 +72,22 @@
 
     <!-- Quatre prises, en peripherie mais dans le masque. Elles passent derriere
          la lettre et la barre, qui se dessinent par-dessus. -->
-    <use href="#hold" transform="translate(67,24) rotate(20,12,12) scale(0.95)"/>
-    <use href="#hold" transform="translate(11,42) rotate(-60,12,12) scale(0.85)"/>
-    <use href="#hold" transform="translate(27,69) rotate(150,12,12) scale(0.9)"/>
-    <use href="#hold" transform="translate(64,64) rotate(-110,12,12)"/>
+    <use href="#hold" transform="translate(67,24) rotate(20,12,12) scale(0.95)" color="#2E86AB"/>
+    <use href="#hold" transform="translate(11,42) rotate(-60,12,12) scale(0.85)" color="#F2C14E"/>
+    <use href="#hold" transform="translate(27,69) rotate(150,12,12) scale(0.9)" color="#D1495B"/>
+    <use href="#hold" transform="translate(64,64) rotate(-110,12,12)" color="#5FAD56"/>
 
-    <!-- Lettre T : grotesque geometrique lourde, tracee a la main plutot que
-         convertie depuis une police — aucune dependance a une fonte installee,
-         et les proportions sont reglees pour ce canevas precis. -->
-    <path d="M34,30 L74,30 L74,41 L60,41 L60,64 L48,64 L48,41 L34,41 Z"
+    <!-- Lettre T, calee par mesure sur les deux autres applications de l'auteur :
+         Popote 56x66 px, Kalos 44x54 px, Topo AVANT 84x71 px. Reduite a 28x29
+         unites. Tracee a la main plutot que convertie depuis une police : aucune
+         dependance a une fonte installee. -->
+    <path d="M40,35 L68,35 L68,44 L58.5,44 L58.5,64 L49.5,64 L49.5,44 L40,44 Z"
           fill="#FFFFFF"/>
 
-    <!-- Barre d'accent, signature commune a Kalos et Popote. Le fut s'arrete a
-         64 et la barre commence a 74 : avec seulement 6 d'ecart, le trait
-         semblait coller au pied de la lettre. -->
-    <rect x="38.5" y="74" width="31" height="5" rx="2.5" fill="#F2A65A"/>
+    <!-- Barre d'accent : un TRAIT, pas un bandeau. Mesure sur les icones de
+         Kalos et Popote : leur barre fait 3 a 4 px la ou celle-ci en faisait 11.
+         Epaisseur ramenee de 5 a 2, longueur inchangee — elle etait deja juste. -->
+    <rect x="38.5" y="70" width="31" height="2" rx="1" fill="#F2A65A"/>
 
   </g>
 </svg>

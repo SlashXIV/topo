@@ -6,6 +6,11 @@
     au lieu d'une famille de bitmaps, et une couleur se change ici plutot que
     dans un exporteur.
 
+    COULEUR DES PRISES — les teintes du circuit par defaut de l'application. Un
+    mur equipe porte des prises de couleur ; en ardoise a peine plus claire que le
+    fond, elles se lisaient comme une texture et non comme des prises. Elles
+    restent en peripherie et derriere la lettre, qui garde le premier plan.
+
     FORME DES PRISES — triangle arrondi, pas un galet. Un contour ferme et lisse
     se lit comme un simple cercle des qu'on le reduit a la taille d'une icone de
     lanceur : verifie sur appareil, la premiere version ressemblait a des pastilles
@@ -46,10 +51,10 @@
         android:translateX="67"
         android:translateY="24">
         <path
-            android:fillColor="@color/icon_hold"
+            android:fillColor="@color/icon_hold_blue"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
         <path
-            android:fillColor="@color/icon_background"
+            android:fillColor="@color/icon_hold_bolt"
             android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
     </group>
 
@@ -63,10 +68,10 @@
         android:translateX="11"
         android:translateY="42">
         <path
-            android:fillColor="@color/icon_hold"
+            android:fillColor="@color/icon_hold_yellow"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
         <path
-            android:fillColor="@color/icon_background"
+            android:fillColor="@color/icon_hold_bolt"
             android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
     </group>
 
@@ -80,10 +85,10 @@
         android:translateX="27"
         android:translateY="69">
         <path
-            android:fillColor="@color/icon_hold"
+            android:fillColor="@color/icon_hold_red"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
         <path
-            android:fillColor="@color/icon_background"
+            android:fillColor="@color/icon_hold_bolt"
             android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
     </group>
 
@@ -95,10 +100,10 @@
         android:translateX="64"
         android:translateY="64">
         <path
-            android:fillColor="@color/icon_hold"
+            android:fillColor="@color/icon_hold_green"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
         <path
-            android:fillColor="@color/icon_background"
+            android:fillColor="@color/icon_hold_bolt"
             android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
     </group>
 
