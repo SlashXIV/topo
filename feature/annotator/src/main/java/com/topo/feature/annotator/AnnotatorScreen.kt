@@ -14,28 +14,37 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.io.IOException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import com.topo.core.domain.model.Limb
@@ -87,14 +96,51 @@ fun AnnotatorScreen(
         onDispose { playbackJob.current?.cancel() }
     }
 
+    // ------------------------------------------------------------------------
+    //  Partage
+    //
+    //  L'image partagee est CE QUE L'ECRAN MONTRE, y compris en rejeu : une
+    //  sequence arretee a mi-parcours se partage telle quelle, pour montrer « le
+    //  mouvement qui coince ». En edition, c'est le beta entier.
+    // ------------------------------------------------------------------------
+    val exportLayer = rememberGraphicsLayer()
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    var isExporting by remember { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(detail?.bloc?.grade ?: "Annotation") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                    }
+                },
+                actions = {
+                    IconButton(
+                        // Desactive pendant l'encodage : un second appui lancerait un
+                        // export concurrent qui purgerait le fichier du premier.
+                        enabled = detail != null && imageFile != null && !isExporting,
+                        onClick = {
+                            scope.launch {
+                                // Le calque n'a pas encore ete dessine : rien a exporter.
+                                if (exportLayer.size == IntSize.Zero) return@launch
+                                isExporting = true
+                                try {
+                                    val chooser = viewModel.prepareShare(exportLayer.toImageBitmap())
+                                    context.startActivity(chooser)
+                                } catch (error: IOException) {
+                                    snackbarHostState.showSnackbar("Impossible d'enregistrer l'image")
+                                } finally {
+                                    isExporting = false
+                                }
+                            }
+                        },
+                    ) {
+                        Icon(Icons.Filled.Share, contentDescription = "Partager le beta")
                     }
                 },
             )
@@ -159,6 +205,7 @@ fun AnnotatorScreen(
                         // Hors mode rejeu, le canevas ignore la progression et
                         // trace la sequence entiere : c'est le mode edition.
                         playback = playback.takeIf { uiState.mode == AnnotationMode.REPLAY },
+                        exportLayer = exportLayer,
                     )
                 } else {
                     Text("Chargement du bloc...", style = MaterialTheme.typography.bodyMedium)

@@ -1,5 +1,7 @@
 package com.topo.feature.annotator
 
+import android.content.Intent
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.topo.core.domain.model.BlocDetail
@@ -37,6 +39,7 @@ class AnnotatorViewModel @Inject constructor(
     private val imageStore: BlocImageStore,
     private val addManualHold: AddManualHoldUseCase,
     private val buildMovementSequence: BuildMovementSequenceUseCase,
+    private val imageExporter: BetaImageExporter,
 ) : ViewModel() {
 
     private val blocId = MutableStateFlow<String?>(null)
@@ -148,6 +151,18 @@ class AnnotatorViewModel @Inject constructor(
             betaRepository.replaceMovements(currentBlocId, existing.dropLast(1))
         }
     }
+
+    /**
+     * Ecrit [image] en PNG et renvoie le selecteur de partage systeme.
+     *
+     * Rien d'autre ne quitte le telephone : l'image sort par le selecteur, vers
+     * l'application que l'utilisateur choisit, et aucune donnee de la base ne
+     * l'accompagne.
+     *
+     * @throws java.io.IOException si l'image n'a pas pu etre ecrite.
+     */
+    suspend fun prepareShare(image: ImageBitmap): Intent =
+        imageExporter.shareIntent(imageExporter.export(image))
 
     fun clearBeta() {
         val currentBlocId = blocId.value ?: return

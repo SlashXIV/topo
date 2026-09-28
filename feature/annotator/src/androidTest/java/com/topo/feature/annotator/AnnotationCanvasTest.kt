@@ -1,10 +1,15 @@
 package com.topo.feature.annotator
 
+import android.graphics.Bitmap
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -21,8 +26,11 @@ import com.topo.core.domain.model.Hold
 import com.topo.core.domain.model.HoldOrigin
 import com.topo.core.domain.model.Limb
 import com.topo.core.domain.model.Movement
+import com.topo.core.ui.theme.BetaColors
 import com.google.common.truth.Truth.assertThat
 import java.io.File
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import org.junit.Rule
 import org.junit.Test
 
@@ -225,6 +233,70 @@ class AnnotationCanvasTest {
         }
 
         composeRule.onNodeWithTag(CanvasTestTag).assertExists()
+    }
+
+    /**
+     * L'image exportee est le rendu de l'ecran, trace compris.
+     *
+     * Le calque d'export enregistre le contenu du canevas au moment du dessin. Si
+     * seul le calque photo y etait capture — ou si le trace, dessine par un enfant,
+     * y echappait — l'image partagee serait une photo nue, sans que rien ne plante.
+     */
+    @Test
+    fun the_export_layer_captures_the_traced_beta_at_canvas_size() {
+        val move = Movement(
+            id = "mvt-1",
+            blocId = "bloc-1",
+            sequenceOrder = 0,
+            limb = Limb.RIGHT_HAND,
+            sourceHoldId = leftHold.id,
+            targetHoldId = rightHold.id,
+        )
+        // Une prise au ras du bord inferieur : la troncature observee sur
+        // emulateur emportait le bas de l'image, et un controle au seul centre
+        // l'avait laissee passer.
+        val bottomHold = hold("bas", x = 0.2f, y = 0.97f)
+        val descent = Movement(
+            id = "mvt-2",
+            blocId = "bloc-1",
+            sequenceOrder = 1,
+            limb = Limb.LEFT_HAND,
+            sourceHoldId = leftHold.id,
+            targetHoldId = bottomHold.id,
+        )
+        lateinit var layer: GraphicsLayer
+
+        composeRule.setContent {
+            layer = rememberGraphicsLayer()
+            AnnotationCanvas(
+                blocDetail = BlocDetail(bloc(), listOf(leftHold, rightHold, bottomHold), listOf(move, descent)),
+                imageFile = MissingImage,
+                mode = AnnotationMode.TRACE_BETA,
+                selectedLimb = Limb.RIGHT_HAND,
+                onHoldRequested = { _, _ -> },
+                onHoldRemoved = {},
+                onTraceCompleted = {},
+                modifier = Modifier.size(CanvasSize),
+                exportLayer = layer,
+            )
+        }
+        composeRule.waitForIdle()
+
+        val bitmap = runBlocking(Dispatchers.Main) { layer.toImageBitmap() }
+            .asAndroidBitmap()
+            .copy(Bitmap.Config.ARGB_8888, false)
+        val expectedPx = with(composeRule.density) { CanvasSize.roundToPx() }
+
+        assertThat(bitmap.width).isEqualTo(expectedPx)
+        assertThat(bitmap.height).isEqualTo(expectedPx)
+        // Milieu du segment entre les deux prises, loin de tout contour de prise :
+        // seul le trait de la main droite peut y avoir laisse une couleur.
+        assertThat(bitmap.getPixel(expectedPx / 2, expectedPx / 2))
+            .isEqualTo(BetaColors.RightHand.toArgb())
+        // Sur le trait de la descente, a 2 % du bord : hors du marqueur d'arrivee
+        // et du contour de la prise, seul le trait de la main gauche y passe.
+        assertThat(bitmap.getPixel((expectedPx * 0.2f).toInt(), (expectedPx * 0.95f).toInt()))
+            .isEqualTo(BetaColors.LeftHand.toArgb())
     }
 
     /**

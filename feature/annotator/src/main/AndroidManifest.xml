@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!--
+            Declare ici et non dans :app : le module qui ecrit l'image est celui qui
+            en definit l'exposition. L'autorite suit le paquet, pour rester unique
+            dans l'APK de test de la bibliotheque comme dans l'application.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.betaimages"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/beta_image_paths" />
+        </provider>
+    </application>
+
+</manifest>

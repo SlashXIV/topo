@@ -1,5 +1,6 @@
 package com.topo.feature.annotator
 
+import android.os.Build
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -11,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -20,12 +22,16 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.topo.core.domain.model.BlocDetail
 import com.topo.core.domain.model.Hold
 import com.topo.core.domain.model.Limb
@@ -75,6 +81,10 @@ const val CanvasTestTag = "annotation-canvas"
  *    trace par-dessus ne fait donc PAS repasser le systeme sur le bitmap
  *    photographique, qui pese plusieurs megapixels ;
  *  - le calque VECTORIEL, au-dessus, est le seul redessine a chaque trame.
+ *
+ * Avec un [exportLayer], le rendu complet — photo et trace — y est enregistre a
+ * chaque dessin, puis affiche depuis lui : l'image exportee est donc exactement
+ * ce que l'ecran montre, produite par le meme code de dessin, sans second moteur.
  */
 @Composable
 fun AnnotationCanvas(
@@ -90,14 +100,36 @@ fun AnnotationCanvas(
     traceState: BetaTraceState = remember { BetaTraceState() },
     findSnapTarget: FindSnapTargetUseCase = remember { FindSnapTargetUseCase() },
     playback: BetaPlaybackState? = null,
+    exportLayer: GraphicsLayer? = null,
 ) {
+    val context = LocalContext.current
+    val imageRequest = remember(imageFile) {
+        ImageRequest.Builder(context)
+            .data(imageFile)
+            // Sous l'API 28, GraphicsLayer.toImageBitmap rejoue le calque sur un
+            // canevas logiciel, qui refuse de lire un bitmap HARDWARE : l'export
+            // planterait. Au-dessus, le bitmap materiel reste le bon choix.
+            .allowHardware(Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+            .build()
+    }
+
     Box(
         modifier = modifier
             .aspectRatio(blocDetail.bloc.aspectRatio)
-            .testTag(CanvasTestTag),
+            .testTag(CanvasTestTag)
+            .then(
+                if (exportLayer == null) {
+                    Modifier
+                } else {
+                    Modifier.drawWithContent {
+                        exportLayer.record { this@drawWithContent.drawContent() }
+                        drawLayer(exportLayer)
+                    }
+                },
+            ),
     ) {
         AsyncImage(
-            model = imageFile,
+            model = imageRequest,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()

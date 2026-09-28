@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Seul cacheDir/shared est expose : les photos de filesDir/blocs restent privees. -->
+<paths>
+    <cache-path name="shared" path="shared/" />
+</paths>
