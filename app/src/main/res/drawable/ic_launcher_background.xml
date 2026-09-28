@@ -15,28 +15,43 @@
     se lit comme un simple cercle des qu'on le reduit a la taille d'une icone de
     lanceur : verifie sur appareil, la premiere version ressemblait a des pastilles
     percees. Trois sommets nettement marques, meme largement adoucis, suffisent a
-    faire lire une prise de bloc. Le trou de boulon est decentre vers le haut,
-    comme sur une vraie prise.
+    faire lire une prise de bloc.
 
-    PLACEMENT — dans les quatre coins, hors de la bande centrale occupee par la
-    lettre et la barre. Trois des quatre prises les touchaient et salissaient le
-    monogramme ; la zone tenue libre est x 38..70, y 33..74, soit le T et la
-    barre plus 2 unites de marge.
+    VIS — au centre de chaque prise, a la place du simple trou noir precedent :
+    lamage sombre, tete metal, fente. C'est ce detail qui fait basculer la lecture
+    du « triangle colore » vers la « prise vissee au mur ». La fente disparait
+    sous 48 dp, la tete tient.
 
-    Les cotes ne laissent que 20 unites de large chacun : les prises sont donc
-    legerement reduites pour y tenir en entier.
+    La vis suit l'echelle du groupe : une petite prise porte une petite vis. Une
+    vis de taille constante serait plus juste physiquement — toutes les prises se
+    vissent en M10 — mais sur la plus petite elle mangerait le triangle.
 
-    Elles sont calees vers la MI-HAUTEUR plutot que dans les angles. La lettre
-    n'occupe que x 40..68, donc les flancs restent libres a cette hauteur, et une
-    prise y est a environ 32 du centre au lieu de 37 dans un angle — le masque
-    circulaire (rayon 36) n'en rogne plus qu'un liseré au lieu de la moitie.
+    PLACEMENT — jaune a mi-hauteur a gauche pointe en bas, bleu en haut a droite
+    pointe en haut, vert en bas a droite pointe a droite, rouge en bas a gauche
+    pointe en bas.
+
+    La zone a tenir libre n'est PAS le rectangle englobant de la lettre. Un T est
+    creux : sous sa barre horizontale (y 44) il ne reste que la hampe, x 49.5..58.5,
+    et les flancs bas sont donc largement libres. C'est ce qui laisse la place au
+    vert et au rouge. Les trois obstacles reels, marge de 2 unites comprise :
+      - barre du T    x 38..70      y 33..46
+      - hampe du T    x 47.5..60.5  y 46..66
+      - trait orange  x 36.5..71.5  y 68..74
+
+    TAILLES — 0.92 / 0.85 / 0.78 / 0.70. Quatre prises identiques posees en
+    couronne se lisent comme un motif decoratif ; c'est l'ecart d'echelle, autant
+    que l'orientation, qui les fait lire comme un mur equipe.
+
+    Les centres restent a moins de 33 unites du centre du canevas, rayon du masque
+    le plus agressif : une prise dont la vis survit au masque reste lisible meme
+    amputee d'un bord.
 
     Quatre prises et non cinq : la cinquieme encombrait le fond sans rien ajouter.
     Elles passent derriere la lettre et la barre, qui appartiennent a la couche
     d'avant-plan et se dessinent par-dessus.
 
-    VectorDrawable n'a pas d'equivalent de <use> : la geometrie est repetee dans
-    chaque groupe, avec une rotation et une echelle differentes.
+    VectorDrawable n'a pas d'equivalent des references de forme : la geometrie est
+    repetee dans chaque groupe, avec une rotation et une echelle differentes.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -48,72 +63,96 @@
         android:fillColor="@color/icon_background"
         android:pathData="M0,0h108v108h-108z" />
 
-    <!-- Prise haut-droite -->
+    <!-- Jaune, mi-hauteur a gauche, pointe en bas. La plus grande. -->
     <group
         android:pivotX="12"
         android:pivotY="12"
-        android:rotation="20"
-        android:scaleX="0.8"
-        android:scaleY="0.8"
-        android:translateX="68"
-        android:translateY="22">
-        <path
-            android:fillColor="@color/icon_hold_blue"
-            android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
-        <path
-            android:fillColor="@color/icon_hold_bolt"
-            android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
-    </group>
-
-    <!-- Prise gauche -->
-    <group
-        android:pivotX="12"
-        android:pivotY="12"
-        android:rotation="-60"
-        android:scaleX="0.75"
-        android:scaleY="0.75"
-        android:translateX="15"
-        android:translateY="26">
+        android:rotation="190"
+        android:scaleX="0.92"
+        android:scaleY="0.92"
+        android:translateX="12"
+        android:translateY="36">
         <path
             android:fillColor="@color/icon_hold_yellow"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
         <path
             android:fillColor="@color/icon_hold_bolt"
-            android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
+            android:pathData="M14.7,11.2A2.7,2.7 0 1,1 9.3,11.2A2.7,2.7 0 1,1 14.7,11.2Z" />
+        <path
+            android:fillColor="@color/icon_hold_screw"
+            android:pathData="M13.9,11.2A1.9,1.9 0 1,1 10.1,11.2A1.9,1.9 0 1,1 13.9,11.2Z" />
+        <path
+            android:fillColor="@color/icon_hold_slot"
+            android:pathData="M10.5,10.85L13.5,10.85A0.35,0.35 0 0,1 13.5,11.55L10.5,11.55A0.35,0.35 0 0,1 10.5,10.85Z" />
     </group>
 
-    <!-- Prise bas-gauche -->
+    <!-- Bleu, en haut a droite, pointe en haut. La plus petite. -->
     <group
         android:pivotX="12"
         android:pivotY="12"
-        android:rotation="150"
-        android:scaleX="0.78"
-        android:scaleY="0.78"
-        android:translateX="14"
-        android:translateY="60">
+        android:rotation="8"
+        android:scaleX="0.7"
+        android:scaleY="0.7"
+        android:translateX="58"
+        android:translateY="15">
         <path
-            android:fillColor="@color/icon_hold_red"
+            android:fillColor="@color/icon_hold_blue"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
         <path
             android:fillColor="@color/icon_hold_bolt"
-            android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
+            android:pathData="M14.7,11.2A2.7,2.7 0 1,1 9.3,11.2A2.7,2.7 0 1,1 14.7,11.2Z" />
+        <path
+            android:fillColor="@color/icon_hold_screw"
+            android:pathData="M13.9,11.2A1.9,1.9 0 1,1 10.1,11.2A1.9,1.9 0 1,1 13.9,11.2Z" />
+        <path
+            android:fillColor="@color/icon_hold_slot"
+            android:pathData="M10.5,10.85L13.5,10.85A0.35,0.35 0 0,1 13.5,11.55L10.5,11.55A0.35,0.35 0 0,1 10.5,10.85Z" />
     </group>
 
-    <!-- Prise bas-droite -->
+    <!-- Vert, en bas a droite, pointe a droite. Passe sous la hampe du T. -->
     <group
         android:pivotX="12"
         android:pivotY="12"
-        android:scaleX="0.8"
-        android:scaleY="0.8"
-        android:rotation="-110"
-        android:translateX="69"
-        android:translateY="58">
+        android:rotation="96"
+        android:scaleX="0.85"
+        android:scaleY="0.85"
+        android:translateX="60"
+        android:translateY="46">
         <path
             android:fillColor="@color/icon_hold_green"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
         <path
             android:fillColor="@color/icon_hold_bolt"
-            android:pathData="M14.0,11.2A2.0,2.0 0 1,1 10.0,11.2A2.0,2.0 0 1,1 14.0,11.2Z" />
+            android:pathData="M14.7,11.2A2.7,2.7 0 1,1 9.3,11.2A2.7,2.7 0 1,1 14.7,11.2Z" />
+        <path
+            android:fillColor="@color/icon_hold_screw"
+            android:pathData="M13.9,11.2A1.9,1.9 0 1,1 10.1,11.2A1.9,1.9 0 1,1 13.9,11.2Z" />
+        <path
+            android:fillColor="@color/icon_hold_slot"
+            android:pathData="M10.5,10.85L13.5,10.85A0.35,0.35 0 0,1 13.5,11.55L10.5,11.55A0.35,0.35 0 0,1 10.5,10.85Z" />
+    </group>
+
+    <!-- Rouge, en bas a gauche, pointe en bas. -->
+    <group
+        android:pivotX="12"
+        android:pivotY="12"
+        android:rotation="172"
+        android:scaleX="0.78"
+        android:scaleY="0.78"
+        android:translateX="15"
+        android:translateY="58">
+        <path
+            android:fillColor="@color/icon_hold_red"
+            android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
+        <path
+            android:fillColor="@color/icon_hold_bolt"
+            android:pathData="M14.7,11.2A2.7,2.7 0 1,1 9.3,11.2A2.7,2.7 0 1,1 14.7,11.2Z" />
+        <path
+            android:fillColor="@color/icon_hold_screw"
+            android:pathData="M13.9,11.2A1.9,1.9 0 1,1 10.1,11.2A1.9,1.9 0 1,1 13.9,11.2Z" />
+        <path
+            android:fillColor="@color/icon_hold_slot"
+            android:pathData="M10.5,10.85L13.5,10.85A0.35,0.35 0 0,1 13.5,11.55L10.5,11.55A0.35,0.35 0 0,1 10.5,10.85Z" />
     </group>
 
 </vector>

@@ -12,21 +12,37 @@
     Ce fichier est la SOURCE. Les VectorDrawable de `app/src/main/res/drawable/`
     en derivent, decoupes en couches `background` / `foreground` / `monochrome`
     comme l'exige le format adaptatif. Toute modification se fait ici d'abord,
-    puis se reporte dans les trois XML.
+    puis se reporte dans les XML.
 
-    Deux reglages viennent d'une verification sur appareil, pas du dessin :
+    Trois reglages viennent d'une verification sur appareil, pas du dessin :
       - les prises sont des TRIANGLES ARRONDIS. Un contour ferme et lisse se lit
         comme un simple cercle a la taille d'une icone de lanceur ; la premiere
         version ressemblait a des pastilles percees ;
-      - leurs centres sont a environ 31 du centre du canevas. Plus loin, le
+      - une VIS au centre de chaque prise, plutot qu'un simple trou noir : c'est
+        ce detail qui fait basculer la lecture du « triangle colore » vers la
+        « prise vissee au mur » ;
+      - leurs centres sont a moins de 33 du centre du canevas. Plus loin, le
         masque circulaire des lanceurs les avalait entierement.
+
+    La zone a tenir libre n'est PAS le rectangle englobant de la lettre. Un T est
+    creux : sous sa barre horizontale (y 44) il ne reste que la hampe, x 49.5..58.5,
+    et les flancs bas sont donc largement libres. Les trois obstacles reels, marge
+    de 2 unites comprise :
+      - barre du T    x 38..70      y 33..46
+      - hampe du T    x 47.5..60.5  y 46..66
+      - trait orange  x 36.5..71.5  y 68..74
+
+    Les quatre echelles (0.92 / 0.85 / 0.78 / 0.70) ne sont pas decoratives :
+    quatre prises identiques posees en couronne se lisent comme un motif, et c'est
+    l'ecart de taille autant que l'orientation qui les fait lire comme un mur.
 
     Palette :
       ardoise fond    #3A4048
       prises          #F2C14E jaune, #5FAD56 vert, #2E86AB bleu, #D1495B rouge
                       (les teintes du circuit par defaut de l'application)
-      trou de boulon  #55000000 (noir translucide : une seule valeur assombrit
+      lamage de vis   #55000000 (noir translucide : une seule valeur assombrit
                       n'importe quelle teinte)
+      tete de vis     #D9DDE2   fente #66000000
       lettre          #FFFFFF
       barre           #F2A65A   (l'orange « main droite » du trace d'annotation,
                                  pour que l'icone et l'ecran parlent la meme langue)
@@ -44,10 +60,10 @@
                C0,22 22,0 54,0 Z"/>
     </clipPath>
 
-    <!-- Silhouette d'une prise de bloc : triangle largement adouci, perce d'un
-         trou de boulon decentre vers le haut comme sur une vraie prise. Une
-         seule geometrie, reprise a differentes echelles et rotations — c'est ce
-         qui donne l'impression d'un mur equipe sans dessiner quatre formes. -->
+    <!-- Silhouette d'une prise de bloc : triangle largement adouci, visse au mur
+         par son centre. Une seule geometrie, reprise a differentes echelles et
+         rotations — c'est ce qui donne l'impression d'un mur equipe sans dessiner
+         quatre formes. -->
     <g id="hold">
       <path d="M12.5,2.2
                C14.2,2.2 15.7,3.2 16.4,4.7
@@ -60,8 +76,14 @@
                L9.1,4.0
                C9.8,2.9 11.1,2.2 12.5,2.2 Z"
             fill="currentColor"/>
-      <path d="M14.0,11.2 A2.0,2.0 0 1,1 10.0,11.2 A2.0,2.0 0 1,1 14.0,11.2 Z"
+      <!-- Vis : lamage, tete, fente. La fente disparait sous 48 dp, la tete tient. -->
+      <path d="M14.7,11.2 A2.7,2.7 0 1,1 9.3,11.2 A2.7,2.7 0 1,1 14.7,11.2 Z"
             fill="#55000000"/>
+      <path d="M13.9,11.2 A1.9,1.9 0 1,1 10.1,11.2 A1.9,1.9 0 1,1 13.9,11.2 Z"
+            fill="#D9DDE2"/>
+      <path d="M10.5,10.85 L13.5,10.85 A0.35,0.35 0 0,1 13.5,11.55
+               L10.5,11.55 A0.35,0.35 0 0,1 10.5,10.85 Z"
+            fill="#66000000"/>
     </g>
   </defs>
 
@@ -70,12 +92,13 @@
     <!-- Fond -->
     <rect width="108" height="108" fill="#3A4048"/>
 
-    <!-- Quatre prises, une par coin, hors de la bande centrale x 38..70 y 33..74
-         qu'occupent la lettre et la barre. Elles ne les touchent plus. -->
-    <use href="#hold" transform="translate(68,22) rotate(20,12,12) scale(0.8)" color="#2E86AB"/>
-    <use href="#hold" transform="translate(15,26) rotate(-60,12,12) scale(0.75)" color="#F2C14E"/>
-    <use href="#hold" transform="translate(14,60) rotate(150,12,12) scale(0.78)" color="#D1495B"/>
-    <use href="#hold" transform="translate(69,58) rotate(-110,12,12) scale(0.8)" color="#5FAD56"/>
+    <!-- Quatre prises. Orientation et taille varient volontairement : jaune a
+         mi-hauteur a gauche pointe en bas, bleu en haut a droite pointe en haut,
+         vert en bas a droite pointe a droite, rouge en bas a gauche pointe en bas. -->
+    <use href="#hold" transform="translate(12,36) rotate(190,12,12) scale(0.92)" color="#F2C14E"/>
+    <use href="#hold" transform="translate(58,15) rotate(8,12,12)   scale(0.7)"  color="#2E86AB"/>
+    <use href="#hold" transform="translate(60,46) rotate(96,12,12)  scale(0.85)" color="#5FAD56"/>
+    <use href="#hold" transform="translate(15,58) rotate(172,12,12) scale(0.78)" color="#D1495B"/>
 
     <!-- Lettre T, calee par mesure sur les deux autres applications de l'auteur :
          Popote 56x66 px, Kalos 44x54 px, Topo AVANT 84x71 px. Reduite a 28x29

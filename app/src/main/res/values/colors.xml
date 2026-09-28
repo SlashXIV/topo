@@ -21,9 +21,14 @@
     <color name="icon_hold_red">#D1495B</color>
 
     <!--
-        Trou de boulon : noir translucide plutot qu'une couleur par prise. Il
-        s'assombrit sur n'importe quelle teinte, donc une seule valeur suffit la
-        ou il en aurait fallu quatre.
+        Vis de fixation. Trois valeurs qui marchent sur les quatre teintes sans
+        avoir a en declarer quatre jeux :
+          - le lamage est un noir translucide, il assombrit n'importe quel fond ;
+          - la tete est un gris metal opaque, plus clair que toutes les prises ;
+          - la fente est un noir translucide plus leger que le lamage, sinon
+            elle coupe la tete en deux a la taille d'une icone de lanceur.
     -->
     <color name="icon_hold_bolt">#55000000</color>
+    <color name="icon_hold_screw">#D9DDE2</color>
+    <color name="icon_hold_slot">#66000000</color>
 </resources>
