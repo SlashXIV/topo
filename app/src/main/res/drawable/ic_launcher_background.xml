@@ -18,11 +18,18 @@
     faire lire une prise de bloc. Le trou de boulon est decentre vers le haut,
     comme sur une vraie prise.
 
-    PLACEMENT — centres a environ 31 du centre du canevas. Plus loin, le masque
-    circulaire des lanceurs (rayon 36) les avalait entierement ; teste sur
-    appareil, elles etaient tout simplement absentes. A cette distance chacune
-    reste largement visible tout en mordant le bord, ce qui suggere un mur qui
-    continue hors champ.
+    PLACEMENT — dans les quatre coins, hors de la bande centrale occupee par la
+    lettre et la barre. Trois des quatre prises les touchaient et salissaient le
+    monogramme ; la zone tenue libre est x 38..70, y 33..74, soit le T et la
+    barre plus 2 unites de marge.
+
+    Les cotes ne laissent que 20 unites de large chacun : les prises sont donc
+    legerement reduites pour y tenir en entier.
+
+    Elles sont calees vers la MI-HAUTEUR plutot que dans les angles. La lettre
+    n'occupe que x 40..68, donc les flancs restent libres a cette hauteur, et une
+    prise y est a environ 32 du centre au lieu de 37 dans un angle — le masque
+    circulaire (rayon 36) n'en rogne plus qu'un liseré au lieu de la moitie.
 
     Quatre prises et non cinq : la cinquieme encombrait le fond sans rien ajouter.
     Elles passent derriere la lettre et la barre, qui appartiennent a la couche
@@ -46,10 +53,10 @@
         android:pivotX="12"
         android:pivotY="12"
         android:rotation="20"
-        android:scaleX="0.95"
-        android:scaleY="0.95"
-        android:translateX="67"
-        android:translateY="24">
+        android:scaleX="0.8"
+        android:scaleY="0.8"
+        android:translateX="68"
+        android:translateY="22">
         <path
             android:fillColor="@color/icon_hold_blue"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
@@ -63,10 +70,10 @@
         android:pivotX="12"
         android:pivotY="12"
         android:rotation="-60"
-        android:scaleX="0.85"
-        android:scaleY="0.85"
-        android:translateX="11"
-        android:translateY="42">
+        android:scaleX="0.75"
+        android:scaleY="0.75"
+        android:translateX="15"
+        android:translateY="26">
         <path
             android:fillColor="@color/icon_hold_yellow"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
@@ -80,10 +87,10 @@
         android:pivotX="12"
         android:pivotY="12"
         android:rotation="150"
-        android:scaleX="0.9"
-        android:scaleY="0.9"
-        android:translateX="27"
-        android:translateY="69">
+        android:scaleX="0.78"
+        android:scaleY="0.78"
+        android:translateX="14"
+        android:translateY="60">
         <path
             android:fillColor="@color/icon_hold_red"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />
@@ -96,9 +103,11 @@
     <group
         android:pivotX="12"
         android:pivotY="12"
+        android:scaleX="0.8"
+        android:scaleY="0.8"
         android:rotation="-110"
-        android:translateX="64"
-        android:translateY="64">
+        android:translateX="69"
+        android:translateY="58">
         <path
             android:fillColor="@color/icon_hold_green"
             android:pathData="M12.5,2.2C14.2,2.2 15.7,3.2 16.4,4.7L21.2,13.8C22.3,15.8 21.7,18.2 20.0,19.5C18.7,20.5 17.1,20.7 15.6,20.7L6.4,20.7C4.1,20.7 2.3,18.8 2.3,16.5C2.3,15.5 2.6,14.5 3.2,13.7L9.1,4.0C9.8,2.9 11.1,2.2 12.5,2.2Z" />

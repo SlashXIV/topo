@@ -70,12 +70,12 @@
     <!-- Fond -->
     <rect width="108" height="108" fill="#3A4048"/>
 
-    <!-- Quatre prises, en peripherie mais dans le masque. Elles passent derriere
-         la lettre et la barre, qui se dessinent par-dessus. -->
-    <use href="#hold" transform="translate(67,24) rotate(20,12,12) scale(0.95)" color="#2E86AB"/>
-    <use href="#hold" transform="translate(11,42) rotate(-60,12,12) scale(0.85)" color="#F2C14E"/>
-    <use href="#hold" transform="translate(27,69) rotate(150,12,12) scale(0.9)" color="#D1495B"/>
-    <use href="#hold" transform="translate(64,64) rotate(-110,12,12)" color="#5FAD56"/>
+    <!-- Quatre prises, une par coin, hors de la bande centrale x 38..70 y 33..74
+         qu'occupent la lettre et la barre. Elles ne les touchent plus. -->
+    <use href="#hold" transform="translate(68,22) rotate(20,12,12) scale(0.8)" color="#2E86AB"/>
+    <use href="#hold" transform="translate(15,26) rotate(-60,12,12) scale(0.75)" color="#F2C14E"/>
+    <use href="#hold" transform="translate(14,60) rotate(150,12,12) scale(0.78)" color="#D1495B"/>
+    <use href="#hold" transform="translate(69,58) rotate(-110,12,12) scale(0.8)" color="#5FAD56"/>
 
     <!-- Lettre T, calee par mesure sur les deux autres applications de l'auteur :
          Popote 56x66 px, Kalos 44x54 px, Topo AVANT 84x71 px. Reduite a 28x29
