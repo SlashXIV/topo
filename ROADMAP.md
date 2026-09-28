@@ -47,7 +47,7 @@ explicitement dans le journal des decisions.
 | **S1** | Room en mode WAL, cascades, CameraX, stockage interne | `PRAGMA journal_mode` = `wal` ; 18 tests instrumentes ; capture JPEG reelle sur appareil |
 | **S2** | Canevas Compose, prises manuelles, magnetisation | Magnetisation mesuree a **0,62 us** sur 150 prises ; 7 tests gestuels, dont un valide par mutation |
 
-103 tests verts au total : 38 instrumentes, 65 unitaires JVM.
+111 tests verts au total : 38 instrumentes, 73 unitaires JVM.
 
 **L'application est utilisable, tient un carnet et rejoue les sequences.** La boucle seance ->
 bloc -> prises -> beta -> historique fonctionne de bout en bout sur appareil, chaque bloc porte
@@ -212,7 +212,7 @@ une couleur met `color_id` a NULL **sans** supprimer le bloc.
 
 ---
 
-### S8 — Statistiques et progression
+### S8 — Statistiques et progression *(livre)*
 
 **Objectif.** Donner une raison de revenir dans l'application.
 
@@ -292,6 +292,9 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | `Topo` plutot que `Topo` | Un compose anglais descriptif ne tient pas la serie ouverte par `Kalos` et `Popote` : des mots courts, chaleureux, avec un clin d'oeil d'initie. `Topo` est le mot des grimpeurs pour le guide de voies, et « c'est quoi le topo ? » decrit exactement ce qu'est un beta. |
 | Icone entierement vectorielle | Kalos utilise un PNG pre-padde a 64 % du canvas. Un VectorDrawable reste net a toutes les densites, pese quelques kilo-octets au lieu d'une famille de bitmaps, et se relit : une couleur se change dans le XML, pas dans un exporteur. |
 | Aucun mipmap PNG herite | `minSdk = 26` garantit les icones adaptatives sur tout le parc vise. Les familles `mipmap-hdpi` a `mipmap-xxxhdpi` que Kalos doit embarquer sont ici inutiles : l'icone entiere tient dans trois fichiers vectoriels, 18 Ko au total. |
+| Couleurs et cotations comptees SEPAREMENT | Un rang de couleur (0 a 4) et un rang de cotation (0 a 23) ne mesurent pas sur la meme regle. Les melanger donnerait un « niveau moyen » sans signification. |
+| Taux de flash rapporte aux reussites, pas a tous les blocs | Rapporte au total, le taux chuterait a chaque projet ouvert et penaliserait le fait d'essayer des blocs durs. |
+| Agregation en Kotlin, pas en SQL | Contrairement aux compteurs de seances, ces regles sont metier et changeront plus souvent que le schema ; en SQL elles seraient dispersees dans des requetes intestables. |
 | Cotation tiree d'une liste figee, jamais saisie librement | « 7A » et « 7a » deviendraient deux niveaux et rien ne se trierait : une cotation libre rend toute statistique de progression impossible. |
 | Reglages en base plutot qu'en DataStore | SQLite est l'unique source de verite du projet. Un second magasin apporterait sa propre histoire de sauvegarde et de migration pour deux enumerations, la ou une table suit le mecanisme deja teste. |
 | Reordonnancement par fleches, pas par glisser-deposer | Le test sur appareil a montre qu'un geste que rien ne signale n'est pas decouvert : le glissement du trace etait reste inconnu jusqu'a ce qu'une ligne de texte l'annonce. |
