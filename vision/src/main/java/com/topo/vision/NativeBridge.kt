@@ -19,8 +19,9 @@ import java.nio.ByteBuffer
  *    est exactement le comportement voulu (echec immediat et bruyant, pas un
  *    `UnsatisfiedLinkError` au premier appel, en production).
  *
- *  - [nativeDetectFromDirectBuffer] exige un buffer DIRECT
- *    (`ByteBuffer.allocateDirect`, ou un plan d'`ImageProxy` CameraX). Un
+ *  - [nativeDetectFromDirectBuffer] et [nativeLoadModel] exigent un buffer
+ *    DIRECT (`ByteBuffer.allocateDirect`, un `MappedByteBuffer`, ou le plan d'un
+ *    `ImageProxy` CameraX en `OUTPUT_IMAGE_FORMAT_RGBA_8888`). Un
  *    `ByteBuffer.allocate()` ordinaire fait renvoyer `nullptr` a
  *    `GetDirectBufferAddress` cote natif, ce qui est converti en
  *    [IllegalArgumentException].
@@ -28,6 +29,10 @@ import java.nio.ByteBuffer
  *  - Le `handle` est un pointeur natif. Il appartient a l'appelant, qui doit
  *    appeler [nativeDestroy] exactement une fois. Utiliser un handle libere est
  *    un use-after-free.
+ *
+ *  - Les erreurs d'ONNX Runtime arrivent en [IllegalArgumentException] (modele
+ *    ou entree refuses) ou [IllegalStateException] (defaillance du moteur) :
+ *    aucune exception C++ ne traverse la frontiere JNI.
  *
  *  - Les tableaux retournes sont APLATIS : `[cx, cy, w, h, score]` par prise,
  *    donc `taille / 5` detections, en coordonnees normalisees `[0, 1]`. Une
@@ -49,10 +54,24 @@ internal object NativeBridge {
     external fun nativeDestroy(handle: Long)
 
     /**
-     * Chemin CameraX : le buffer doit etre direct, aucune copie n'est faite.
+     * Charge un modele ONNX et ouvre la session. ONNX Runtime copie le modele :
+     * [model] peut etre libere des le retour.
+     */
+    external fun nativeLoadModel(handle: Long, model: ByteBuffer)
+
+    external fun nativeIsReady(handle: Long): Boolean
+
+    /**
+     * Suppression des non-maxima seule, sur des candidats aplatis. Reservee aux
+     * tests : c'est le seul moyen de lui soumettre un cas limite choisi.
+     */
+    external fun nativeNonMaxSuppression(candidates: FloatArray, iouThreshold: Float): FloatArray
+
+    /**
+     * Chemin CameraX : plan RGBA_8888 direct, aucune copie n'est faite.
      *
-     * @param rowStride octets par ligne (different de `width * bpp` si l'image
-     *        est paddee par le materiel - c'est le cas courant sur les plans YUV).
+     * @param rowStride octets par ligne (superieur a `width * 4` si l'image est
+     *        paddee par le materiel, ce qui est courant sur les plans CameraX).
      */
     external fun nativeDetectFromDirectBuffer(
         handle: Long,

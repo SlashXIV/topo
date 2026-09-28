@@ -78,21 +78,29 @@ target_link_libraries(topo_vision
 )
 
 # ---------------------------------------------------------------------------
-#  ONNX Runtime — branche au sprint Vision, volontairement inactif ici.
+#  ONNX Runtime — cible importee depuis l'AAR precompile.
 #
-#  Point de controle a ne pas oublier a ce moment-la : l'exigence 16 Ko porte sur
-#  TOUTES les .so de l'APK, pas seulement la notre. L'AAR precompile d'ONNX
-#  Runtime a un historique de non-conformite (cote binding Java
-#  libonnxruntime4j_jni.so, que cette architecture n'embarque pas puisqu'on passe
-#  par l'API C++). A verifier a l'objdump AVANT de s'engager, avec pour repli une
-#  recompilation d'ORT depuis les sources avec les flags ci-dessus.
+#  L'AAR ne fournit pas de module Prefab : :vision en extrait les en-tetes et les
+#  .so dans build/onnxruntime et passe ce chemin en ONNXRUNTIME_ROOT. La .so
+#  elle-meme est empaquetee dans l'APK par la dependance Gradle, pas par CMake.
 #
-#  add_library(onnxruntime SHARED IMPORTED)
-#  set_target_properties(onnxruntime PROPERTIES
-#          IMPORTED_LOCATION ${ONNXRUNTIME_ROOT}/jni/${ANDROID_ABI}/libonnxruntime.so)
-#  target_include_directories(topo_vision PRIVATE ${ONNXRUNTIME_ROOT}/headers)
-#  target_link_libraries(topo_vision onnxruntime)
+#  Conformite 16 Ko : cette .so n'est pas compilee ici, les flags de lien
+#  ci-dessus ne la couvrent donc PAS. Elle a ete auditee a l'objdump avant
+#  adoption (cf. libs.versions.toml), et scripts/check_alignment.sh la reverifie
+#  dans l'APK final. Le binding Java libonnxruntime4j_jni.so est empaquete aussi
+#  par l'AAR, mais jamais charge : ce moteur passe par l'API C++.
+#
+#  SYSTEM : les en-tetes d'ORT ne sont pas soumis a nos -Wall -Wextra -Werror.
 # ---------------------------------------------------------------------------
+if(NOT DEFINED ONNXRUNTIME_ROOT)
+    message(FATAL_ERROR "ONNXRUNTIME_ROOT non defini : lancer le build par Gradle")
+endif()
+
+add_library(onnxruntime SHARED IMPORTED)
+set_target_properties(onnxruntime PROPERTIES
+        IMPORTED_LOCATION ${ONNXRUNTIME_ROOT}/jni/${ANDROID_ABI}/libonnxruntime.so)
+target_include_directories(topo_vision SYSTEM PRIVATE ${ONNXRUNTIME_ROOT}/headers)
+target_link_libraries(topo_vision onnxruntime)
 
 message(STATUS "[Topo] ABI=${ANDROID_ABI} | STL=${ANDROID_STL} | "
         "flexible-page-sizes=${ANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES} | build=${CMAKE_BUILD_TYPE}")

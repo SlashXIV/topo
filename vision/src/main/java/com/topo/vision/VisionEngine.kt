@@ -24,8 +24,8 @@ import kotlinx.coroutines.withContext
  * pese plusieurs dizaines de Mo hors du heap Java et ne doit pas attendre le
  * bon vouloir du ramasse-miettes.
  *
- * Sprint 0 : le pont est traverse pour de vrai, mais aucun modele n'est charge,
- * donc [detect] retourne toujours une liste vide.
+ * Sans modele charge, [detect] traverse le pont et retourne une liste vide :
+ * c'est le chemin nominal tant qu'aucun modele de prises n'est embarque.
  */
 class VisionEngine(
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
@@ -34,12 +34,28 @@ class VisionEngine(
     private val handle = AtomicLong(NativeBridge.nativeCreate())
 
     override val isReady: Boolean
-        get() = false // Aucun modele embarque a ce stade (cf. sprint Vision).
+        get() = handle.get().let { it != 0L && NativeBridge.nativeIsReady(it) }
+
+    /**
+     * Charge un modele ONNX au format YOLO `[1, 4 + classes, N]`.
+     *
+     * Hors du thread principal : l'analyse et l'optimisation du graphe prennent
+     * plusieurs centaines de millisecondes.
+     *
+     * @throws IllegalArgumentException si le modele est illisible ou n'a pas le
+     *         format attendu — verifie au chargement, pas a la premiere image.
+     */
+    suspend fun loadModel(model: ByteBuffer) = withContext(dispatcher) {
+        require(model.isDirect) { "Le modele doit etre dans un ByteBuffer direct" }
+        val current = handle.get()
+        check(current != 0L) { "VisionEngine deja ferme" }
+        NativeBridge.nativeLoadModel(current, model)
+    }
 
     /** Image portee par un [Bitmap] ARGB_8888 (photo capturee ou importee). */
     data class BitmapSource(val bitmap: Bitmap) : HoldDetector.ImageSource
 
-    /** Image portee par un plan direct d'`ImageProxy` CameraX. */
+    /** Image RGBA_8888 portee par un plan direct d'`ImageProxy` CameraX. */
     data class DirectBufferSource(
         val buffer: ByteBuffer,
         val width: Int,
