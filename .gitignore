@@ -68,3 +68,7 @@ Thumbs.db
 desktop.ini
 *.log
 *.hprof
+
+# Modele de substitution du Sprint 10 (AGPL-3.0) : regenere par
+# ml/export_placeholder.py, jamais versionne.
+vision/src/androidTest/assets/placeholder/
