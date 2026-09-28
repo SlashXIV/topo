@@ -26,3 +26,6 @@ data class AnnotatorRoute(val blocId: String)
 
 @Serializable
 data object SettingsRoute
+
+@Serializable
+data object StatsRoute

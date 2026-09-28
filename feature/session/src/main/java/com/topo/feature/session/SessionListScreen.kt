@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.InsertChart
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,6 +52,7 @@ const val AddSessionTestTag = "add-session"
 fun SessionListScreen(
     onSessionClick: (sessionId: String) -> Unit,
     onSettingsClick: () -> Unit = {},
+    onStatsClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SessionListViewModel = hiltViewModel(),
 ) {
@@ -64,6 +66,9 @@ fun SessionListScreen(
             TopAppBar(
                 title = { Text("Mes seances") },
                 actions = {
+                    IconButton(onClick = onStatsClick) {
+                        Icon(Icons.Default.InsertChart, contentDescription = "Progression")
+                    }
                     IconButton(onClick = onSettingsClick) {
                         Icon(Icons.Default.Settings, contentDescription = "Reglages")
                     }

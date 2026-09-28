@@ -36,6 +36,7 @@ dependencies {
     implementation(projects.feature.annotator)
     implementation(projects.feature.session)
     implementation(projects.feature.settings)
+    implementation(projects.feature.stats)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)

@@ -12,6 +12,7 @@ import com.topo.feature.camera.CameraCaptureScreen
 import com.topo.feature.session.SessionDetailScreen
 import com.topo.feature.session.SessionListScreen
 import com.topo.feature.settings.SettingsScreen
+import com.topo.feature.stats.StatsScreen
 
 /**
  * Graphe de navigation de Topo.
@@ -37,6 +38,7 @@ fun TopoNavHost(
                     navController.navigate(SessionDetailRoute(sessionId))
                 },
                 onSettingsClick = { navController.navigate(SettingsRoute) },
+                onStatsClick = { navController.navigate(StatsRoute) },
             )
         }
 
@@ -62,6 +64,10 @@ fun TopoNavHost(
                     navController.navigate(AnnotatorRoute(blocId))
                 },
             )
+        }
+
+        composable<StatsRoute> {
+            StatsScreen(onBack = navController::popBackStack)
         }
 
         composable<SettingsRoute> {

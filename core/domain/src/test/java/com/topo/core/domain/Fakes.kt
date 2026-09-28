@@ -33,6 +33,8 @@ internal class FakeBlocRepository(
     override fun observeBlocsForSession(sessionId: String): Flow<List<Bloc>> =
         blocs.map { list -> list.filter { it.sessionId == sessionId } }
 
+    override fun observeAllBlocs(): Flow<List<Bloc>> = blocs
+
     override fun observeBlocDetail(blocId: String): Flow<BlocDetail?> =
         blocs.map { list ->
             list.firstOrNull { it.id == blocId }?.let { BlocDetail(it, emptyList(), emptyList()) }

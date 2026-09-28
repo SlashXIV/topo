@@ -10,6 +10,15 @@ interface BlocRepository {
     fun observeBlocsForSession(sessionId: String): Flow<List<Bloc>>
 
     /**
+     * Tous les blocs, toutes seances confondues.
+     *
+     * Les statistiques portent sur l'historique entier : les agreger seance par
+     * seance obligerait a collecter autant de flux que de seances, et a les
+     * recombiner a chaque emission.
+     */
+    fun observeAllBlocs(): Flow<List<Bloc>>
+
+    /**
      * Le bloc avec ses prises et ses mouvements, en un seul flux.
      *
      * Emettre les trois ensembles ensemble evite un etat intermediaire incoherent

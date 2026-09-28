@@ -23,6 +23,9 @@ internal class BlocRepositoryImpl @Inject constructor(
     override fun observeBlocsForSession(sessionId: String): Flow<List<Bloc>> =
         blocDao.observeBlocsForSession(sessionId).map { rows -> rows.map { it.toDomain() } }
 
+    override fun observeAllBlocs(): Flow<List<Bloc>> =
+        blocDao.observeAllBlocs().map { rows -> rows.map { it.toDomain() } }
+
     override fun observeBlocDetail(blocId: String): Flow<BlocDetail?> =
         blocDao.observeBlocDetail(blocId).map { it?.toDomain() }
 

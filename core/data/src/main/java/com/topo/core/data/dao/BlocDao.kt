@@ -27,6 +27,9 @@ interface BlocDao {
     @Query("SELECT * FROM blocs WHERE id = :blocId")
     fun observeBlocDetail(blocId: String): Flow<BlocWithBeta?>
 
+    @Query("SELECT * FROM blocs ORDER BY created_at DESC")
+    fun observeAllBlocs(): Flow<List<BlocEntity>>
+
     @Query("SELECT * FROM blocs WHERE id = :blocId")
     suspend fun getBloc(blocId: String): BlocEntity?
 
