@@ -62,6 +62,21 @@ seule classe « prise » (prises et volumes confondus), decoupages d'origine con
 Ecarte : [Climbing Holds (Brage)](https://universe.roboflow.com/brage-drnsc/climbing-holds-mavv2),
 annote de facon clairsemee — une prise non etiquetee est apprise comme du fond.
 
+## Scene 3D pour le portfolio
+
+`scene3d/export_scene.py` exporte un bloc en « paquet de scene » (~265 Ko) pour la visionneuse
+web du portfolio : photo recadree sur le bloc, relief estime par **Depth Anything V2 Small**,
+contour de chaque prise par **SAM 2.1 tiny** — tous deux Apache-2.0 ; les variantes Base et
+Large de Depth Anything V2 sont non commerciales et ne doivent pas etre substituees. Les prises
+sont celles que l'utilisateur a gardees et corrigees dans l'application.
+
+```bash
+ml/.venv/Scripts/python -m pip install "transformers>=4.56" accelerate opencv-python
+ml/.venv/Scripts/python ml/scene3d/export_scene.py <topo.db> <dossier_photos> <id_bloc> <sortie>
+```
+
+Relire l'image `_controle.jpg` produite (contours + profondeur) avant toute publication.
+
 ## Chaine cible
 
 1. Dataset de prises d'escalade annotees (boites englobantes).
