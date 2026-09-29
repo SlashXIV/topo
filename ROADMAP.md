@@ -565,9 +565,19 @@ Xiaomi a 120 Hz : 242 trames, 2 saccadees (0,8 %), aucune vsync manquee, 7 ms de
 2,4 ms de GPU par trame. L'emulateur affiche des trames de 200 ms passees cote GPU : sa couche de
 traduction GL, pas le dessin.
 
-**Phase 3 — 3D dans l'application (a decider).** Le modele de profondeur pese ~50 Mo et ne peut
-etre telecharge a la demande (aucune dependance reseau). A trancher apres usage de la demo web,
-idealement apres l'ONNX Runtime reduit.
+**Phase 3 — 3D dans l'application (livree, validee sur le Xiaomi).** Depth Anything V2 Small en
+INT8 (27 Mo, embarque, aucune dependance reseau), choisi sur mesure : ~400 ms sur le Xiaomi contre
+~800 ms en FP16 et q4f16 ; XNNPACK refuse le Resize du modele, la session reste sur le CPU d'ORT.
+Correlation >= 0,997 avec le FP32 sur six photos de Villenave. Relief garde en cache : seule la
+premiere ouverture paie l'inference. Rendu OpenGL ES 3 (`:feature:relief`) : mur texture et
+eclaire, halos a la couleur de difficulte, volumes en blanc, arcs du beta rejoues, rotation,
+zoom et balancement au repos. Halos seulement, pas de contours SAM sur l'appareil.
+
+Reste : sur l'emulateur API 37, la surface GL n'est jamais creee (vue attachee et visible, aucun
+`surfaceCreated`) ; sur le Xiaomi, la premiere ouverture apres un calcul a vu sa surface creee
+avec ~3 s de retard. Piste : forcer la creation (TextureView, ou `SurfaceView` hors d'un
+`AndroidView` recompose), a verifier sur les deux appareils. Les trames du fil GL ne sont pas
+encore mesurees : `gfxinfo` ne couvre que l'interface Compose.
 
 ---
 
