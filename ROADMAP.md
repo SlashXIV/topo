@@ -498,7 +498,7 @@ Les commentaires et la documentation du code restent hors perimetre.
 
 ---
 
-### S14 — Mettre en valeur les prises du bloc
+### S14 — Mettre en valeur les prises du bloc *(livre)*
 
 **Le constat, venu du terrain.** La difficulte n'est portee que par les fleches de depart : une
 fois au pied du mur, rien sur la photo ne dit a quel niveau appartiennent les prises gardees.
@@ -510,6 +510,13 @@ fois au pied du mur, rien sur la photo ne dit a quel niveau appartiennent les pr
   le meme code de dessin.
 - **Porter la difficulte dans le nom du bloc**, pour la retrouver dans la grille d'une seance sans
   ouvrir le bloc.
+
+**Livre.** Les prises du bloc portent un halo de sa couleur de circuit — celle de ses fleches —
+a l'ecran comme sur l'image partagee, qui sort du meme code de dessin : disque translucide,
+anneau plein, et lisere sombre qui le detache d'un mur de la meme couleur. Les volumes restent en
+blanc neutre. Le titre du bloc se lit comme au mur : « Violet · 6B ». Verifie sur les photos
+reelles de Villenave : halo violet lisible sur des prises rouges. Un test lit la couleur de
+l'anneau dans le rendu capture.
 
 **Pourquoi apres l'industrialisation.** C'est un confort de lecture : l'application est
 complete sans. La zone de detection (S11), elle, retire du travail a chaque bloc.
