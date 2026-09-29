@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +45,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.topo.core.domain.usecase.DetectHoldsUseCase
 import java.io.IOException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -107,6 +109,7 @@ fun AnnotatorScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     var isExporting by remember { mutableStateOf(false) }
+    var isDetecting by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
@@ -165,6 +168,22 @@ fun AnnotatorScreen(
                 onClear = when (uiState.mode) {
                     AnnotationMode.ADD_HOLD -> viewModel::clearHolds
                     else -> viewModel::clearBeta
+                },
+                isDetecting = isDetecting,
+                onDetect = {
+                    scope.launch {
+                        isDetecting = true
+                        val message = try {
+                            viewModel.detectHolds()?.message()
+                        } catch (error: IllegalArgumentException) {
+                            "Detection impossible sur cette photo"
+                        } catch (error: IllegalStateException) {
+                            "Detection impossible sur cette photo"
+                        } finally {
+                            isDetecting = false
+                        }
+                        message?.let { snackbarHostState.showSnackbar(it) }
+                    }
                 },
             )
 
@@ -226,6 +245,8 @@ private fun AnnotationToolbar(
     onLimbChange: (Limb) -> Unit,
     onUndo: () -> Unit,
     onClear: () -> Unit,
+    isDetecting: Boolean,
+    onDetect: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -292,6 +313,13 @@ private fun AnnotationToolbar(
                 else -> movementCount > 0
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                // La detection PROPOSE des prises : elle vit donc avec la pose
+                // manuelle, et se corrige avec le meme geste — un appui retire.
+                if (mode == AnnotationMode.ADD_HOLD) {
+                    FilledTonalButton(onClick = onDetect, enabled = !isDetecting) {
+                        Text(if (isDetecting) "Detection..." else "Detecter les prises")
+                    }
+                }
                 TextButton(onClick = onUndo, enabled = hasSomethingToUndo) {
                     Text(mode.undoLabel())
                 }
@@ -300,6 +328,23 @@ private fun AnnotationToolbar(
                 }
             }
         }
+    }
+}
+
+/**
+ * Compte rendu d'une detection. Chaque cas dit quoi faire ensuite : une detection
+ * qui n'ajoute rien sans expliquer pourquoi passerait pour une panne.
+ */
+private fun DetectHoldsUseCase.Result.message(): String = when (this) {
+    DetectHoldsUseCase.Result.Unavailable ->
+        "Detection indisponible : aucun modele embarque. Pose les prises a la main."
+    is DetectHoldsUseCase.Result.Added -> when {
+        added > 0 && alreadyPlaced > 0 ->
+            "$added prises proposees, $alreadyPlaced deja posees. Appuie sur une prise pour la retirer."
+        added > 0 ->
+            "$added prises proposees. Appuie sur une prise pour la retirer."
+        alreadyPlaced > 0 -> "Aucune nouvelle prise : toutes sont deja posees."
+        else -> "Aucune prise detectee sur cette photo."
     }
 }
 

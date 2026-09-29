@@ -11,6 +11,7 @@ import com.topo.core.domain.repository.BlocImageStore
 import com.topo.core.domain.repository.BlocRepository
 import com.topo.core.domain.usecase.AddManualHoldUseCase
 import com.topo.core.domain.usecase.BuildMovementSequenceUseCase
+import com.topo.core.domain.usecase.DetectHoldsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -40,6 +41,7 @@ class AnnotatorViewModel @Inject constructor(
     private val addManualHold: AddManualHoldUseCase,
     private val buildMovementSequence: BuildMovementSequenceUseCase,
     private val imageExporter: BetaImageExporter,
+    private val detectHolds: DetectHoldsUseCase,
 ) : ViewModel() {
 
     private val blocId = MutableStateFlow<String?>(null)
@@ -163,6 +165,22 @@ class AnnotatorViewModel @Inject constructor(
      */
     suspend fun prepareShare(image: ImageBitmap): Intent =
         imageExporter.shareIntent(imageExporter.export(image))
+
+    /**
+     * Propose les prises detectees sur la photo, en plus de celles deja posees.
+     *
+     * Suspendue et appelee par l'ecran, comme [prepareShare] : le resultat est un
+     * message a afficher une fois, pas un etat a conserver.
+     *
+     * @return null si le bloc n'est pas encore charge.
+     * @throws IllegalArgumentException si la photo ou le modele sont illisibles.
+     */
+    suspend fun detectHolds(): DetectHoldsUseCase.Result? {
+        val currentBlocId = blocId.value ?: return null
+        val state = uiState.value
+        val image = state.imageFile ?: return null
+        return detectHolds(currentBlocId, image, state.blocDetail?.holds.orEmpty())
+    }
 
     fun clearBeta() {
         val currentBlocId = blocId.value ?: return
