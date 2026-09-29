@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_library(topo_vision SHARED
+        depth_estimator.cpp
         jni_bridge.cpp
         vision_processor.cpp
 )

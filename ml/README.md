@@ -62,6 +62,23 @@ seule classe « prise » (prises et volumes confondus), decoupages d'origine con
 Ecarte : [Climbing Holds (Brage)](https://universe.roboflow.com/brage-drnsc/climbing-holds-mavv2),
 annote de facon clairsemee — une prise non etiquetee est apprise comme du fond.
 
+## Modele de relief (vue 3D de l'application)
+
+`depth_model.py` telecharge **Depth Anything V2 Small** en ONNX INT8 (onnx-community, 27 Mo,
+Apache-2.0), en verifie l'empreinte SHA-256, le depose dans
+`vision/src/main/assets/models/depth.onnx` et calcule la reference des tests instrumentes par un
+miroir NumPy de `depth_estimator.cpp`. Comme pour le modele de prises, un build de publication
+refuse de se construire sans lui.
+
+```bash
+ml/.venv/Scripts/python ml/depth_model.py
+```
+
+Variante choisie sur mesure (Xiaomi, 392x518, `DepthModelBenchmark`) : INT8 ~400 ms, FP16
+796 ms, q4f16 791 ms ; XNNPACK refuse les trois (Resize de la tete), la session reste sur le
+CPU d'ONNX Runtime. Fidelite de l'INT8 contre FP32 sur six photos de Villenave : correlation
+>= 0,997.
+
 ## Scene 3D pour le portfolio
 
 `scene3d/export_scene.py` exporte un bloc en « paquet de scene » (~265 Ko) pour la visionneuse

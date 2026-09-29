@@ -1,6 +1,7 @@
 package com.topo.vision
 
 import com.topo.core.domain.repository.HoldDetector
+import com.topo.core.domain.repository.ReliefEstimator
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -17,4 +18,7 @@ internal abstract class VisionModule {
 
     @Binds
     abstract fun bindHoldDetector(detector: BundledModelHoldDetector): HoldDetector
+
+    @Binds
+    abstract fun bindReliefEstimator(estimator: BundledModelReliefEstimator): ReliefEstimator
 }

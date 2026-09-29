@@ -8,6 +8,8 @@
 //         [cx, cy, w, h, score, nature, L, a, b, ...]
 //     nature : 0 prise, 1 volume ; L, a, b : couleur CIELAB de la prise.
 //     longueur = kStride * nombre de detections (auto-descriptive, pas d'en-tete).
+//     La profondeur suit la meme regle : [largeur, hauteur, valeurs ligne par
+//     ligne...], un seul tableau, une seule copie.
 //     Coordonnees normalisees [0,1]. Retourner une List<Detection> d'objets Java
 //     couterait un NewObject + 5 SetFloatField par prise, soit ~900 appels JNI
 //     pour 150 prises : c'est precisement ce que cette architecture refuse.
@@ -51,6 +53,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "depth_estimator.h"
 #include "vision_processor.h"
 
 namespace {
@@ -131,13 +134,14 @@ void* DirectAddress(JNIEnv* env, jobject buffer, jlong* capacity) {
     return address;
 }
 
-topo::VisionProcessor* FromHandle(JNIEnv* env, jlong handle) {
+template <typename Engine = topo::VisionProcessor>
+Engine* FromHandle(JNIEnv* env, jlong handle) {
     if (handle == 0L) {
         ThrowJava(env, "java/lang/IllegalStateException",
                   "Handle natif nul : moteur deja libere ou jamais cree");
         return nullptr;
     }
-    return reinterpret_cast<topo::VisionProcessor*>(handle);
+    return reinterpret_cast<Engine*>(handle);
 }
 
 /** Aplatit les detections en un unique jfloatArray (cf. contrat, point 1). */
@@ -363,6 +367,101 @@ jfloatArray NativeDetectFromBitmap(JNIEnv* env,
     return ToFlatArray(env, detections);
 }
 
+// --------------------------------------------------------------------------
+//  Profondeur : un moteur distinct, un handle distinct
+// --------------------------------------------------------------------------
+
+jlong NativeDepthCreate(JNIEnv* /* env */, jobject /* thiz */) {
+    return reinterpret_cast<jlong>(new topo::DepthEstimator());
+}
+
+void NativeDepthDestroy(JNIEnv* /* env */, jobject /* thiz */, jlong handle) {
+    delete reinterpret_cast<topo::DepthEstimator*>(handle);  // delete nullptr : sans effet.
+}
+
+void NativeDepthLoadModel(JNIEnv* env, jobject /* thiz */, jlong handle, jobject model) {
+    auto* estimator = FromHandle<topo::DepthEstimator>(env, handle);
+    if (estimator == nullptr) return;
+    jlong capacity = 0;
+    void* address = DirectAddress(env, model, &capacity);
+    if (address == nullptr) return;
+    Guarded(env, [&] {
+        estimator->LoadModel(static_cast<const uint8_t*>(address), static_cast<size_t>(capacity));
+        return 0;
+    });
+}
+
+jboolean NativeDepthIsReady(JNIEnv* env, jobject /* thiz */, jlong handle) {
+    auto* estimator = FromHandle<topo::DepthEstimator>(env, handle);
+    return estimator != nullptr && estimator->IsReady() ? JNI_TRUE : JNI_FALSE;
+}
+
+/** @return [largeur, hauteur, valeurs...] ; [0, 0] sans modele charge. */
+jfloatArray NativeEstimateDepth(JNIEnv* env, jobject /* thiz */, jlong handle, jobject bitmap) {
+    auto* estimator = FromHandle<topo::DepthEstimator>(env, handle);
+    if (estimator == nullptr) return nullptr;
+    AndroidBitmapInfo info{};
+    if (bitmap == nullptr ||
+        AndroidBitmap_getInfo(env, bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS ||
+        info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        ThrowJava(env, "java/lang/IllegalArgumentException", "Bitmap ARGB_8888 attendu");
+        return nullptr;
+    }
+    ScopedBitmapLock lock(env, bitmap);
+    if (!lock.ok()) {
+        ThrowJava(env, "java/lang/IllegalStateException", "AndroidBitmap_lockPixels a echoue");
+        return nullptr;
+    }
+    const auto map = Guarded(env, [&] {
+        return estimator->Estimate(lock.pixels(), static_cast<int32_t>(info.width),
+                                   static_cast<int32_t>(info.height),
+                                   static_cast<int32_t>(info.stride));
+    });
+    if (env->ExceptionCheck()) return nullptr;
+
+    const auto length = static_cast<jsize>(2 + map.values.size());
+    jfloatArray result = env->NewFloatArray(length);
+    if (result == nullptr) return nullptr;
+    const jfloat header[] = {static_cast<jfloat>(map.width), static_cast<jfloat>(map.height)};
+    env->SetFloatArrayRegion(result, 0, 2, header);
+    if (!map.values.empty()) {
+        env->SetFloatArrayRegion(result, 2, length - 2, map.values.data());
+    }
+    return result;
+}
+
+/**
+ * Point d'entree de TEST du pretraitement de profondeur.
+ * @return [largeur, hauteur, tenseur CHW...].
+ */
+jfloatArray NativeDepthPreprocess(JNIEnv* env, jobject /* thiz */, jobject bitmap) {
+    AndroidBitmapInfo info{};
+    if (bitmap == nullptr ||
+        AndroidBitmap_getInfo(env, bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS ||
+        info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        ThrowJava(env, "java/lang/IllegalArgumentException", "Bitmap ARGB_8888 attendu");
+        return nullptr;
+    }
+    ScopedBitmapLock lock(env, bitmap);
+    if (!lock.ok()) {
+        ThrowJava(env, "java/lang/IllegalStateException", "AndroidBitmap_lockPixels a echoue");
+        return nullptr;
+    }
+    const auto width = static_cast<int32_t>(info.width);
+    const auto height = static_cast<int32_t>(info.height);
+    const auto size = topo::ComputeDepthInputSize(width, height);
+    std::vector<jfloat> flat(2 + static_cast<size_t>(3) * size.width * size.height);
+    flat[0] = static_cast<jfloat>(size.width);
+    flat[1] = static_cast<jfloat>(size.height);
+    topo::PreprocessDepth(lock.pixels(), width, height, static_cast<int32_t>(info.stride), size,
+                          flat.data() + 2);
+    jfloatArray result = env->NewFloatArray(static_cast<jsize>(flat.size()));
+    if (result != nullptr) {
+        env->SetFloatArrayRegion(result, 0, static_cast<jsize>(flat.size()), flat.data());
+    }
+    return result;
+}
+
 const JNINativeMethod kMethods[] = {
         {"nativeCreate", "()J", reinterpret_cast<void*>(NativeCreate)},
         {"nativeDestroy", "(J)V", reinterpret_cast<void*>(NativeDestroy)},
@@ -376,6 +475,15 @@ const JNINativeMethod kMethods[] = {
          reinterpret_cast<void*>(NativeDetectFromDirectBuffer)},
         {"nativeDetectFromBitmap", "(JLandroid/graphics/Bitmap;)[F",
          reinterpret_cast<void*>(NativeDetectFromBitmap)},
+        {"nativeDepthCreate", "()J", reinterpret_cast<void*>(NativeDepthCreate)},
+        {"nativeDepthDestroy", "(J)V", reinterpret_cast<void*>(NativeDepthDestroy)},
+        {"nativeDepthLoadModel", "(JLjava/nio/ByteBuffer;)V",
+         reinterpret_cast<void*>(NativeDepthLoadModel)},
+        {"nativeDepthIsReady", "(J)Z", reinterpret_cast<void*>(NativeDepthIsReady)},
+        {"nativeEstimateDepth", "(JLandroid/graphics/Bitmap;)[F",
+         reinterpret_cast<void*>(NativeEstimateDepth)},
+        {"nativeDepthPreprocess", "(Landroid/graphics/Bitmap;)[F",
+         reinterpret_cast<void*>(NativeDepthPreprocess)},
 };
 
 }  // namespace

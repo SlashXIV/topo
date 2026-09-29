@@ -93,4 +93,24 @@ internal object NativeBridge {
      * Le bitmap doit etre en [Bitmap.Config.ARGB_8888].
      */
     external fun nativeDetectFromBitmap(handle: Long, bitmap: Bitmap): FloatArray
+
+    // --- Profondeur : moteur distinct, handle distinct (a ne pas croiser) ---
+
+    /** @return un handle d'estimateur de profondeur, a liberer via [nativeDepthDestroy]. */
+    external fun nativeDepthCreate(): Long
+
+    external fun nativeDepthDestroy(handle: Long)
+
+    external fun nativeDepthLoadModel(handle: Long, model: ByteBuffer)
+
+    external fun nativeDepthIsReady(handle: Long): Boolean
+
+    /**
+     * Relief d'un bitmap ARGB_8888 : `[largeur, hauteur, valeurs ligne par ligne...]`,
+     * valeurs dans `[0, 1]`, 1 = le plus proche. `[0, 0]` sans modele charge.
+     */
+    external fun nativeEstimateDepth(handle: Long, bitmap: Bitmap): FloatArray
+
+    /** Tenseur d'entree du modele de relief, `[largeur, hauteur, CHW...]`. Reserve aux tests. */
+    external fun nativeDepthPreprocess(bitmap: Bitmap): FloatArray
 }

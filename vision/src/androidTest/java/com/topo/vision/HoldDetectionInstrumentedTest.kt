@@ -170,7 +170,10 @@ class HoldDetectionInstrumentedTest {
      */
     @Test
     fun inference_latency_is_logged() = runTest {
-        val models = assets.list(BENCHMARK).orEmpty().filter { it.endsWith(".onnx") }.sorted()
+        val models = assets.list(BENCHMARK).orEmpty().filter {
+            // Les modeles de relief (depth_*) ont leur propre mesure : DepthModelBenchmark.
+            it.endsWith(".onnx") && !it.startsWith("depth_")
+        }.sorted()
         assumeTrue("Aucun modele a mesurer : copier des .onnx dans assets/$BENCHMARK", models.isNotEmpty())
 
         for (model in models) {

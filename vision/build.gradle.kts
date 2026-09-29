@@ -54,16 +54,25 @@ tasks.matching { it.name.startsWith("configureCMake") || it.name.startsWith("bui
 // simplement inactif. Tolerable en debug, ou l'on travaille sur autre chose ; pas
 // dans un build de publication, qui partirait sans sa fonctionnalite phare.
 // Contournement explicite : -Ptopo.allowMissingModel=true.
+// Meme verrou pour le modele de relief : sans lui, la vue 3D disparait sans bruit.
 val bundledModel = layout.projectDirectory.file("src/main/assets/models/holds.onnx")
+val bundledDepthModel = layout.projectDirectory.file("src/main/assets/models/depth.onnx")
 val allowMissingModel = providers.gradleProperty("topo.allowMissingModel").map(String::toBoolean).orElse(false)
 tasks.matching { it.name == "preReleaseBuild" }.configureEach {
     val model = bundledModel.asFile
+    val depthModel = bundledDepthModel.asFile
     val allowed = allowMissingModel
     doFirst {
         if (!model.exists() && !allowed.get()) {
             throw GradleException(
                 "Modele de detection absent : ${model.path}. Le produire avec ml/train.py " +
                     "(cf. ml/README.md), ou construire sans avec -Ptopo.allowMissingModel=true.",
+            )
+        }
+        if (!depthModel.exists() && !allowed.get()) {
+            throw GradleException(
+                "Modele de relief absent : ${depthModel.path}. Le telecharger avec " +
+                    "ml/depth_model.py, ou construire sans avec -Ptopo.allowMissingModel=true.",
             )
         }
     }
