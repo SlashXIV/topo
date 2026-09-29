@@ -355,7 +355,7 @@ echelle.
 
 ---
 
-### S11 — Ne garder que les prises du bloc *(livre — latence a mesurer sur appareil)*
+### S11 — Ne garder que les prises du bloc *(livre)*
 
 **Le constat.** La detection trouve TOUTES les prises du mur — 115 sur la photo de test — alors
 qu'un bloc n'en utilise qu'une quinzaine. Retirer les autres une a une annule le gain.
@@ -424,8 +424,14 @@ prises proposees sur les prises de la zone seulement.
 
 **Reste.**
 - La zone vit le temps de l'edition ; la persister avec le bloc si le besoin s'en fait sentir.
-- Latence du modele a deux classes en release. La grande prise grise en croissant de la photo de
-  test n'est detectee par aucun des deux modeles.
+- La grande prise grise en croissant de la photo de test n'est detectee par aucun des deux
+  modeles.
+
+**Latence du modele a deux classes — mesuree sur le Xiaomi, en release : 58,2 ms de mediane**
+(max 61 ms), soit celle du modele a une classe : seule la derniere couche change. Une premiere
+passe a 104 ms s'expliquait par l'application Topo ouverte en parallele : ses inferences
+alternaient entre 55 ms et 100-137 ms, signature de threads XNNPACK disputes. Refaite
+application fermee, la mesure est stable.
 
 ---
 
@@ -494,7 +500,7 @@ Les commentaires et la documentation du code restent hors perimetre.
 **Reste.**
 - **ONNX Runtime reduit aux operateurs du modele** : 33 Mo en arm64 aujourd'hui, quelques Mo
   attendus. Impose de compiler ORT depuis les sources : a decider.
-- Signature de publication, et latence du modele a deux classes sur appareil.
+- Signature de publication, et mesure du demarrage sur telephone physique.
 
 ---
 
