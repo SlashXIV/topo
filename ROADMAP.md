@@ -355,7 +355,7 @@ echelle.
 
 ---
 
-### S11 — Ne garder que les prises du bloc *(en cours — validation sur appareil)*
+### S11 — Ne garder que les prises du bloc *(livre — latence a mesurer sur appareil)*
 
 **Le constat.** La detection trouve TOUTES les prises du mur — 115 sur la photo de test — alors
 qu'un bloc n'en utilise qu'une quinzaine. Retirer les autres une a une annule le gain.
@@ -413,10 +413,17 @@ l'appareil photo systeme. L'EXIF a ecarte l'objectif : toutes les photos sont au
 zoom 1,0. L'apercu montre desormais toute la photo, et un pincement zoome — au-dela de 2x environ,
 la camera logique bascule d'elle-meme sur le teleobjectif.
 
+**Zone de detection tracee au doigt — livree.** « Cadrer le bloc », puis un glissement d'un coin
+a l'autre : hors du cadre s'assombrit, et la detection ne regarde que lui. Seule la zone est
+DECODEE (BitmapRegionDecoder) : c'est elle que le modele recoit a 640 pixels, et chaque prise y
+gagne en resolution — environ trois fois sur un bloc qui couvre un tiers de la photo. La zone est
+tracee sur la photo redressee alors que le decodeur lit le fichier brut : la rotation EXIF inverse
+est verifiee contre une rotation simulee (inverser 90 et 270 degres fait echouer le test) et sur
+un vrai JPEG couche etiquete ROTATE_90. Verifie dans l'application : 437 x 476 pixels analyses,
+prises proposees sur les prises de la zone seulement.
+
 **Reste.**
-- **Zone de detection choisie par l'utilisateur.** Meme bien cadree, une photo de pan contient
-  souvent plusieurs blocs. Tracer au doigt un cadre avant la detection, et ne detecter — puis ne
-  filtrer — qu'a l'interieur, eliminerait les prises voisines a la source plutot qu'a la main.
+- La zone vit le temps de l'edition ; la persister avec le bloc si le besoin s'en fait sentir.
 - Latence du modele a deux classes en release. La grande prise grise en croissant de la photo de
   test n'est detectee par aucun des deux modeles.
 
