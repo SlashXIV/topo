@@ -55,10 +55,10 @@ fun playbackFrameAt(progress: Float, movementCount: Int): PlaybackFrame {
 }
 
 /** Vitesses de lecture proposees. */
-enum class PlaybackSpeed(val factor: Float, val label: String) {
-    HALF(0.5f, "0,5x"),
-    NORMAL(1f, "1x"),
-    DOUBLE(2f, "2x"),
+enum class PlaybackSpeed(val factor: Float) {
+    HALF(0.5f),
+    NORMAL(1f),
+    DOUBLE(2f),
     ;
 
     fun next(): PlaybackSpeed = entries[(ordinal + 1) % entries.size]

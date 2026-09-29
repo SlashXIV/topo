@@ -1,5 +1,6 @@
 package com.topo.feature.annotator
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 
 const val PlayPauseTestTag = "playback-play-pause"
@@ -50,11 +52,11 @@ fun PlaybackControls(
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         IconButton(onClick = onRestart, enabled = enabled) {
-            Icon(Icons.Default.Replay, contentDescription = "Revenir au debut")
+            Icon(Icons.Default.Replay, contentDescription = stringResource(R.string.annotator_playback_restart))
         }
 
         IconButton(onClick = { onStep(-1) }, enabled = enabled) {
-            Icon(Icons.Default.SkipPrevious, contentDescription = "Mouvement precedent")
+            Icon(Icons.Default.SkipPrevious, contentDescription = stringResource(R.string.annotator_playback_previous))
         }
 
         IconButton(
@@ -64,7 +66,9 @@ fun PlaybackControls(
         ) {
             Icon(
                 imageVector = if (playback.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = if (playback.isPlaying) "Pause" else "Lecture",
+                contentDescription = stringResource(
+                    if (playback.isPlaying) R.string.annotator_playback_pause else R.string.annotator_playback_play,
+                ),
             )
         }
 
@@ -73,7 +77,7 @@ fun PlaybackControls(
             enabled = enabled,
             modifier = Modifier.testTag(StepForwardTestTag),
         ) {
-            Icon(Icons.Default.SkipNext, contentDescription = "Mouvement suivant")
+            Icon(Icons.Default.SkipNext, contentDescription = stringResource(R.string.annotator_playback_next))
         }
 
         TextButton(
@@ -81,16 +85,23 @@ fun PlaybackControls(
             enabled = enabled,
             modifier = Modifier.testTag(SpeedTestTag),
         ) {
-            Text(playback.speed.label)
+            Text(stringResource(playback.speed.label()))
         }
 
         if (!enabled) {
             Text(
-                text = "Aucun mouvement a rejouer",
+                text = stringResource(R.string.annotator_playback_empty),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 8.dp),
             )
         }
     }
+}
+
+@StringRes
+private fun PlaybackSpeed.label(): Int = when (this) {
+    PlaybackSpeed.HALF -> R.string.annotator_speed_half
+    PlaybackSpeed.NORMAL -> R.string.annotator_speed_normal
+    PlaybackSpeed.DOUBLE -> R.string.annotator_speed_double
 }

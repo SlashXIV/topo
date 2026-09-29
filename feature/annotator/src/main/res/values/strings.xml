@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Barre d'application -->
+    <string name="annotator_title_fallback">Annotation</string>
+    <string name="annotator_back">Retour</string>
+    <string name="annotator_share_beta">Partager le beta</string>
+    <string name="annotator_share_failed">Impossible d\'enregistrer l\'image</string>
+    <string name="annotator_loading_bloc">Chargement du bloc…</string>
+
+    <!-- Modes -->
+    <string name="annotator_mode_add_hold">Prises</string>
+    <string name="annotator_mode_trace_beta">Tracer</string>
+    <string name="annotator_mode_replay">Rejouer</string>
+
+    <!-- Mode d'emploi, une phrase par mode -->
+    <string name="annotator_hint_add_hold">Appuie sur le mur pour poser une prise, sur une prise pour la retirer.</string>
+    <string name="annotator_hint_trace_beta">Choisis un membre, puis FAIS GLISSER ton doigt d\'une prise à l\'autre : le trait s\'aimante aux prises.</string>
+    <string name="annotator_hint_replay">Rejoue la séquence mouvement par mouvement.</string>
+    <string name="annotator_hint_pick_color">Appuie sur une prise de ton bloc : seules les prises de sa couleur resteront, avec les volumes et les prises de ton beta.</string>
+
+    <!-- Membres -->
+    <string name="annotator_limb_left_hand">Main G</string>
+    <string name="annotator_limb_right_hand">Main D</string>
+    <string name="annotator_limb_left_foot">Pied G</string>
+    <string name="annotator_limb_right_foot">Pied D</string>
+
+    <!-- Actions -->
+    <string name="annotator_cancel">Annuler</string>
+    <string name="annotator_detecting">Détection…</string>
+    <string name="annotator_detect_holds">Détecter les prises</string>
+    <string name="annotator_keep_color">Garder une couleur</string>
+    <string name="annotator_undo_last_hold">Annuler la dernière prise</string>
+    <string name="annotator_undo_last_movement">Annuler le dernier mouvement</string>
+    <string name="annotator_clear_holds">Effacer les prises</string>
+    <string name="annotator_clear_beta">Effacer le beta</string>
+
+    <!-- Compte rendu de detection -->
+    <string name="annotator_detect_failed">Détection impossible sur cette photo</string>
+    <string name="annotator_detect_unavailable">Détection indisponible : aucun modèle embarqué. Pose les prises à la main.</string>
+    <plurals name="annotator_detect_added">
+        <item quantity="one">%d prise proposée</item>
+        <item quantity="other">%d prises proposées</item>
+    </plurals>
+    <plurals name="annotator_detect_completed">
+        <item quantity="one">%d prise existante a maintenant une couleur</item>
+        <item quantity="other">%d prises existantes ont maintenant une couleur</item>
+    </plurals>
+    <plurals name="annotator_detect_already_placed">
+        <item quantity="one">%d déjà posée</item>
+        <item quantity="other">%d déjà posées</item>
+    </plurals>
+    <!-- %1$s et %2$s sont les fragments pluriels ci-dessus -->
+    <string name="annotator_detect_added_and_completed">%1$s, %2$s.</string>
+    <string name="annotator_detect_completed_only">%1$s : tu peux garder une couleur.</string>
+    <string name="annotator_detect_added_and_already_placed">%1$s, %2$s. Appuie sur une prise pour la retirer.</string>
+    <string name="annotator_detect_added_only">%1$s. Appuie sur une prise pour la retirer.</string>
+    <string name="annotator_detect_all_already_placed">Aucune nouvelle prise : toutes sont déjà posées.</string>
+    <string name="annotator_detect_none">Aucune prise détectée sur cette photo.</string>
+
+    <!-- Filtrage par couleur -->
+    <string name="annotator_keep_color_no_reference">Cette prise n\'a pas de couleur mesurée. Relance la détection et choisis une prise détectée.</string>
+    <string name="annotator_keep_color_nothing_removed">Aucune prise retirée : toutes sont de cette couleur, des volumes ou dans ton beta.</string>
+    <plurals name="annotator_keep_color_removed">
+        <item quantity="one">%d prise retirée</item>
+        <item quantity="other">%d prises retirées</item>
+    </plurals>
+    <plurals name="annotator_keep_color_kept">
+        <item quantity="one">%d gardée</item>
+        <item quantity="other">%d gardées</item>
+    </plurals>
+    <string name="annotator_keep_color_filtered">%1$s, %2$s. Relance la détection pour les retrouver.</string>
+
+    <!-- Rejeu -->
+    <string name="annotator_playback_restart">Revenir au début</string>
+    <string name="annotator_playback_previous">Mouvement précédent</string>
+    <string name="annotator_playback_pause">Pause</string>
+    <string name="annotator_playback_play">Lecture</string>
+    <string name="annotator_playback_next">Mouvement suivant</string>
+    <string name="annotator_playback_empty">Aucun mouvement à rejouer</string>
+    <string name="annotator_speed_half">0,5x</string>
+    <string name="annotator_speed_normal">1x</string>
+    <string name="annotator_speed_double">2x</string>
+</resources>

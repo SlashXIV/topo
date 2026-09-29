@@ -1,5 +1,7 @@
 package com.topo.feature.annotator
 
+import android.content.res.Resources
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -41,6 +43,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -108,6 +112,7 @@ fun AnnotatorScreen(
     // ------------------------------------------------------------------------
     val exportLayer = rememberGraphicsLayer()
     val context = LocalContext.current
+    val resources = LocalResources.current
     val snackbarHostState = remember { SnackbarHostState() }
     var isExporting by remember { mutableStateOf(false) }
     var isDetecting by remember { mutableStateOf(false) }
@@ -117,10 +122,10 @@ fun AnnotatorScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(detail?.bloc?.grade ?: "Annotation") },
+                title = { Text(detail?.bloc?.grade ?: stringResource(R.string.annotator_title_fallback)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.annotator_back))
                     }
                 },
                 actions = {
@@ -137,14 +142,16 @@ fun AnnotatorScreen(
                                     val chooser = viewModel.prepareShare(exportLayer.toImageBitmap())
                                     context.startActivity(chooser)
                                 } catch (error: IOException) {
-                                    snackbarHostState.showSnackbar("Impossible d'enregistrer l'image")
+                                    snackbarHostState.showSnackbar(
+                                        resources.getString(R.string.annotator_share_failed),
+                                    )
                                 } finally {
                                     isExporting = false
                                 }
                             }
                         },
                     ) {
-                        Icon(Icons.Filled.Share, contentDescription = "Partager le beta")
+                        Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.annotator_share_beta))
                     }
                 },
             )
@@ -178,11 +185,11 @@ fun AnnotatorScreen(
                     scope.launch {
                         isDetecting = true
                         val message = try {
-                            viewModel.detectHolds()?.message()
+                            viewModel.detectHolds()?.message(resources)
                         } catch (error: IllegalArgumentException) {
-                            "Detection impossible sur cette photo"
+                            resources.getString(R.string.annotator_detect_failed)
                         } catch (error: IllegalStateException) {
-                            "Detection impossible sur cette photo"
+                            resources.getString(R.string.annotator_detect_failed)
                         } finally {
                             isDetecting = false
                         }
@@ -232,7 +239,7 @@ fun AnnotatorScreen(
                         onHoldRemoved = { holdId ->
                             if (uiState.isPickingColor) {
                                 scope.launch {
-                                    viewModel.keepColorOf(holdId)?.message()?.let {
+                                    viewModel.keepColorOf(holdId)?.message(resources)?.let {
                                         snackbarHostState.showSnackbar(it)
                                     }
                                 }
@@ -247,7 +254,7 @@ fun AnnotatorScreen(
                         exportLayer = exportLayer,
                     )
                 } else {
-                    Text("Chargement du bloc...", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.annotator_loading_bloc), style = MaterialTheme.typography.bodyMedium)
                 }
             }
         }
@@ -286,7 +293,7 @@ private fun AnnotationToolbar(
                 FilterChip(
                     selected = candidate == mode,
                     onClick = { onModeChange(candidate) },
-                    label = { Text(candidate.label()) },
+                    label = { Text(stringResource(candidate.label())) },
                 )
             }
         }
@@ -299,7 +306,9 @@ private fun AnnotationToolbar(
         // affordance visuelle — c'est precisement ce qu'une ligne de texte resout
         // mieux qu'une icone.
         Text(
-            text = if (isPickingColor) PICK_COLOR_HINT else mode.hint(),
+            text = stringResource(
+                if (isPickingColor) R.string.annotator_hint_pick_color else mode.hint(),
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(vertical = 2.dp),
@@ -321,7 +330,7 @@ private fun AnnotationToolbar(
                                     .background(limb.swatch()),
                             )
                         },
-                        label = { Text(limb.label()) },
+                        label = { Text(stringResource(limb.label())) },
                     )
                 }
             }
@@ -339,20 +348,24 @@ private fun AnnotationToolbar(
                 // La detection PROPOSE des prises : elle vit donc avec la pose
                 // manuelle, et se corrige avec le meme geste — un appui retire.
                 if (mode == AnnotationMode.ADD_HOLD && isPickingColor) {
-                    FilledTonalButton(onClick = onCancelPick) { Text("Annuler") }
+                    FilledTonalButton(onClick = onCancelPick) { Text(stringResource(R.string.annotator_cancel)) }
                 } else if (mode == AnnotationMode.ADD_HOLD) {
                     FilledTonalButton(onClick = onDetect, enabled = !isDetecting) {
-                        Text(if (isDetecting) "Detection..." else "Detecter les prises")
+                        Text(
+                            stringResource(
+                                if (isDetecting) R.string.annotator_detecting else R.string.annotator_detect_holds,
+                            ),
+                        )
                     }
                     FilledTonalButton(onClick = onPickColor, enabled = holdCount > 0) {
-                        Text("Garder une couleur")
+                        Text(stringResource(R.string.annotator_keep_color))
                     }
                 }
                 TextButton(onClick = onUndo, enabled = hasSomethingToUndo) {
-                    Text(mode.undoLabel())
+                    Text(stringResource(mode.undoLabel()))
                 }
                 TextButton(onClick = onClear, enabled = hasSomethingToUndo) {
-                    Text(mode.clearLabel())
+                    Text(stringResource(mode.clearLabel()))
                 }
             }
         }
@@ -363,73 +376,86 @@ private fun AnnotationToolbar(
  * Compte rendu d'une detection. Chaque cas dit quoi faire ensuite : une detection
  * qui n'ajoute rien sans expliquer pourquoi passerait pour une panne.
  */
-private fun DetectHoldsUseCase.Result.message(): String = when (this) {
+private fun DetectHoldsUseCase.Result.message(resources: Resources): String = when (this) {
     DetectHoldsUseCase.Result.Unavailable ->
-        "Detection indisponible : aucun modele embarque. Pose les prises a la main."
-    is DetectHoldsUseCase.Result.Added -> when {
-        // Les prises completees d'abord : c'est ce que l'utilisateur attend quand
-        // il relance la detection sur un bloc deja annote, pour filtrer ensuite.
-        completed > 0 && added > 0 ->
-            "$added prises proposees, $completed prises existantes ont maintenant une couleur."
-        completed > 0 ->
-            "$completed prises existantes ont maintenant une couleur : tu peux garder une couleur."
-        added > 0 && alreadyPlaced > 0 ->
-            "$added prises proposees, $alreadyPlaced deja posees. Appuie sur une prise pour la retirer."
-        added > 0 ->
-            "$added prises proposees. Appuie sur une prise pour la retirer."
-        alreadyPlaced > 0 -> "Aucune nouvelle prise : toutes sont deja posees."
-        else -> "Aucune prise detectee sur cette photo."
+        resources.getString(R.string.annotator_detect_unavailable)
+    is DetectHoldsUseCase.Result.Added -> {
+        val addedText = resources.getQuantityString(R.plurals.annotator_detect_added, added, added)
+        val completedText =
+            resources.getQuantityString(R.plurals.annotator_detect_completed, completed, completed)
+        when {
+            // Les prises completees d'abord : c'est ce que l'utilisateur attend quand
+            // il relance la detection sur un bloc deja annote, pour filtrer ensuite.
+            completed > 0 && added > 0 ->
+                resources.getString(R.string.annotator_detect_added_and_completed, addedText, completedText)
+            completed > 0 ->
+                resources.getString(R.string.annotator_detect_completed_only, completedText)
+            added > 0 && alreadyPlaced > 0 ->
+                resources.getString(
+                    R.string.annotator_detect_added_and_already_placed,
+                    addedText,
+                    resources.getQuantityString(
+                        R.plurals.annotator_detect_already_placed,
+                        alreadyPlaced,
+                        alreadyPlaced,
+                    ),
+                )
+            added > 0 -> resources.getString(R.string.annotator_detect_added_only, addedText)
+            alreadyPlaced > 0 -> resources.getString(R.string.annotator_detect_all_already_placed)
+            else -> resources.getString(R.string.annotator_detect_none)
+        }
     }
 }
 
-private const val PICK_COLOR_HINT =
-    "Appuie sur une prise de ton bloc : seules les prises de sa couleur resteront, " +
-        "avec les volumes et les prises de ton beta."
-
-private fun KeepHoldColorUseCase.Result.message(): String = when (this) {
+private fun KeepHoldColorUseCase.Result.message(resources: Resources): String = when (this) {
     KeepHoldColorUseCase.Result.NoReferenceColor ->
-        "Cette prise n'a pas de couleur mesuree. Relance la detection et choisis une prise detectee."
+        resources.getString(R.string.annotator_keep_color_no_reference)
     is KeepHoldColorUseCase.Result.Filtered ->
         if (removed == 0) {
-            "Aucune prise retiree : toutes sont de cette couleur, des volumes ou dans ton beta."
+            resources.getString(R.string.annotator_keep_color_nothing_removed)
         } else {
-            "$removed prises retirees, $kept gardees. Relance la detection pour les retrouver."
+            resources.getString(
+                R.string.annotator_keep_color_filtered,
+                resources.getQuantityString(R.plurals.annotator_keep_color_removed, removed, removed),
+                resources.getQuantityString(R.plurals.annotator_keep_color_kept, kept, kept),
+            )
         }
 }
 
-private fun AnnotationMode.label(): String = when (this) {
-    AnnotationMode.ADD_HOLD -> "Prises"
-    AnnotationMode.TRACE_BETA -> "Tracer"
-    AnnotationMode.REPLAY -> "Rejouer"
+@StringRes
+private fun AnnotationMode.label(): Int = when (this) {
+    AnnotationMode.ADD_HOLD -> R.string.annotator_mode_add_hold
+    AnnotationMode.TRACE_BETA -> R.string.annotator_mode_trace_beta
+    AnnotationMode.REPLAY -> R.string.annotator_mode_replay
 }
 
 /** Mode d'emploi, une phrase par mode. Le geste attendu passe en premier. */
-private fun AnnotationMode.hint(): String = when (this) {
-    AnnotationMode.ADD_HOLD ->
-        "Appuie sur le mur pour poser une prise, sur une prise pour la retirer."
-    AnnotationMode.TRACE_BETA ->
-        "Choisis un membre, puis FAIS GLISSER ton doigt d'une prise a l'autre : " +
-            "le trait s'aimante aux prises."
-    AnnotationMode.REPLAY ->
-        "Rejoue la sequence mouvement par mouvement."
+@StringRes
+private fun AnnotationMode.hint(): Int = when (this) {
+    AnnotationMode.ADD_HOLD -> R.string.annotator_hint_add_hold
+    AnnotationMode.TRACE_BETA -> R.string.annotator_hint_trace_beta
+    AnnotationMode.REPLAY -> R.string.annotator_hint_replay
 }
 
 /** Libelles explicites : l'action porte sur ce que le mode courant manipule. */
-private fun AnnotationMode.undoLabel(): String = when (this) {
-    AnnotationMode.ADD_HOLD -> "Annuler la derniere prise"
-    else -> "Annuler le dernier mouvement"
+@StringRes
+private fun AnnotationMode.undoLabel(): Int = when (this) {
+    AnnotationMode.ADD_HOLD -> R.string.annotator_undo_last_hold
+    else -> R.string.annotator_undo_last_movement
 }
 
-private fun AnnotationMode.clearLabel(): String = when (this) {
-    AnnotationMode.ADD_HOLD -> "Effacer les prises"
-    else -> "Effacer le beta"
+@StringRes
+private fun AnnotationMode.clearLabel(): Int = when (this) {
+    AnnotationMode.ADD_HOLD -> R.string.annotator_clear_holds
+    else -> R.string.annotator_clear_beta
 }
 
-private fun Limb.label(): String = when (this) {
-    Limb.LEFT_HAND -> "Main G"
-    Limb.RIGHT_HAND -> "Main D"
-    Limb.LEFT_FOOT -> "Pied G"
-    Limb.RIGHT_FOOT -> "Pied D"
+@StringRes
+private fun Limb.label(): Int = when (this) {
+    Limb.LEFT_HAND -> R.string.annotator_limb_left_hand
+    Limb.RIGHT_HAND -> R.string.annotator_limb_right_hand
+    Limb.LEFT_FOOT -> R.string.annotator_limb_left_foot
+    Limb.RIGHT_FOOT -> R.string.annotator_limb_right_foot
 }
 
 private fun Limb.swatch(): Color = when (this) {
