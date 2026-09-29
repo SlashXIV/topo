@@ -5,6 +5,9 @@ plugins {
     // Routes de navigation typees : Navigation Compose serialise les objets de
     // route, ce qui supprime les chaines de format et leur analyse manuelle.
     alias(libs.plugins.kotlin.serialization)
+    // Embarque le baseline profile genere par :baselineprofile dans le build de
+    // publication : les chemins de demarrage arrivent precompiles.
+    alias(libs.plugins.baselineprofile)
 }
 
 android {
@@ -49,6 +52,11 @@ dependencies {
     // Detection des fuites en DEBUG uniquement : LeakCanary s'installe tout seul
     // et n'entre jamais dans le build de publication.
     debugImplementation(libs.leakcanary.android)
+
+    // Installe le profil a la premiere execution quand le magasin ne l'a pas fait
+    // (installation par adb, magasins tiers).
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(projects.baselineprofile)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)

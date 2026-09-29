@@ -20,6 +20,9 @@ local.properties
 *.class
 output.json
 release/
+# Exception : les sources propres au build de publication, dont le baseline
+# profile genere (app/src/release/generated), sont versionnees.
+!app/src/release/
 captures/
 
 # Rapports lint / tests

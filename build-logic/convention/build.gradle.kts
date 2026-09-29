@@ -42,6 +42,10 @@ gradlePlugin {
             id = "topo.android.hilt"
             implementationClass = "AndroidHiltConventionPlugin"
         }
+        register("androidTest") {
+            id = "topo.android.test"
+            implementationClass = "AndroidTestConventionPlugin"
+        }
         register("androidNative") {
             id = "topo.android.native"
             implementationClass = "AndroidNativeConventionPlugin"

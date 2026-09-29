@@ -35,3 +35,6 @@ include(":feature:settings")
 include(":feature:stats")
 
 include(":vision")
+
+// Mesure et optimisation du demarrage : instrumente :app depuis l'exterieur.
+include(":baselineprofile")
