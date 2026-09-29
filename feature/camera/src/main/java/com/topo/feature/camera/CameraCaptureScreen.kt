@@ -29,6 +29,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -98,7 +99,9 @@ fun CameraCaptureScreen(
             when (val state = uiState) {
                 CaptureUiState.Capturing -> CircularProgressIndicator()
                 is CaptureUiState.Failed -> Text(
-                    text = state.message,
+                    text = state.detail
+                        ?.let { stringResource(R.string.camera_capture_error_detail, it) }
+                        ?: stringResource(R.string.camera_capture_error),
                     color = MaterialTheme.colorScheme.error,
                 )
 
@@ -109,7 +112,11 @@ fun CameraCaptureScreen(
                 onClick = { viewModel.captureBloc(sessionId) },
                 enabled = hasPermission && uiState !is CaptureUiState.Capturing,
             ) {
-                Text(if (hasPermission) "Photographier le bloc" else "Autorisation requise")
+                Text(
+                    stringResource(
+                        if (hasPermission) R.string.camera_capture_action else R.string.camera_permission_required,
+                    ),
+                )
             }
         }
     }

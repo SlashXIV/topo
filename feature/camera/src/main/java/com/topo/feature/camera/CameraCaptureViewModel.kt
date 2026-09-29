@@ -16,7 +16,11 @@ sealed interface CaptureUiState {
     data object Ready : CaptureUiState
     data object Capturing : CaptureUiState
     data class Saved(val blocId: String) : CaptureUiState
-    data class Failed(val message: String) : CaptureUiState
+    /**
+     * Echec de capture. Seul le detail technique est transporte : le libelle est
+     * compose par l'ecran, a partir des ressources.
+     */
+    data class Failed(val detail: String?) : CaptureUiState
 }
 
 @HiltViewModel
@@ -57,9 +61,7 @@ class CameraCaptureViewModel @Inject constructor(
 
             _uiState.value = result.fold(
                 onSuccess = { CaptureUiState.Saved(it) },
-                onFailure = {
-                    CaptureUiState.Failed(it.message ?: "Capture impossible")
-                },
+                onFailure = { CaptureUiState.Failed(it.message) },
             )
         }
     }

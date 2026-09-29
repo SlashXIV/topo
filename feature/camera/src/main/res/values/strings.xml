@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Textes de l'ecran de capture. Typographie francaise : espace insecable
+    ( ) avant « : ; ! ? ».
+-->
+<resources>
+    <string name="camera_capture_action">Photographier le bloc</string>
+    <string name="camera_permission_required">Autorisation requise</string>
+    <string name="camera_capture_error">Capture impossible</string>
+    <string name="camera_capture_error_detail">Capture impossible : %s</string>
+</resources>
