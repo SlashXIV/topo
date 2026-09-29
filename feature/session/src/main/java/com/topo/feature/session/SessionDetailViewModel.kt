@@ -3,6 +3,7 @@ package com.topo.feature.session
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.topo.core.domain.model.Hold
 import com.topo.core.domain.model.Bloc
 import com.topo.core.domain.model.AppSettings
 import com.topo.core.domain.model.BlocStatus
@@ -74,6 +75,8 @@ data class SessionDetailUiState(
     val statusError: StatusFailure? = null,
     val settings: AppSettings = AppSettings.Default,
     val circuit: List<CircuitColor> = emptyList(),
+    /** Prises de chaque bloc, par identifiant : la vignette les dessine. */
+    val holdsByBloc: Map<String, List<Hold>> = emptyMap(),
 )
 
 @HiltViewModel
@@ -120,11 +123,19 @@ class SessionDetailViewModel @Inject constructor(
         // flatMapLatest : changer de seance abandonne l'abonnement precedent, sinon
         // deux flux emettraient en concurrence et l'ecran alternerait entre les deux.
         sessionId.filterNotNull().flatMapLatest(sessionRepository::observeSession),
-        sessionId.filterNotNull().flatMapLatest(blocRepository::observeBlocsForSession),
+        // Blocs et prises ensemble : une vignette ne doit pas afficher un bloc avec
+        // les prises d'une emission precedente.
+        sessionId.filterNotNull().flatMapLatest { id ->
+            combine(
+                blocRepository.observeBlocsForSession(id),
+                blocRepository.observeHoldsForSession(id),
+                ::Pair,
+            )
+        },
         filter,
         errors,
         difficultyContext,
-    ) { session, blocs, activeFilter, failures, difficulty ->
+    ) { session, (blocs, holds), activeFilter, failures, difficulty ->
         SessionDetailUiState(
             session = session,
             // Le filtrage se fait ici et non en SQL : la grille d'une seance tient
@@ -138,6 +149,7 @@ class SessionDetailViewModel @Inject constructor(
             statusError = failures.status,
             settings = difficulty.settings,
             circuit = difficulty.circuit,
+            holdsByBloc = holds,
         )
     }.stateIn(
         scope = viewModelScope,

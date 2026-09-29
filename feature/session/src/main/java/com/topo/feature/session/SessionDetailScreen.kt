@@ -201,6 +201,8 @@ fun SessionDetailScreen(
                             isCompleted = bloc.isCompleted,
                             onClick = { onBlocClick(bloc.id) },
                             onLongClick = { progressBlocId = bloc.id },
+                            zone = bloc.detectionZone,
+                            holds = uiState.holdsByBloc[bloc.id].orEmpty(),
                         )
                     }
                 }

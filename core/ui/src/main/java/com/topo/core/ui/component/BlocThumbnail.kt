@@ -1,5 +1,20 @@
 package com.topo.core.ui.component
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Constraints
+import coil.request.ImageRequest
+import coil.size.Size
+import com.topo.core.domain.model.BoundingBox
+import com.topo.core.domain.model.Hold
+import com.topo.core.domain.model.HoldKind
+import kotlin.math.roundToInt
 import androidx.compose.ui.res.pluralStringResource
 import com.topo.core.ui.R
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -32,6 +47,11 @@ import java.io.File
  * pour connaitre sa forme provoquerait une rafale d'allocations au defilement.
  * C'est la raison d'etre des colonnes `image_width` / `image_height`.
  *
+ * Avec un cadre de bloc, la vignette est RECADREE sur lui et ses prises portent
+ * le halo de sa difficulte : dans une seance, on reconnait chaque bloc — et la
+ * couleur de ses prises — sans l'ouvrir. La photo d'un pan embarque presque
+ * toujours des blocs voisins ; sans recadrage, la vignette les montrerait tous.
+ *
  * L'appui long ouvre la fiche de progression. Une corbeille permanente sur chaque
  * vignette encombrerait une grille dont l'action principale est d'ouvrir le bloc,
  * et placerait une action destructrice a portee de pouce dans une liste defilante.
@@ -52,7 +72,24 @@ fun BlocThumbnail(
     isCompleted: Boolean = false,
     onClick: () -> Unit = {},
     onLongClick: (() -> Unit)? = null,
+    /** Cadre du bloc sur la photo ; null pour la photo entiere. */
+    zone: BoundingBox? = null,
+    /** Prises du bloc, dessinees par-dessus la photo. Les volumes sont ignores. */
+    holds: List<Hold> = emptyList(),
 ) {
+    val context = LocalContext.current
+    val request = remember(imageFile, zone) {
+        ImageRequest.Builder(context)
+            .data(imageFile)
+            .apply {
+                // Recadree, la vignette agrandit la photo : Coil la demanderait a la
+                // taille agrandie, 15 Mo par vignette pour un bloc au tiers de la
+                // photo. 1024 pixels suffisent a une vignette, meme recadree.
+                if (zone != null) size(Size(MAX_DECODED_SIDE, MAX_DECODED_SIDE))
+            }
+            .build()
+    }
+
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
@@ -60,18 +97,25 @@ fun BlocThumbnail(
     ) {
         Box(
             modifier = Modifier
+                // Forme CONSTANTE, celle de la photo, cadre ou non : une vignette
+                // aussi haute que le bloc qu'elle montre casserait la grille —
+                // constate avec un cadre etroit et haut.
                 .aspectRatio(aspectRatio)
+                .clipToBounds()
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = onLongClick,
                 ),
         ) {
             AsyncImage(
-                model = imageFile,
+                model = request,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
+                modifier = if (zone == null) Modifier.fillMaxSize() else Modifier.cropTo(zone, aspectRatio),
+                contentScale = if (zone == null) ContentScale.Crop else ContentScale.FillBounds,
             )
+            if (holds.isNotEmpty()) {
+                HoldsOverlay(holds, zone, aspectRatio, circuitColor ?: BetaColors.Hold, Modifier.fillMaxSize())
+            }
 
             // La pastille de tete porte ce que les reglages mettent en avant.
             // L'appelant decide : la vignette ne connait pas les preferences,
@@ -178,3 +222,67 @@ private fun Color.readableForeground(): Color {
     val luminance = 0.299f * red + 0.587f * green + 0.114f * blue
     return if (luminance > 0.6f) Color(0xFF1B1B1B) else Color.White
 }
+
+/**
+ * Placement de la photo dans la vignette : largeur et hauteur affichees de la
+ * photo, et son decalage.
+ */
+private data class PhotoPlacement(val width: Float, val height: Float, val x: Float, val y: Float) {
+    fun toFrame(normalizedX: Float, normalizedY: Float) = Offset(x + normalizedX * width, y + normalizedY * height)
+}
+
+/**
+ * Agrandit la photo juste assez pour que [zone] couvre la vignette, et la centre
+ * sur le bloc. Sans deborder : pres d'un bord, la vignette s'arrete au bord de la
+ * photo plutot que de montrer du vide. Photo et prises passent par ce seul calcul,
+ * pour qu'un halo tombe toujours sur sa prise.
+ */
+private fun placePhoto(frameWidth: Float, frameHeight: Float, aspectRatio: Float, zone: BoundingBox?): PhotoPlacement {
+    if (zone == null) return PhotoPlacement(frameWidth, frameHeight, 0f, 0f)
+    val width = maxOf(frameWidth / zone.width, frameHeight * aspectRatio / zone.height)
+    val height = width / aspectRatio
+    val x = (frameWidth / 2f - zone.centerX * width).coerceIn(frameWidth - width, 0f)
+    val y = (frameHeight / 2f - zone.centerY * height).coerceIn(frameHeight - height, 0f)
+    return PhotoPlacement(width, height, x, y)
+}
+
+private fun Modifier.cropTo(zone: BoundingBox, aspectRatio: Float): Modifier = layout { measurable, constraints ->
+    val placement = placePhoto(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat(), aspectRatio, zone)
+    val placeable = measurable.measure(
+        Constraints.fixed(placement.width.roundToInt(), placement.height.roundToInt()),
+    )
+    layout(constraints.maxWidth, constraints.maxHeight) {
+        placeable.place(placement.x.roundToInt(), placement.y.roundToInt())
+    }
+}
+
+/**
+ * Prises du bloc sur la vignette, au halo de sa difficulte (blanc sans couleur).
+ * Les volumes sont omis : sur une vignette, ils encombreraient sans rien dire du
+ * bloc.
+ */
+@Composable
+private fun HoldsOverlay(holds: List<Hold>, zone: BoundingBox?, aspectRatio: Float, color: Color, modifier: Modifier) {
+    Spacer(
+        modifier = modifier.drawWithCache {
+            val ring = Stroke(width = 2.dp.toPx())
+            val outline = Stroke(width = 1.dp.toPx())
+            val radius = 6.dp.toPx()
+            val placement = placePhoto(size.width, size.height, aspectRatio, zone)
+            onDrawBehind {
+                for (hold in holds) {
+                    if (hold.kind == HoldKind.VOLUME) continue
+                    // Une prise hors du cadre appartient a un bloc voisin, meme si
+                    // le recadrage laisse voir un peu de photo autour du bloc.
+                    if (zone != null && !zone.containsCenterOf(hold.box)) continue
+                    drawHoldHalo(placement.toFrame(hold.box.centerX, hold.box.centerY), radius, color, ring, outline)
+                }
+            }
+        },
+    )
+}
+
+private fun BoundingBox.containsCenterOf(box: BoundingBox) =
+    box.centerX in left..right && box.centerY in top..bottom
+
+private const val MAX_DECODED_SIDE = 1024
