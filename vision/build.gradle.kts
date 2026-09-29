@@ -56,6 +56,9 @@ dependencies {
     implementation(libs.onnxruntime.android)
     onnxRuntimeAar(libs.onnxruntime.android)
 
+    testImplementation(libs.junit)
+    testImplementation(libs.truth)
+
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.truth)

@@ -2,7 +2,10 @@ package com.topo.vision
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.BitmapRegionDecoder
 import android.graphics.Matrix
+import android.graphics.Rect
+import android.os.Build
 import android.media.ExifInterface
 import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.DetectedHold
@@ -81,20 +84,22 @@ class VisionEngine(
             val current = handle.get()
             check(current != 0L) { "VisionEngine deja ferme" }
 
+            if (image is HoldDetector.ImageFile) {
+                val region = image.region?.let(NormalizedRect::of) ?: FULL_IMAGE
+                val bitmap = decodeForInference(image.file, region)
+                val flat = try {
+                    NativeBridge.nativeDetectFromBitmap(current, bitmap)
+                } finally {
+                    // Plusieurs Mo hors du tas geres par le GC : liberes des
+                    // l'inference faite, pas au bon vouloir du ramasse-miettes.
+                    bitmap.recycle()
+                }
+                return@withContext flat.toDetections().map { it.fromRegion(region) }
+            }
+
             val flat = when (image) {
                 is BitmapSource ->
                     NativeBridge.nativeDetectFromBitmap(current, image.bitmap)
-
-                is HoldDetector.ImageFile -> {
-                    val bitmap = decodeForInference(image.file)
-                    try {
-                        NativeBridge.nativeDetectFromBitmap(current, bitmap)
-                    } finally {
-                        // Plusieurs Mo hors du tas geres par le GC : liberes des
-                        // l'inference faite, pas au bon vouloir du ramasse-miettes.
-                        bitmap.recycle()
-                    }
-                }
 
                 is DirectBufferSource ->
                     NativeBridge.nativeDetectFromDirectBuffer(
@@ -119,33 +124,25 @@ class VisionEngine(
     }
 
     /**
-     * Decode une photo de bloc pour l'inference.
+     * Decode la zone d'une photo de bloc pour l'inference.
      *
-     * Sous-echantillonnee : le modele ne voit que 640 pixels de cote, decoder une
-     * photo de 12 Mpx en entier couterait ~48 Mo pour les jeter aussitot. On garde
-     * au moins le double de l'entree, pour que le redimensionnement final reste
-     * un vrai filtrage et non un saut de pixels.
+     * Seule la ZONE est lue, par BitmapRegionDecoder : c'est elle, et non la photo
+     * entiere, que le modele recoit a 640 pixels. Sur un bloc qui couvre un tiers
+     * de la photo, chaque prise y gagne environ trois fois plus de pixels — les
+     * petites prises, les premieres manquees, en profitent le plus.
+     *
+     * Sous-echantillonnee : on garde au moins le double de l'entree du modele,
+     * pour que le redimensionnement final reste un vrai filtrage et non un saut
+     * de pixels ; au-dela, decoder coute de la memoire pour rien.
      *
      * Redressee selon l'EXIF : BitmapFactory l'ignore, alors que Coil l'applique a
-     * l'affichage. Sans correction, les prises detectees sur une photo prise en
-     * portrait tomberaient a cote de celles que l'ecran montre.
+     * l'affichage. La zone, tracee sur la photo affichee, est donc d'abord ramenee
+     * dans l'image brute (cf. [NormalizedRect.toRaw]).
      */
-    private fun decodeForInference(file: File): Bitmap {
+    internal fun decodeForInference(file: File, region: NormalizedRect = FULL_IMAGE): Bitmap {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeFile(file.path, bounds)
         require(bounds.outWidth > 0 && bounds.outHeight > 0) { "Image illisible : ${file.name}" }
-
-        var sample = 1
-        while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= MIN_DECODED_SIDE) {
-            sample *= 2
-        }
-        val decoded = BitmapFactory.decodeFile(
-            file.path,
-            BitmapFactory.Options().apply {
-                inSampleSize = sample
-                inPreferredConfig = Bitmap.Config.ARGB_8888
-            },
-        ) ?: throw IllegalArgumentException("Image illisible : ${file.name}")
 
         val rotation = when (
             ExifInterface(file.path).getAttributeInt(
@@ -153,14 +150,47 @@ class VisionEngine(
                 ExifInterface.ORIENTATION_NORMAL,
             )
         ) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
-            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
-            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
-            else -> return decoded
+            ExifInterface.ORIENTATION_ROTATE_90 -> 90
+            ExifInterface.ORIENTATION_ROTATE_180 -> 180
+            ExifInterface.ORIENTATION_ROTATE_270 -> 270
+            else -> 0
         }
+
+        val raw = region.toRaw(rotation)
+        val pixels = Rect(
+            (raw.left * bounds.outWidth).toInt(),
+            (raw.top * bounds.outHeight).toInt(),
+            kotlin.math.ceil(raw.right * bounds.outWidth).toInt().coerceAtMost(bounds.outWidth),
+            kotlin.math.ceil(raw.bottom * bounds.outHeight).toInt().coerceAtMost(bounds.outHeight),
+        )
+        require(pixels.width() > 0 && pixels.height() > 0) { "Zone vide" }
+
+        var sample = 1
+        while (maxOf(pixels.width(), pixels.height()) / (sample * 2) >= MIN_DECODED_SIDE) {
+            sample *= 2
+        }
+        val decoder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            BitmapRegionDecoder.newInstance(file.path)
+        } else {
+            @Suppress("DEPRECATION")
+            BitmapRegionDecoder.newInstance(file.path, false)
+        } ?: throw IllegalArgumentException("Image illisible : ${file.name}")
+        val decoded = try {
+            decoder.decodeRegion(
+                pixels,
+                BitmapFactory.Options().apply {
+                    inSampleSize = sample
+                    inPreferredConfig = Bitmap.Config.ARGB_8888
+                },
+            )
+        } finally {
+            decoder.recycle()
+        } ?: throw IllegalArgumentException("Image illisible : ${file.name}")
+
+        if (rotation == 0) return decoded
         val upright = Bitmap.createBitmap(
             decoded, 0, 0, decoded.width, decoded.height,
-            Matrix().apply { postRotate(rotation) }, true,
+            Matrix().apply { postRotate(rotation.toFloat()) }, true,
         )
         decoded.recycle()
         return upright
@@ -190,6 +220,8 @@ class VisionEngine(
     private companion object {
         /** Deux fois l'entree du modele : cf. [decodeForInference]. */
         const val MIN_DECODED_SIDE = 1280
+
+        val FULL_IMAGE = NormalizedRect(0f, 0f, 1f, 1f)
 
         /** Code natif de `Kind::kVolume` (vision_processor.h). */
         const val VOLUME_CODE = 1f
