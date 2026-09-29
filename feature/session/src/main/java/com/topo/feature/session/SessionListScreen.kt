@@ -32,6 +32,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -39,6 +41,7 @@ import com.topo.core.domain.model.SessionSummary
 import com.topo.core.ui.component.ConfirmDialog
 import com.topo.core.ui.component.EmptyState
 import com.topo.core.ui.component.LoadingState
+import com.topo.core.ui.R as CoreR
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -64,13 +67,13 @@ fun SessionListScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("Mes seances") },
+                title = { Text(stringResource(R.string.session_list_title)) },
                 actions = {
                     IconButton(onClick = onStatsClick) {
-                        Icon(Icons.Default.InsertChart, contentDescription = "Progression")
+                        Icon(Icons.Default.InsertChart, contentDescription = stringResource(R.string.session_list_stats))
                     }
                     IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, contentDescription = "Reglages")
+                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.session_list_settings))
                     }
                 },
             )
@@ -80,7 +83,7 @@ fun SessionListScreen(
                 onClick = { showCreateDialog = true },
                 modifier = Modifier.testTag(AddSessionTestTag),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Nouvelle seance")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.session_new))
             }
         },
     ) { padding ->
@@ -88,9 +91,9 @@ fun SessionListScreen(
             SessionListUiState.Loading -> LoadingState(Modifier.padding(padding))
 
             SessionListUiState.Empty -> EmptyState(
-                title = "Aucune seance",
-                message = "Cree une seance pour commencer a enregistrer tes blocs.",
-                actionLabel = "Creer une seance",
+                title = stringResource(R.string.session_list_empty_title),
+                message = stringResource(R.string.session_list_empty_message),
+                actionLabel = stringResource(R.string.session_list_empty_action),
                 onAction = { showCreateDialog = true },
                 modifier = Modifier.padding(padding),
             )
@@ -128,10 +131,14 @@ fun SessionListScreen(
 
     sessionToDelete?.let { summary ->
         ConfirmDialog(
-            title = "Supprimer la seance ?",
-            message = "Les ${summary.blocCount} bloc(s) de cette seance, leurs prises et " +
-                "leurs mouvements seront supprimes. Cette action est irreversible.",
-            confirmLabel = "Supprimer",
+            title = stringResource(R.string.session_delete_title),
+            // Une seance vide a son propre texte : « contient 0 bloc » n'annoncerait rien.
+            message = if (summary.blocCount == 0) {
+                stringResource(R.string.session_delete_message_empty)
+            } else {
+                pluralStringResource(R.plurals.session_delete_message, summary.blocCount, summary.blocCount)
+            },
+            confirmLabel = stringResource(R.string.session_delete_confirm),
             onConfirm = {
                 viewModel.deleteSession(summary.session.id)
                 sessionToDelete = null
@@ -170,7 +177,7 @@ private fun SessionCard(
                 )
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Supprimer la seance")
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.session_card_delete))
             }
         }
     }
@@ -186,20 +193,20 @@ private fun CreateSessionDialog(
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nouvelle seance") },
+        title = { Text(stringResource(R.string.session_new)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = location,
                     onValueChange = { location = it },
-                    label = { Text("Lieu") },
+                    label = { Text(stringResource(R.string.session_create_location)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Notes (optionnel)") },
+                    label = { Text(stringResource(R.string.session_create_notes)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -210,16 +217,17 @@ private fun CreateSessionDialog(
                 // Un lieu vide est refuse par le domaine : mieux vaut desactiver
                 // le bouton que laisser l'utilisateur declencher un echec muet.
                 enabled = location.isNotBlank(),
-            ) { Text("Creer") }
+            ) { Text(stringResource(R.string.session_create_confirm)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(CoreR.string.action_cancel)) } },
     )
 }
 
+@Composable
 private fun SessionSummary.describeProgress(): String = when {
-    blocCount == 0 -> "Aucun bloc"
-    completedCount == 0 -> "$blocCount bloc(s)"
-    else -> "$completedCount / $blocCount reussi(s)"
+    blocCount == 0 -> stringResource(R.string.session_card_no_bloc)
+    completedCount == 0 -> pluralStringResource(R.plurals.session_card_bloc_count, blocCount, blocCount)
+    else -> pluralStringResource(R.plurals.session_card_sent_count, completedCount, completedCount, blocCount)
 }
 
 /** Conversion en date LOCALE : l'instant est stocke en UTC (cf. `Session.date`). */

@@ -1,5 +1,6 @@
 package com.topo.feature.session
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,12 +39,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.topo.core.domain.model.Bloc
 import com.topo.core.domain.model.AppSettings
 import com.topo.core.domain.model.BlocStatus
 import com.topo.core.domain.model.CircuitColor
 import com.topo.core.domain.model.DifficultyDisplay
+import com.topo.core.ui.text.labelRes
 import com.topo.core.ui.theme.BetaColors
 
 const val ProgressSheetTestTag = "bloc-progress-sheet"
@@ -83,7 +86,9 @@ fun BlocProgressSheet(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(
-                text = bloc.grade?.let { "Bloc $it" } ?: "Bloc",
+                text = bloc.grade
+                    ?.let { stringResource(R.string.session_bloc_title_with_grade, it) }
+                    ?: stringResource(R.string.session_bloc_title),
                 style = MaterialTheme.typography.titleLarge,
             )
 
@@ -99,13 +104,13 @@ fun BlocProgressSheet(
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Statut", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.session_bloc_status), style = MaterialTheme.typography.labelLarge)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     BlocStatus.entries.forEach { status ->
                         FilterChip(
                             selected = status == bloc.status,
                             onClick = { onStatusChange(status) },
-                            label = { Text(status.shortLabel()) },
+                            label = { Text(stringResource(status.labelRes)) },
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = status.color().copy(alpha = 0.25f),
                             ),
@@ -127,7 +132,7 @@ fun BlocProgressSheet(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text("Essais", style = MaterialTheme.typography.labelLarge)
+                Text(stringResource(R.string.session_bloc_attempts), style = MaterialTheme.typography.labelLarge)
                 Text(
                     text = "${bloc.attempts}",
                     style = MaterialTheme.typography.headlineSmall,
@@ -136,7 +141,7 @@ fun BlocProgressSheet(
                     onClick = onAttemptAdded,
                     modifier = Modifier.testTag(AddAttemptTestTag),
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Ajouter un essai")
+                    Icon(Icons.Default.Add, contentDescription = stringResource(R.string.session_bloc_add_attempt))
                 }
             }
 
@@ -148,7 +153,7 @@ fun BlocProgressSheet(
             TextButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = null)
                 Text(
-                    text = "Supprimer ce bloc",
+                    text = stringResource(R.string.session_bloc_delete),
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(start = 8.dp),
                 )
@@ -175,14 +180,14 @@ private fun FeelingField(
         OutlinedTextField(
             value = draft,
             onValueChange = { draft = it },
-            label = { Text("Ressenti") },
-            placeholder = { Text("La cle du passage, les sensations...") },
+            label = { Text(stringResource(R.string.session_bloc_feeling)) },
+            placeholder = { Text(stringResource(R.string.session_bloc_feeling_placeholder)) },
             modifier = Modifier.fillMaxWidth(),
         )
         if (draft != initial) {
             AssistChip(
                 onClick = { onCommit(draft) },
-                label = { Text("Enregistrer le ressenti") },
+                label = { Text(stringResource(R.string.session_bloc_feeling_save)) },
                 colors = AssistChipDefaults.assistChipColors(),
             )
         }
@@ -202,10 +207,10 @@ private fun CircuitSection(
     onSelect: (String?) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Couleur du circuit", style = MaterialTheme.typography.labelLarge)
+        Text(stringResource(R.string.session_bloc_circuit), style = MaterialTheme.typography.labelLarge)
         if (circuit.isEmpty()) {
             Text(
-                text = "Aucune couleur definie. Ajoute ton circuit dans les reglages.",
+                text = stringResource(R.string.session_bloc_circuit_empty),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -249,7 +254,7 @@ private fun GradeSection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
-            text = "Cotation (${settings.gradeScale.label})",
+            text = stringResource(R.string.session_bloc_grade, stringResource(settings.gradeScale.labelRes)),
             style = MaterialTheme.typography.labelLarge,
         )
         Row(
@@ -267,12 +272,14 @@ private fun GradeSection(
     }
 }
 
-internal fun BlocStatus.shortLabel(): String = when (this) {
-    BlocStatus.PROJECT -> "Projet"
-    BlocStatus.WORKING -> "En travail"
-    BlocStatus.FLASHED -> "Flash"
-    BlocStatus.SENT -> "Reussi"
-}
+@get:StringRes
+internal val BlocStatus.labelRes: Int
+    get() = when (this) {
+        BlocStatus.PROJECT -> R.string.session_status_project
+        BlocStatus.WORKING -> R.string.session_status_working
+        BlocStatus.FLASHED -> R.string.session_status_flashed
+        BlocStatus.SENT -> R.string.session_status_sent
+    }
 
 internal fun BlocStatus.color(): Color = when (this) {
     BlocStatus.PROJECT -> BetaColors.StatusProject

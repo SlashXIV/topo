@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Textes des ecrans de seance. Typographie francaise : espace insecable
+    ( ) avant « : ; ! ? ».
+-->
+<resources>
+    <!-- Liste des seances -->
+    <string name="session_list_title">Mes séances</string>
+    <string name="session_list_stats">Progression</string>
+    <string name="session_list_settings">Réglages</string>
+    <string name="session_new">Nouvelle séance</string>
+    <string name="session_list_empty_title">Aucune séance</string>
+    <string name="session_list_empty_message">Crée une séance pour commencer à enregistrer tes blocs.</string>
+    <string name="session_list_empty_action">Créer une séance</string>
+    <string name="session_card_delete">Supprimer la séance</string>
+    <string name="session_card_no_bloc">Aucun bloc</string>
+    <plurals name="session_card_bloc_count">
+        <item quantity="one">%d bloc</item>
+        <item quantity="other">%d blocs</item>
+    </plurals>
+    <!-- L'accord suit le nombre de blocs reussis, pas le total : « 1 / 5 réussi ». -->
+    <plurals name="session_card_sent_count">
+        <item quantity="one">%1$d / %2$d réussi</item>
+        <item quantity="other">%1$d / %2$d réussis</item>
+    </plurals>
+
+    <!-- Creation d'une seance -->
+    <string name="session_create_location">Lieu</string>
+    <string name="session_create_notes">Notes (optionnel)</string>
+    <string name="session_create_confirm">Créer</string>
+
+    <!-- Suppression d'une seance -->
+    <string name="session_delete_title">Supprimer la séance ?</string>
+    <string name="session_delete_message_empty">Cette séance ne contient aucun bloc. Cette action est irréversible.</string>
+    <plurals name="session_delete_message">
+        <item quantity="one">Cette séance contient %d bloc. Il sera supprimé avec ses prises et ses mouvements. Cette action est irréversible.</item>
+        <item quantity="other">Cette séance contient %d blocs. Ils seront supprimés avec leurs prises et leurs mouvements. Cette action est irréversible.</item>
+    </plurals>
+    <string name="session_delete_confirm">Supprimer</string>
+
+    <!-- Detail d'une seance -->
+    <string name="session_detail_title_fallback">Séance</string>
+    <string name="session_detail_back">Retour</string>
+    <string name="session_detail_import">Importer depuis la galerie</string>
+    <string name="session_detail_capture">Photographier</string>
+    <string name="session_detail_empty_title">Aucun bloc</string>
+    <string name="session_detail_empty_message">Photographie un bloc ou importe une photo depuis ta galerie.</string>
+    <string name="session_detail_filter_empty_title">Aucun bloc ne correspond</string>
+    <string name="session_detail_filter_empty_message">Change de filtre pour revoir les autres blocs de la séance.</string>
+    <string name="session_detail_filter_empty_action">Tout afficher</string>
+    <string name="session_import_error">Import impossible</string>
+    <string name="session_import_error_detail">Import impossible : %s</string>
+
+    <!-- Filtres de la grille -->
+    <string name="session_filter_all">Tous</string>
+    <string name="session_filter_projects">Projets</string>
+    <string name="session_filter_working">En travail</string>
+    <string name="session_filter_sent">Réussis</string>
+
+    <!-- Statuts d'un bloc -->
+    <string name="session_status_project">Projet</string>
+    <string name="session_status_working">En travail</string>
+    <string name="session_status_flashed">Flash</string>
+    <string name="session_status_sent">Réussi</string>
+    <plurals name="session_status_error_flash">
+        <item quantity="one">Un flash est une réussite du premier essai : %d essai enregistré</item>
+        <item quantity="other">Un flash est une réussite du premier essai : %d essais enregistrés</item>
+    </plurals>
+    <string name="session_status_error">Changement de statut impossible</string>
+    <string name="session_status_error_detail">Changement de statut impossible : %s</string>
+
+    <!-- Fiche de progression d'un bloc -->
+    <string name="session_bloc_title">Bloc</string>
+    <string name="session_bloc_title_with_grade">Bloc %s</string>
+    <string name="session_bloc_status">Statut</string>
+    <string name="session_bloc_attempts">Essais</string>
+    <string name="session_bloc_add_attempt">Ajouter un essai</string>
+    <string name="session_bloc_feeling">Ressenti</string>
+    <string name="session_bloc_feeling_placeholder">La clé du passage, les sensations…</string>
+    <string name="session_bloc_feeling_save">Enregistrer le ressenti</string>
+    <string name="session_bloc_circuit">Couleur du circuit</string>
+    <string name="session_bloc_circuit_empty">Aucune couleur définie. Ajoute ton circuit dans les réglages.</string>
+    <string name="session_bloc_grade">Cotation (%s)</string>
+    <string name="session_bloc_delete">Supprimer ce bloc</string>
+    <string name="session_bloc_delete_title">Supprimer le bloc ?</string>
+    <string name="session_bloc_delete_message">Ses prises, ses mouvements et sa photo seront supprimés.</string>
+</resources>

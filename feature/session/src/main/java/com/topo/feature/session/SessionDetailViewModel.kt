@@ -46,6 +46,20 @@ enum class BlocFilter {
     }
 }
 
+/**
+ * Echec d'import depuis la galerie. Le ViewModel ne porte aucun texte d'interface :
+ * seul le detail technique transite, l'ecran compose le message.
+ */
+data class ImportFailure(val detail: String?)
+
+/** Refus d'un changement de statut, traduit en message par l'ecran. */
+sealed interface StatusFailure {
+    /** Flash declare alors que plusieurs essais sont deja enregistres. */
+    data object FlashAfterSeveralAttempts : StatusFailure
+
+    data class Other(val detail: String?) : StatusFailure
+}
+
 data class SessionDetailUiState(
     val session: Session? = null,
     /** Blocs apres application du filtre — ce que la grille affiche. */
@@ -54,8 +68,8 @@ data class SessionDetailUiState(
     val totalBlocs: Int = 0,
     val filter: BlocFilter = BlocFilter.ALL,
     val isLoading: Boolean = true,
-    val importError: String? = null,
-    val statusError: String? = null,
+    val importError: ImportFailure? = null,
+    val statusError: StatusFailure? = null,
     val settings: AppSettings = AppSettings.Default,
     val circuit: List<CircuitColor> = emptyList(),
 )
@@ -74,8 +88,8 @@ class SessionDetailViewModel @Inject constructor(
 
     private val sessionId = MutableStateFlow<String?>(null)
     private val filter = MutableStateFlow(BlocFilter.ALL)
-    private val importError = MutableStateFlow<String?>(null)
-    private val statusError = MutableStateFlow<String?>(null)
+    private val importError = MutableStateFlow<ImportFailure?>(null)
+    private val statusError = MutableStateFlow<StatusFailure?>(null)
 
     /**
      * Flux regroupes.
@@ -146,7 +160,7 @@ class SessionDetailViewModel @Inject constructor(
         val currentSessionId = sessionId.value ?: return
         viewModelScope.launch {
             importBloc(sessionId = currentSessionId, openStream = openStream)
-                .onFailure { importError.value = "Import impossible : ${it.message}" }
+                .onFailure { importError.value = ImportFailure(it.message) }
         }
     }
 
@@ -158,7 +172,7 @@ class SessionDetailViewModel @Inject constructor(
         viewModelScope.launch {
             statusError.value = null
             setBlocStatus(blocId, status)
-                .onFailure { statusError.value = it.message }
+                .onFailure { statusError.value = it.toStatusFailure(status) }
         }
     }
 
@@ -208,8 +222,21 @@ class SessionDetailViewModel @Inject constructor(
     }
 }
 
+/**
+ * Le cas d'usage ne refuse un statut qu'a un seul titre, le flash apres plusieurs
+ * essais, signale par une IllegalStateException ; tout autre echec (bloc disparu)
+ * est remonte tel quel. Son message, redige pour les journaux, n'est jamais
+ * affiche comme libelle.
+ */
+private fun Throwable.toStatusFailure(requested: BlocStatus): StatusFailure =
+    if (requested == BlocStatus.FLASHED && this is IllegalStateException) {
+        StatusFailure.FlashAfterSeveralAttempts
+    } else {
+        StatusFailure.Other(message)
+    }
+
 /** Les deux sources d'erreur de l'ecran, regroupees pour tenir dans un `combine` type. */
-private data class Errors(val import: String?, val status: String?)
+private data class Errors(val import: ImportFailure?, val status: StatusFailure?)
 
 /** Ce qu'il faut pour afficher et saisir une difficulte. */
 private data class DifficultyContext(

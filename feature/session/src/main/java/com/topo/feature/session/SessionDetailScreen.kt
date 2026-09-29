@@ -1,6 +1,7 @@
 package com.topo.feature.session
 
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +38,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -90,8 +93,11 @@ fun SessionDetailScreen(
         }
     }
 
-    uiState.importError?.let { message ->
-        LaunchedEffect(message) {
+    uiState.importError?.let { failure ->
+        val message = failure.detail
+            ?.let { stringResource(R.string.session_import_error_detail, it) }
+            ?: stringResource(R.string.session_import_error)
+        LaunchedEffect(failure) {
             snackbarHostState.showSnackbar(message)
             viewModel.acknowledgeImportError()
         }
@@ -102,10 +108,10 @@ fun SessionDetailScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(uiState.session?.locationName ?: "Seance") },
+                title = { Text(uiState.session?.locationName ?: stringResource(R.string.session_detail_title_fallback)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.session_detail_back))
                     }
                 },
                 actions = {
@@ -118,7 +124,7 @@ fun SessionDetailScreen(
                     ) {
                         Icon(
                             Icons.Default.PhotoLibrary,
-                            contentDescription = "Importer depuis la galerie",
+                            contentDescription = stringResource(R.string.session_detail_import),
                         )
                     }
                 },
@@ -128,7 +134,7 @@ fun SessionDetailScreen(
             ExtendedFloatingActionButton(
                 onClick = { onCaptureBloc(sessionId) },
                 modifier = Modifier.testTag(CaptureBlocTestTag),
-                text = { Text("Photographier") },
+                text = { Text(stringResource(R.string.session_detail_capture)) },
                 icon = { Icon(Icons.Default.PhotoCamera, contentDescription = null) },
             )
         },
@@ -147,16 +153,16 @@ fun SessionDetailScreen(
                 uiState.isLoading -> LoadingState()
 
                 uiState.totalBlocs == 0 -> EmptyState(
-                    title = "Aucun bloc",
-                    message = "Photographie un bloc ou importe une photo depuis ta galerie.",
-                    actionLabel = "Importer depuis la galerie",
+                    title = stringResource(R.string.session_detail_empty_title),
+                    message = stringResource(R.string.session_detail_empty_message),
+                    actionLabel = stringResource(R.string.session_detail_import),
                     onAction = { pickImage.launch(imageOnlyRequest) },
                 )
 
                 uiState.blocs.isEmpty() -> EmptyState(
-                    title = "Aucun bloc ne correspond",
-                    message = "Change de filtre pour revoir les autres blocs de la seance.",
-                    actionLabel = "Tout afficher",
+                    title = stringResource(R.string.session_detail_filter_empty_title),
+                    message = stringResource(R.string.session_detail_filter_empty_message),
+                    actionLabel = stringResource(R.string.session_detail_filter_empty_action),
                     onAction = { viewModel.selectFilter(BlocFilter.ALL) },
                 )
 
@@ -184,7 +190,7 @@ fun SessionDetailScreen(
                             grade = bloc.grade,
                             circuitColor = color?.let { Color(it.argb) },
                             circuitName = color?.name,
-                            statusLabel = bloc.status.shortLabel(),
+                            statusLabel = stringResource(bloc.status.labelRes),
                             statusColor = bloc.status.color(),
                             attempts = bloc.attempts,
                             isCompleted = bloc.isCompleted,
@@ -211,7 +217,7 @@ fun SessionDetailScreen(
                 circuit = uiState.circuit,
                 onColorChange = { viewModel.setBlocColor(bloc.id, it) },
                 onGradeChange = { viewModel.setBlocGrade(bloc.id, it, uiState.settings.gradeScale) },
-                statusError = uiState.statusError,
+                statusError = uiState.statusError?.let { statusFailureMessage(it, bloc.attempts) },
                 onStatusChange = { viewModel.changeStatus(bloc.id, it) },
                 onAttemptAdded = { viewModel.addAttempt(bloc.id) },
                 onFeelingChange = { viewModel.updateFeeling(bloc.id, it) },
@@ -229,9 +235,9 @@ fun SessionDetailScreen(
 
     blocToDelete?.let { bloc ->
         ConfirmDialog(
-            title = "Supprimer le bloc ?",
-            message = "Ses prises, ses mouvements et sa photo seront supprimes.",
-            confirmLabel = "Supprimer",
+            title = stringResource(R.string.session_bloc_delete_title),
+            message = stringResource(R.string.session_bloc_delete_message),
+            confirmLabel = stringResource(R.string.session_delete_confirm),
             onConfirm = {
                 viewModel.deleteBloc(bloc.id)
                 blocToDelete = null
@@ -257,15 +263,31 @@ private fun BlocFilterRow(
             FilterChip(
                 selected = filter == selected,
                 onClick = { onSelect(filter) },
-                label = { Text(filter.label()) },
+                label = { Text(stringResource(filter.labelRes)) },
             )
         }
     }
 }
 
-private fun BlocFilter.label(): String = when (this) {
-    BlocFilter.ALL -> "Tous"
-    BlocFilter.PROJECTS -> "Projets"
-    BlocFilter.WORKING -> "En travail"
-    BlocFilter.SENT -> "Reussis"
+@get:StringRes
+private val BlocFilter.labelRes: Int
+    get() = when (this) {
+        BlocFilter.ALL -> R.string.session_filter_all
+        BlocFilter.PROJECTS -> R.string.session_filter_projects
+        BlocFilter.WORKING -> R.string.session_filter_working
+        BlocFilter.SENT -> R.string.session_filter_sent
+    }
+
+/**
+ * Le nombre d'essais vient du bloc affiche et non de l'erreur : c'est celui que
+ * l'utilisateur a sous les yeux dans la fiche, donc celui qui justifie le refus.
+ */
+@Composable
+private fun statusFailureMessage(failure: StatusFailure, attempts: Int): String = when (failure) {
+    StatusFailure.FlashAfterSeveralAttempts ->
+        pluralStringResource(R.plurals.session_status_error_flash, attempts, attempts)
+
+    is StatusFailure.Other -> failure.detail
+        ?.let { stringResource(R.string.session_status_error_detail, it) }
+        ?: stringResource(R.string.session_status_error)
 }

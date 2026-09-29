@@ -1,5 +1,6 @@
 package com.topo.feature.session
 
+import androidx.annotation.StringRes
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -7,6 +8,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextInput
+import androidx.test.platform.app.InstrumentationRegistry
 import com.topo.core.domain.model.Session
 import com.topo.core.domain.model.SessionSummary
 import com.topo.core.domain.repository.SessionRepository
@@ -32,13 +34,16 @@ class SessionListScreenTest {
 
     private val repository = FakeSessionRepository()
 
+    private fun string(@StringRes id: Int): String =
+        InstrumentationRegistry.getInstrumentation().targetContext.getString(id)
+
     @Test
     fun an_empty_list_shows_the_empty_state_and_not_a_blank_screen() {
         composeRule.setContent {
             SessionListScreen(onSessionClick = {}, viewModel = SessionListViewModel(repository))
         }
 
-        composeRule.onNodeWithText("Aucune seance").assertIsDisplayed()
+        composeRule.onNodeWithText(string(R.string.session_list_empty_title)).assertIsDisplayed()
     }
 
     @Test
@@ -48,8 +53,8 @@ class SessionListScreenTest {
         }
 
         composeRule.onNodeWithTag(AddSessionTestTag).performClick()
-        composeRule.onNodeWithText("Lieu").performTextInput("Arkose Nation")
-        composeRule.onNodeWithText("Creer").performClick()
+        composeRule.onNodeWithText(string(R.string.session_create_location)).performTextInput("Arkose Nation")
+        composeRule.onNodeWithText(string(R.string.session_create_confirm)).performClick()
 
         // Aucune notification manuelle n'est emise : c'est l'ecriture dans le depot
         // qui fait reemettre le Flow, et l'ecran suit.
@@ -63,11 +68,11 @@ class SessionListScreenTest {
         }
 
         composeRule.onNodeWithTag(AddSessionTestTag).performClick()
-        composeRule.onNodeWithText("Lieu").performTextInput("   ")
+        composeRule.onNodeWithText(string(R.string.session_create_location)).performTextInput("   ")
 
         // Le domaine refuse un lieu vide : desactiver le bouton vaut mieux que
         // laisser l'utilisateur declencher un echec silencieux.
-        composeRule.onNodeWithText("Creer").assertIsNotEnabled()
+        composeRule.onNodeWithText(string(R.string.session_create_confirm)).assertIsNotEnabled()
     }
 
     @Test
@@ -95,7 +100,10 @@ class SessionListScreenTest {
             SessionListScreen(onSessionClick = {}, viewModel = SessionListViewModel(repository))
         }
 
-        composeRule.onNodeWithText("2 / 5 reussi(s)").assertIsDisplayed()
+        composeRule.onNodeWithText(
+            InstrumentationRegistry.getInstrumentation().targetContext.resources
+                .getQuantityString(R.plurals.session_card_sent_count, 2, 2, 5),
+        ).assertIsDisplayed()
     }
 
     private class FakeSessionRepository : SessionRepository {
