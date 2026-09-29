@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.topo.core.domain.usecase.DetectHoldsUseCase
+import com.topo.core.domain.usecase.KeepHoldColorUseCase
 import java.io.IOException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -152,6 +153,9 @@ fun AnnotatorScreen(
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             AnnotationToolbar(
                 mode = uiState.mode,
+                isPickingColor = uiState.isPickingColor,
+                onPickColor = viewModel::startColorPick,
+                onCancelPick = viewModel::cancelColorPick,
                 selectedLimb = uiState.selectedLimb,
                 holdCount = detail?.holds?.size ?: 0,
                 movementCount = movementCount,
@@ -218,8 +222,24 @@ fun AnnotatorScreen(
                         imageFile = imageFile,
                         mode = uiState.mode,
                         selectedLimb = uiState.selectedLimb,
-                        onHoldRequested = viewModel::addHoldAt,
-                        onHoldRemoved = viewModel::removeHold,
+                        // Pendant la pipette, un appui sur le mur ne pose rien : le
+                        // doigt vise une prise, un appui a cote serait un rate.
+                        onHoldRequested = if (uiState.isPickingColor) {
+                            { _, _ -> }
+                        } else {
+                            viewModel::addHoldAt
+                        },
+                        onHoldRemoved = { holdId ->
+                            if (uiState.isPickingColor) {
+                                scope.launch {
+                                    viewModel.keepColorOf(holdId)?.message()?.let {
+                                        snackbarHostState.showSnackbar(it)
+                                    }
+                                }
+                            } else {
+                                viewModel.removeHold(holdId)
+                            }
+                        },
                         onTraceCompleted = viewModel::completeTrace,
                         // Hors mode rejeu, le canevas ignore la progression et
                         // trace la sequence entiere : c'est le mode edition.
@@ -238,6 +258,9 @@ fun AnnotatorScreen(
 @Composable
 private fun AnnotationToolbar(
     mode: AnnotationMode,
+    isPickingColor: Boolean,
+    onPickColor: () -> Unit,
+    onCancelPick: () -> Unit,
     selectedLimb: Limb,
     holdCount: Int,
     movementCount: Int,
@@ -276,7 +299,7 @@ private fun AnnotationToolbar(
         // affordance visuelle — c'est precisement ce qu'une ligne de texte resout
         // mieux qu'une icone.
         Text(
-            text = mode.hint(),
+            text = if (isPickingColor) PICK_COLOR_HINT else mode.hint(),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(vertical = 2.dp),
@@ -315,9 +338,14 @@ private fun AnnotationToolbar(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 // La detection PROPOSE des prises : elle vit donc avec la pose
                 // manuelle, et se corrige avec le meme geste — un appui retire.
-                if (mode == AnnotationMode.ADD_HOLD) {
+                if (mode == AnnotationMode.ADD_HOLD && isPickingColor) {
+                    FilledTonalButton(onClick = onCancelPick) { Text("Annuler") }
+                } else if (mode == AnnotationMode.ADD_HOLD) {
                     FilledTonalButton(onClick = onDetect, enabled = !isDetecting) {
                         Text(if (isDetecting) "Detection..." else "Detecter les prises")
+                    }
+                    FilledTonalButton(onClick = onPickColor, enabled = holdCount > 0) {
+                        Text("Garder une couleur")
                     }
                 }
                 TextButton(onClick = onUndo, enabled = hasSomethingToUndo) {
@@ -346,6 +374,21 @@ private fun DetectHoldsUseCase.Result.message(): String = when (this) {
         alreadyPlaced > 0 -> "Aucune nouvelle prise : toutes sont deja posees."
         else -> "Aucune prise detectee sur cette photo."
     }
+}
+
+private const val PICK_COLOR_HINT =
+    "Appuie sur une prise de ton bloc : seules les prises de sa couleur resteront, " +
+        "avec les volumes et les prises de ton beta."
+
+private fun KeepHoldColorUseCase.Result.message(): String = when (this) {
+    KeepHoldColorUseCase.Result.NoReferenceColor ->
+        "Cette prise n'a pas de couleur mesuree. Relance la detection et choisis une prise detectee."
+    is KeepHoldColorUseCase.Result.Filtered ->
+        if (removed == 0) {
+            "Aucune prise retiree : toutes sont de cette couleur, des volumes ou dans ton beta."
+        } else {
+            "$removed prises retirees, $kept gardees. Relance la detection pour les retrouver."
+        }
 }
 
 private fun AnnotationMode.label(): String = when (this) {

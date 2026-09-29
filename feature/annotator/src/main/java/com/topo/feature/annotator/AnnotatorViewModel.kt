@@ -12,6 +12,7 @@ import com.topo.core.domain.repository.BlocRepository
 import com.topo.core.domain.usecase.AddManualHoldUseCase
 import com.topo.core.domain.usecase.BuildMovementSequenceUseCase
 import com.topo.core.domain.usecase.DetectHoldsUseCase
+import com.topo.core.domain.usecase.KeepHoldColorUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import javax.inject.Inject
@@ -31,6 +32,11 @@ data class AnnotatorUiState(
     val imageFile: File? = null,
     val mode: AnnotationMode = AnnotationMode.ADD_HOLD,
     val selectedLimb: Limb = Limb.RIGHT_HAND,
+    /**
+     * Le prochain appui sur une prise en designe la couleur au lieu de la
+     * retirer. Etat explicite et visible : le meme geste change de sens.
+     */
+    val isPickingColor: Boolean = false,
 )
 
 @HiltViewModel
@@ -42,6 +48,7 @@ class AnnotatorViewModel @Inject constructor(
     private val buildMovementSequence: BuildMovementSequenceUseCase,
     private val imageExporter: BetaImageExporter,
     private val detectHolds: DetectHoldsUseCase,
+    private val keepHoldColor: KeepHoldColorUseCase,
 ) : ViewModel() {
 
     private val blocId = MutableStateFlow<String?>(null)
@@ -81,7 +88,28 @@ class AnnotatorViewModel @Inject constructor(
     }
 
     fun selectMode(mode: AnnotationMode) {
-        editorState.value = editorState.value.copy(mode = mode)
+        // Changer de mode abandonne la pipette : revenir aux prises plus tard ne
+        // doit pas trouver un appui encore detourne.
+        editorState.value = editorState.value.copy(mode = mode, isPickingColor = false)
+    }
+
+    fun startColorPick() {
+        editorState.value = editorState.value.copy(isPickingColor = true)
+    }
+
+    fun cancelColorPick() {
+        editorState.value = editorState.value.copy(isPickingColor = false)
+    }
+
+    /**
+     * Ne garde que les prises de la couleur de [holdId], et quitte la pipette.
+     *
+     * @return null si le bloc n'est pas encore charge.
+     */
+    suspend fun keepColorOf(holdId: String): KeepHoldColorUseCase.Result? {
+        cancelColorPick()
+        val detail = uiState.value.blocDetail ?: return null
+        return keepHoldColor(detail, holdId)
     }
 
     fun selectLimb(limb: Limb) {
