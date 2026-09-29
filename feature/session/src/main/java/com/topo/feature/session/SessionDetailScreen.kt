@@ -34,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -70,7 +71,7 @@ fun SessionDetailScreen(
 
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
-    var progressBlocId by remember { mutableStateOf<String?>(null) }
+    var progressBlocId by rememberSaveable { mutableStateOf<String?>(null) }
     var blocToDelete by remember { mutableStateOf<Bloc?>(null) }
 
     val imageOnlyRequest = remember {

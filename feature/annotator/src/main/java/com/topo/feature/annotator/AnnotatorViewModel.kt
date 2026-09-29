@@ -2,6 +2,7 @@ package com.topo.feature.annotator
 
 import android.content.Intent
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.topo.core.domain.model.BlocDetail
@@ -57,13 +58,18 @@ class AnnotatorViewModel @Inject constructor(
     private val imageExporter: BetaImageExporter,
     private val detectHolds: DetectHoldsUseCase,
     private val keepHoldColor: KeepHoldColorUseCase,
+    private val savedState: SavedStateHandle,
 ) : ViewModel() {
 
     private val blocId = MutableStateFlow<String?>(null)
 
-    private val editorState = MutableStateFlow(
-        AnnotatorUiState(mode = AnnotationMode.ADD_HOLD, selectedLimb = Limb.RIGHT_HAND),
-    )
+    private val editorState = MutableStateFlow(EditorStateSaver.restore(savedState))
+
+    /** Toute modification de l'editeur passe ici : elle est sauvee dans la foulee. */
+    private fun edit(transform: AnnotatorUiState.() -> AnnotatorUiState) {
+        editorState.value = editorState.value.transform()
+        EditorStateSaver.save(editorState.value, savedState)
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val blocDetail = blocId
@@ -98,35 +104,31 @@ class AnnotatorViewModel @Inject constructor(
     fun selectMode(mode: AnnotationMode) {
         // Changer de mode abandonne la pipette : revenir aux prises plus tard ne
         // doit pas trouver un appui encore detourne.
-        editorState.value = editorState.value.copy(
-            mode = mode,
-            isPickingColor = false,
-            isDrawingZone = false,
-        )
+        edit { copy(mode = mode, isPickingColor = false, isDrawingZone = false) }
     }
 
     fun startZoneDrawing() {
-        editorState.value = editorState.value.copy(isDrawingZone = true, isPickingColor = false)
+        edit { copy(isDrawingZone = true, isPickingColor = false) }
     }
 
     fun cancelZoneDrawing() {
-        editorState.value = editorState.value.copy(isDrawingZone = false)
+        edit { copy(isDrawingZone = false) }
     }
 
     fun setDetectionZone(zone: BoundingBox) {
-        editorState.value = editorState.value.copy(detectionZone = zone, isDrawingZone = false)
+        edit { copy(detectionZone = zone, isDrawingZone = false) }
     }
 
     fun clearDetectionZone() {
-        editorState.value = editorState.value.copy(detectionZone = null)
+        edit { copy(detectionZone = null) }
     }
 
     fun startColorPick() {
-        editorState.value = editorState.value.copy(isPickingColor = true)
+        edit { copy(isPickingColor = true) }
     }
 
     fun cancelColorPick() {
-        editorState.value = editorState.value.copy(isPickingColor = false)
+        edit { copy(isPickingColor = false) }
     }
 
     /**
@@ -141,7 +143,7 @@ class AnnotatorViewModel @Inject constructor(
     }
 
     fun selectLimb(limb: Limb) {
-        editorState.value = editorState.value.copy(selectedLimb = limb)
+        edit { copy(selectedLimb = limb) }
     }
 
     fun addHoldAt(normalizedX: Float, normalizedY: Float) {

@@ -1,5 +1,6 @@
 package com.topo.feature.session
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.topo.core.domain.model.Bloc
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -84,10 +86,16 @@ class SessionDetailViewModel @Inject constructor(
     circuitColorRepository: CircuitColorRepository,
     private val recordAttempt: RecordAttemptUseCase,
     private val setBlocStatus: SetBlocStatusUseCase,
+    private val savedState: SavedStateHandle,
 ) : ViewModel() {
 
     private val sessionId = MutableStateFlow<String?>(null)
-    private val filter = MutableStateFlow(BlocFilter.ALL)
+
+    // Dans le SavedStateHandle : le filtre survit a la terminaison du processus,
+    // frequente quand on quitte Topo pour la galerie ou l'appareil photo. Par nom,
+    // pour qu'un reordonnancement de l'enumeration ne change pas le filtre rendu.
+    private val filter = savedState.getStateFlow(FILTER_KEY, BlocFilter.ALL.name)
+        .map { name -> BlocFilter.entries.firstOrNull { it.name == name } ?: BlocFilter.ALL }
     private val importError = MutableStateFlow<ImportFailure?>(null)
     private val statusError = MutableStateFlow<StatusFailure?>(null)
 
@@ -143,7 +151,7 @@ class SessionDetailViewModel @Inject constructor(
     }
 
     fun selectFilter(filter: BlocFilter) {
-        this.filter.value = filter
+        savedState[FILTER_KEY] = filter.name
     }
 
     /** Fichier image d'un bloc, pour l'affichage de la vignette. */
@@ -243,3 +251,5 @@ private data class DifficultyContext(
     val settings: AppSettings,
     val circuit: List<CircuitColor>,
 )
+
+private const val FILTER_KEY = "session.filter"

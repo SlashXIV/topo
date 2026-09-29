@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -174,7 +175,7 @@ private fun FeelingField(
     initial: String,
     onCommit: (String) -> Unit,
 ) {
-    var draft by remember(initial) { mutableStateOf(initial) }
+    var draft by rememberSaveable(initial) { mutableStateOf(initial) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(

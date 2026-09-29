@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,7 +61,7 @@ fun SessionListScreen(
     viewModel: SessionListViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var showCreateDialog by remember { mutableStateOf(false) }
+    var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     var sessionToDelete by remember { mutableStateOf<SessionSummary?>(null) }
 
     Scaffold(
@@ -188,8 +189,8 @@ private fun CreateSessionDialog(
     onConfirm: (locationName: String, notes: String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var location by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf("") }
+    var location by rememberSaveable { mutableStateOf("") }
+    var notes by rememberSaveable { mutableStateOf("") }
 
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
