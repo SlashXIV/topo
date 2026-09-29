@@ -61,8 +61,12 @@ class KeepHoldColorUseCase @Inject constructor(
         /**
          * En dessous, une couleur est NEUTRE (blanc, gris, noir) : sa teinte n'est
          * que du bruit de capteur, et seule sa luminosite la distingue.
+         *
+         * Mesure sur une photo de salle reelle : prises grises a 3-4, prises
+         * VIOLETTES a 7-9 seulement — l'eclairage de salle desature fortement. Un
+         * seuil a 12, la valeur intuitive, aurait pris le violet pour du gris.
          */
-        const val NEUTRAL_CHROMA = 12f
+        const val NEUTRAL_CHROMA = 6f
 
         /** Ecart de luminosite toleree entre deux neutres : blanc et gris clair se separent la. */
         const val NEUTRAL_LIGHTNESS_TOLERANCE = 18f
@@ -72,9 +76,10 @@ class KeepHoldColorUseCase @Inject constructor(
          *
          * La teinte et non la distance Lab complete : la meme prise passe de
          * l'ombre au projecteur en changeant de luminosite, beaucoup moins de
-         * teinte.
+         * teinte. Mesure : trois prises violettes du meme mur s'etalent sur 23
+         * points de luminosite mais 21 degres de teinte seulement.
          */
-        const val HUE_TOLERANCE = 25f
+        const val HUE_TOLERANCE = 30f
 
         /** Garde-fou sur la luminosite : un rose et un rouge ont une teinte proche. */
         const val CHROMATIC_LIGHTNESS_TOLERANCE = 30f

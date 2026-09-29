@@ -16,20 +16,27 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
 /**
- * Couleurs CIELAB plausibles d'un mur de salle, choisies a la main : c'est leur
- * ECART qui compte, pas leur precision. A remplacer par des mesures sur photo
- * reelle une fois les seuils calibres.
+ * Couleurs CIELAB. Violet, gris, jaune et rouge sont MESUREES sur une photo de
+ * salle reelle (Climb Up), par le miroir Python de la mesure native ; blanc et
+ * rose, absents de cette photo, sont choisis a la main.
  */
 class KeepHoldColorUseCaseTest {
 
+    // Mesurees.
+    private val purple = HoldColor(29f, 7.6f, -2.5f)
+    private val purpleLit = HoldColor(52f, 7.0f, -0.7f)
+    private val purpleOther = HoldColor(30f, 8.0f, -4.1f)
+    private val downclimbGrey = HoldColor(25f, 1.1f, 2.8f)
+    private val greyVolume = HoldColor(45f, 0.1f, 4.0f)
+    private val yellow = HoldColor(42f, 7.6f, 43.3f)
+    private val red = HoldColor(38f, 37.7f, 24.5f)
+    private val redLit = HoldColor(54f, 24.7f, 11.0f)
+
+    // Choisies a la main.
     private val white = HoldColor(90f, 0f, 3f)
     private val whiteInShade = HoldColor(78f, 1f, 4f)
     private val lightGrey = HoldColor(62f, 0f, 2f)
-    private val purple = HoldColor(35f, 35f, -40f)
-    private val purpleInShade = HoldColor(24f, 28f, -34f)
-    private val red = HoldColor(45f, 62f, 40f)
-    private val pink = HoldColor(78f, 30f, 5f)
-    private val yellow = HoldColor(82f, 5f, 75f)
+    private val pink = HoldColor(80f, 25f, 2f)
 
     @Test
     fun white_holds_are_kept_even_in_shade_and_light_grey_ones_go() = runTest {
@@ -48,18 +55,44 @@ class KeepHoldColorUseCaseTest {
     }
 
     @Test
-    fun a_saturated_colour_survives_a_change_of_lighting_but_not_a_change_of_hue() = runTest {
+    fun desaturated_purple_holds_are_kept_together_and_grey_ones_go() = runTest {
         val beta = DeletingBetaRepository()
         val detail = detail(
             hold("ref", purple),
-            hold("shade", purpleInShade),
+            hold("lit", purpleLit),
+            hold("other", purpleOther),
+            hold("grey", downclimbGrey),
+            hold("yellow", yellow),
             hold("red", red),
-            hold("white", white),
         )
 
         KeepHoldColorUseCase(beta)(detail, "ref")
 
-        assertThat(beta.deleted).containsExactly("red", "white")
+        // Le violet de salle n'est sature qu'a 7-9 : il reste distinct du gris (3-4).
+        assertThat(beta.deleted).containsExactly("grey", "yellow", "red")
+    }
+
+    @Test
+    fun a_grey_volume_stays_but_a_grey_downclimb_hold_goes() = runTest {
+        val beta = DeletingBetaRepository()
+        val detail = detail(
+            hold("ref", yellow),
+            hold("volume", greyVolume, kind = HoldKind.VOLUME),
+            hold("downclimb", downclimbGrey),
+        )
+
+        KeepHoldColorUseCase(beta)(detail, "ref")
+
+        assertThat(beta.deleted).containsExactly("downclimb")
+    }
+
+    @Test
+    fun a_red_hold_stays_red_under_a_spotlight() = runTest {
+        val beta = DeletingBetaRepository()
+
+        KeepHoldColorUseCase(beta)(detail(hold("ref", red), hold("lit", redLit), hold("y", yellow)), "ref")
+
+        assertThat(beta.deleted).containsExactly("y")
     }
 
     @Test
