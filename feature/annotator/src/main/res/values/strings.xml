@@ -4,6 +4,7 @@
     <string name="annotator_title_fallback">Annotation</string>
     <string name="annotator_back">Retour</string>
     <string name="annotator_share_beta">Partager le beta</string>
+    <string name="annotator_open_relief">Voir en 3D</string>
     <string name="annotator_share_failed">Impossible d\'enregistrer l\'image</string>
     <string name="annotator_loading_bloc">Chargement du bloc…</string>
 

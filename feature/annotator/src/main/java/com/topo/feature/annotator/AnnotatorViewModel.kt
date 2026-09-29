@@ -14,6 +14,7 @@ import com.topo.core.domain.repository.BetaRepository
 import com.topo.core.domain.repository.BlocImageStore
 import com.topo.core.domain.repository.BlocRepository
 import com.topo.core.domain.repository.CircuitColorRepository
+import com.topo.core.domain.repository.ReliefEstimator
 import com.topo.core.domain.repository.SettingsRepository
 import com.topo.core.domain.usecase.AddManualHoldUseCase
 import com.topo.core.domain.usecase.BuildMovementSequenceUseCase
@@ -58,6 +59,8 @@ data class AnnotatorUiState(
     val detectionZone: BoundingBox? = null,
     /** Le prochain glissement trace la zone. Etat explicite, comme la pipette. */
     val isDrawingZone: Boolean = false,
+    /** Un modele de relief est embarque : la vue 3D est proposee. */
+    val isReliefAvailable: Boolean = false,
 )
 
 @HiltViewModel
@@ -71,6 +74,7 @@ class AnnotatorViewModel @Inject constructor(
     private val detectHolds: DetectHoldsUseCase,
     private val keepHoldColor: KeepHoldColorUseCase,
     private val savedState: SavedStateHandle,
+    reliefEstimator: ReliefEstimator,
     circuitColorRepository: CircuitColorRepository,
     settingsRepository: SettingsRepository,
 ) : ViewModel() {
@@ -106,6 +110,7 @@ class AnnotatorViewModel @Inject constructor(
             circuit = colors,
             gradeScale = settings.gradeScale,
             detectionZone = detail?.bloc?.detectionZone,
+            isReliefAvailable = reliefEstimator.isAvailable,
         )
     }.stateIn(
         scope = viewModelScope,

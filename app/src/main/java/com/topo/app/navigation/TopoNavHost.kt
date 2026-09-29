@@ -9,6 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.topo.feature.annotator.AnnotatorScreen
 import com.topo.feature.camera.CameraCaptureScreen
+import com.topo.feature.relief.ReliefScreen
 import com.topo.feature.session.SessionDetailScreen
 import com.topo.feature.session.SessionListScreen
 import com.topo.feature.settings.SettingsScreen
@@ -85,7 +86,13 @@ fun TopoNavHost(
                 blocId = route.blocId,
                 askDifficulty = route.askDifficulty,
                 onBack = navController::popBackStack,
+                onOpenRelief = { blocId -> navController.navigate(ReliefRoute(blocId)) },
             )
+        }
+
+        composable<ReliefRoute> { entry ->
+            val route: ReliefRoute = entry.toRoute()
+            ReliefScreen(blocId = route.blocId, onBack = navController::popBackStack)
         }
     }
 }

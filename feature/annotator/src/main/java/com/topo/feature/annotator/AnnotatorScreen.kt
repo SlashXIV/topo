@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.ViewInAr
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -79,6 +80,7 @@ fun AnnotatorScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     askDifficulty: Boolean = false,
+    onOpenRelief: (blocId: String) -> Unit = {},
     viewModel: AnnotatorViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(blocId) { viewModel.bind(blocId) }
@@ -159,6 +161,13 @@ fun AnnotatorScreen(
                     }
                 },
                 actions = {
+                    // Masque sans modele de relief : un bouton qui mene a « indisponible »
+                    // n'a rien a faire la.
+                    if (uiState.isReliefAvailable) {
+                        IconButton(enabled = detail != null, onClick = { onOpenRelief(blocId) }) {
+                            Icon(Icons.Filled.ViewInAr, contentDescription = stringResource(R.string.annotator_open_relief))
+                        }
+                    }
                     IconButton(
                         // Desactive pendant l'encodage : un second appui lancerait un
                         // export concurrent qui purgerait le fichier du premier.

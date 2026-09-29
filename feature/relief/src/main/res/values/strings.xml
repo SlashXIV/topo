@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="relief_title">Relief 3D</string>
+    <string name="relief_back">Retour</string>
+    <string name="relief_loading">Estimation du relief…</string>
+
+    <string name="relief_unavailable_title">Vue 3D indisponible</string>
+    <string name="relief_unavailable_message">Cette version de Topo n’embarque pas le modèle de relief.</string>
+    <string name="relief_failed_title">Relief impossible à calculer</string>
+    <string name="relief_failed_message">La photo de ce bloc n’a pas pu être lue.</string>
+
+    <plurals name="relief_hold_count">
+        <item quantity="one">%d prise</item>
+        <item quantity="other">%d prises</item>
+    </plurals>
+    <string name="relief_hint">Glisse pour tourner, pince pour zoomer.</string>
+    <string name="relief_hint_beta">Glisse pour tourner, touche deux fois pour rejouer le beta.</string>
+    <string name="relief_replay">Rejouer</string>
+</resources>

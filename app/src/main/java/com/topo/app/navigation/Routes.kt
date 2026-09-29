@@ -28,6 +28,10 @@ data class CaptureRoute(val sessionId: String)
 @Serializable
 data class AnnotatorRoute(val blocId: String, val askDifficulty: Boolean = false)
 
+/** Vue 3D d'un bloc : son relief estime, ses prises et son beta. */
+@Serializable
+data class ReliefRoute(val blocId: String)
+
 @Serializable
 data object SettingsRoute
 

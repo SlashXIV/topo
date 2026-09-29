@@ -48,6 +48,7 @@ dependencies {
     implementation(projects.feature.session)
     implementation(projects.feature.settings)
     implementation(projects.feature.stats)
+    implementation(projects.feature.relief)
 
     // Detection des fuites en DEBUG uniquement : LeakCanary s'installe tout seul
     // et n'entre jamais dans le build de publication.

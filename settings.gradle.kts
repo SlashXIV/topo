@@ -33,6 +33,7 @@ include(":feature:annotator")
 include(":feature:session")
 include(":feature:settings")
 include(":feature:stats")
+include(":feature:relief")
 
 include(":vision")
 
