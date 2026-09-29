@@ -31,6 +31,19 @@ constexpr float kIouThreshold = 0.45f;
 /** Borne haute : un mur depasse rarement 200 prises. */
 constexpr int32_t kMaxDetections = 300;
 
+/** Nature de l'objet detecte. Les valeurs traversent le pont JNI : ne pas renumeroter. */
+enum class Kind : int32_t {
+    kHold = 0,
+    kVolume = 1,
+};
+
+/** Couleur CIELAB (illuminant D65) : L dans [0,100], a et b signes. */
+struct LabColor {
+    float l;
+    float a;
+    float b;
+};
+
 /**
  * Une prise detectee.
  * Coordonnees NORMALISEES dans [0,1] par rapport a l'image d'entree : le modele
@@ -43,7 +56,17 @@ struct Detection {
     float w;      // largeur
     float h;      // hauteur
     float score;  // confiance [0,1]
+    Kind kind = Kind::kHold;
+    LabColor color{0.0f, 0.0f, 0.0f};
 };
+
+/**
+ * Contrat de classes d'un modele :
+ *  - 1 classe  : prises seulement ;
+ *  - 2 classes : [prise, volume], dans cet ordre (ml/fetch_datasets.py --volumes).
+ * Au-dela (modele de substitution COCO), tout est traite comme prise.
+ */
+constexpr int32_t kVolumeClassCount = 2;
 
 /**
  * Moteur d'inference.
@@ -100,13 +123,26 @@ private:
  * Suppression des non-maxima, toutes classes confondues.
  *
  * Exposee pour etre testee isolement. Toutes classes confondues et non par
- * classe : le modele de prises n'aura qu'une classe, et sur le modele de
- * substitution deux classes superposees au meme endroit sont de toute facon une
- * seule prise pour l'utilisateur.
+ * classe : deux boites de classes differentes superposees au meme endroit sont
+ * une seule prise pour l'utilisateur. Une prise vissee SUR un volume n'est pas
+ * pour autant supprimee : leurs tailles tres differentes donnent un IoU faible.
  */
 std::vector<Detection> NonMaxSuppression(std::vector<Detection> candidates,
                                          float iou_threshold,
                                          size_t max_detections);
+
+/**
+ * Couleur d'une prise : mediane CIELAB sur le CENTRE de sa boite.
+ *
+ * Le centre et non la boite entiere : une boite englobante deborde sur le mur a
+ * ses coins, d'autant plus que la prise est ronde. La mediane et non la moyenne :
+ * le trou de la vis, une trace de magnesie ou un reflet sont des valeurs
+ * aberrantes qu'une moyenne absorberait dans la couleur.
+ *
+ * Exposee pour etre testee isolement.
+ */
+LabColor MeasureColor(const uint8_t* pixels, int32_t width, int32_t height, int32_t stride,
+                      const Detection& box);
 
 }  // namespace topo
 

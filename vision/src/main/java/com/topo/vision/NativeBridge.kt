@@ -34,14 +34,15 @@ import java.nio.ByteBuffer
  *    ou entree refuses) ou [IllegalStateException] (defaillance du moteur) :
  *    aucune exception C++ ne traverse la frontiere JNI.
  *
- *  - Les tableaux retournes sont APLATIS : `[cx, cy, w, h, score]` par prise,
- *    donc `taille / 5` detections, en coordonnees normalisees `[0, 1]`. Une
+ *  - Les tableaux retournes sont APLATIS : `[cx, cy, w, h, score, nature, L, a, b]`
+ *    par prise, donc `taille / DETECTION_STRIDE` detections, en coordonnees
+ *    normalisees `[0, 1]` ; nature 0 = prise, 1 = volume ; couleur CIELAB. Une
  *    seule traversee JNI par inference (cf. l'en-tete de `jni_bridge.cpp`).
  */
 internal object NativeBridge {
 
     /** Taille d'un enregistrement de detection dans le tableau aplati. */
-    const val DETECTION_STRIDE: Int = 5
+    const val DETECTION_STRIDE: Int = 9
 
     init {
         System.loadLibrary("topo_vision")
@@ -66,6 +67,12 @@ internal object NativeBridge {
      * tests : c'est le seul moyen de lui soumettre un cas limite choisi.
      */
     external fun nativeNonMaxSuppression(candidates: FloatArray, iouThreshold: Float): FloatArray
+
+    /**
+     * Couleur CIELAB `[L, a, b]` d'une boite normalisee sur un bitmap ARGB_8888.
+     * Reservee aux tests, comme [nativeNonMaxSuppression].
+     */
+    external fun nativeMeasureColor(bitmap: Bitmap, cx: Float, cy: Float, w: Float, h: Float): FloatArray
 
     /**
      * Chemin CameraX : plan RGBA_8888 direct, aucune copie n'est faite.

@@ -6,6 +6,8 @@ import android.graphics.Matrix
 import android.media.ExifInterface
 import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.DetectedHold
+import com.topo.core.domain.model.HoldColor
+import com.topo.core.domain.model.HoldKind
 import com.topo.core.domain.model.HoldOrigin
 import com.topo.core.domain.repository.HoldDetector
 import java.io.File
@@ -179,6 +181,8 @@ class VisionEngine(
                 ),
                 confidence = this[i + 4],
                 origin = HoldOrigin.MODEL,
+                kind = if (this[i + 5] == VOLUME_CODE) HoldKind.VOLUME else HoldKind.HOLD,
+                color = HoldColor(l = this[i + 6], a = this[i + 7], b = this[i + 8]),
             )
         }
     }
@@ -186,5 +190,8 @@ class VisionEngine(
     private companion object {
         /** Deux fois l'entree du modele : cf. [decodeForInference]. */
         const val MIN_DECODED_SIDE = 1280
+
+        /** Code natif de `Kind::kVolume` (vision_processor.h). */
+        const val VOLUME_CODE = 1f
     }
 }

@@ -4,9 +4,10 @@
 //  CONTRAT DE TRAVERSEE (lire avant toute modification)
 //  ---------------------------------------------------
 //  1. UNE SEULE traversee JNI par inference. Les resultats reviennent dans un
-//     unique tableau de float aplati :
-//         [cx0, cy0, w0, h0, score0, cx1, cy1, w1, h1, score1, ...]
-//     longueur = 5 * nombre de detections (auto-descriptive, pas d'en-tete).
+//     unique tableau de float aplati, kStride valeurs par detection :
+//         [cx, cy, w, h, score, nature, L, a, b, ...]
+//     nature : 0 prise, 1 volume ; L, a, b : couleur CIELAB de la prise.
+//     longueur = kStride * nombre de detections (auto-descriptive, pas d'en-tete).
 //     Coordonnees normalisees [0,1]. Retourner une List<Detection> d'objets Java
 //     couterait un NewObject + 5 SetFloatField par prise, soit ~900 appels JNI
 //     pour 150 prises : c'est precisement ce que cette architecture refuse.
@@ -56,6 +57,9 @@ namespace {
 
 constexpr const char* kTag = "TopoJNI";
 constexpr const char* kBridgeClass = "com/topo/vision/NativeBridge";
+
+/** Valeurs par detection dans le tableau aplati (cf. contrat, point 1). */
+constexpr jsize kStride = 9;
 
 void ThrowJava(JNIEnv* env, const char* class_name, const char* message) {
     jclass clazz = env->FindClass(class_name);
@@ -141,7 +145,7 @@ jfloatArray ToFlatArray(JNIEnv* env, const std::vector<topo::Detection>& detecti
     if (env->ExceptionCheck()) {
         return nullptr;  // Guarded a deja leve l'exception Java.
     }
-    const jsize length = static_cast<jsize>(detections.size() * 5);
+    const jsize length = static_cast<jsize>(detections.size()) * kStride;
     jfloatArray result = env->NewFloatArray(length);
     if (result == nullptr) {
         return nullptr;  // OutOfMemoryError deja levee par la JVM.
@@ -158,6 +162,10 @@ jfloatArray ToFlatArray(JNIEnv* env, const std::vector<topo::Detection>& detecti
         flat.push_back(d.w);
         flat.push_back(d.h);
         flat.push_back(d.score);
+        flat.push_back(static_cast<jfloat>(static_cast<int32_t>(d.kind)));
+        flat.push_back(d.color.l);
+        flat.push_back(d.color.a);
+        flat.push_back(d.color.b);
     }
     env->SetFloatArrayRegion(result, 0, length, flat.data());
     return result;
@@ -232,6 +240,35 @@ jfloatArray NativeNonMaxSuppression(JNIEnv* env, jobject /* thiz */, jfloatArray
     }
     return ToFlatArray(env, topo::NonMaxSuppression(std::move(candidates), iou_threshold,
                                                     static_cast<size_t>(topo::kMaxDetections)));
+}
+
+/**
+ * Point d'entree de TEST de la mesure de couleur, sur un Bitmap RGBA_8888.
+ * @return [L, a, b].
+ */
+jfloatArray NativeMeasureColor(JNIEnv* env, jobject /* thiz */, jobject bitmap, jfloat cx,
+                               jfloat cy, jfloat w, jfloat h) {
+    AndroidBitmapInfo info{};
+    if (bitmap == nullptr ||
+        AndroidBitmap_getInfo(env, bitmap, &info) != ANDROID_BITMAP_RESULT_SUCCESS ||
+        info.format != ANDROID_BITMAP_FORMAT_RGBA_8888) {
+        ThrowJava(env, "java/lang/IllegalArgumentException", "Bitmap ARGB_8888 attendu");
+        return nullptr;
+    }
+    ScopedBitmapLock lock(env, bitmap);
+    if (!lock.ok()) {
+        ThrowJava(env, "java/lang/IllegalStateException", "AndroidBitmap_lockPixels a echoue");
+        return nullptr;
+    }
+    topo::Detection box{cx, cy, w, h, 1.0f};
+    const topo::LabColor lab =
+            topo::MeasureColor(lock.pixels(), static_cast<int32_t>(info.width),
+                               static_cast<int32_t>(info.height),
+                               static_cast<int32_t>(info.stride), box);
+    const jfloat values[] = {lab.l, lab.a, lab.b};
+    jfloatArray result = env->NewFloatArray(3);
+    if (result != nullptr) env->SetFloatArrayRegion(result, 0, 3, values);
+    return result;
 }
 
 /**
@@ -333,6 +370,8 @@ const JNINativeMethod kMethods[] = {
         {"nativeIsReady", "(J)Z", reinterpret_cast<void*>(NativeIsReady)},
         {"nativeNonMaxSuppression", "([FF)[F",
          reinterpret_cast<void*>(NativeNonMaxSuppression)},
+        {"nativeMeasureColor", "(Landroid/graphics/Bitmap;FFFF)[F",
+         reinterpret_cast<void*>(NativeMeasureColor)},
         {"nativeDetectFromDirectBuffer", "(JLjava/nio/ByteBuffer;III)[F",
          reinterpret_cast<void*>(NativeDetectFromDirectBuffer)},
         {"nativeDetectFromBitmap", "(JLandroid/graphics/Bitmap;)[F",

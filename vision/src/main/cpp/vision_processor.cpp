@@ -16,6 +16,24 @@ namespace {
 
 constexpr const char* kTag = "TopoVision";
 
+/** sRGB 8 bits -> CIELAB D65, par les formules de la norme (sans table). */
+LabColor SrgbToLab(uint8_t r8, uint8_t g8, uint8_t b8) {
+    auto linear = [](uint8_t v) {
+        const float c = static_cast<float>(v) / 255.0f;
+        return c <= 0.04045f ? c / 12.92f : std::pow((c + 0.055f) / 1.055f, 2.4f);
+    };
+    const float r = linear(r8), g = linear(g8), b = linear(b8);
+    // Matrice sRGB -> XYZ, normalisee par le blanc de reference D65.
+    const float x = (0.4124f * r + 0.3576f * g + 0.1805f * b) / 0.95047f;
+    const float y = (0.2126f * r + 0.7152f * g + 0.0722f * b);
+    const float z = (0.0193f * r + 0.1192f * g + 0.9505f * b) / 1.08883f;
+    auto f = [](float t) {
+        return t > 0.008856f ? std::cbrt(t) : (7.787f * t + 16.0f / 116.0f);
+    };
+    const float fx = f(x), fy = f(y), fz = f(z);
+    return {116.0f * fy - 16.0f, 500.0f * (fx - fy), 200.0f * (fy - fz)};
+}
+
 /** Parametres du letterbox, necessaires pour ramener les boites dans l'image source. */
 struct Letterbox {
     float scale;
@@ -86,12 +104,20 @@ std::vector<Detection> Decode(const float* rows, int64_t attributes, int64_t anc
     const auto w_img = static_cast<float>(width);
     const auto h_img = static_cast<float>(height);
 
+    const int64_t classes = attributes - 4;
     for (int64_t i = 0; i < anchors; ++i) {
         float score = 0.0f;
-        for (int64_t c = 4; c < attributes; ++c) {
-            score = std::max(score, rows[c * anchors + i]);
+        int64_t best = 0;
+        for (int64_t c = 0; c < classes; ++c) {
+            const float value = rows[(4 + c) * anchors + i];
+            if (value > score) {
+                score = value;
+                best = c;
+            }
         }
         if (score < kScoreThreshold) continue;
+        const Kind kind =
+                classes == kVolumeClassCount && best == 1 ? Kind::kVolume : Kind::kHold;
 
         const float cx = rows[0 * anchors + i];
         const float cy = rows[1 * anchors + i];
@@ -107,7 +133,7 @@ std::vector<Detection> Decode(const float* rows, int64_t attributes, int64_t anc
         if (x1 <= x0 || y1 <= y0) continue;
 
         candidates.push_back({(x0 + x1) / 2 / w_img, (y0 + y1) / 2 / h_img,
-                              (x1 - x0) / w_img, (y1 - y0) / h_img, score});
+                              (x1 - x0) / w_img, (y1 - y0) / h_img, score, kind});
     }
     return candidates;
 }
@@ -152,6 +178,45 @@ std::vector<Detection> NonMaxSuppression(std::vector<Detection> candidates,
         if (kept.size() == max_detections) break;
     }
     return kept;
+}
+
+LabColor MeasureColor(const uint8_t* pixels, int32_t width, int32_t height, int32_t stride,
+                      const Detection& box) {
+    // Moitie centrale de la boite, echantillonnee sur une grille bornee : une
+    // centaine de prises par photo, quelques centaines de points chacune, le
+    // cout reste negligeable devant l'inference.
+    constexpr int kGrid = 12;
+    constexpr float kCentralFraction = 0.5f;
+    std::vector<float> ls, as, bs;
+    ls.reserve(kGrid * kGrid);
+    as.reserve(kGrid * kGrid);
+    bs.reserve(kGrid * kGrid);
+
+    for (int gy = 0; gy < kGrid; ++gy) {
+        for (int gx = 0; gx < kGrid; ++gx) {
+            const float u = (static_cast<float>(gx) + 0.5f) / kGrid - 0.5f;
+            const float v = (static_cast<float>(gy) + 0.5f) / kGrid - 0.5f;
+            const float nx = box.cx + u * box.w * kCentralFraction;
+            const float ny = box.cy + v * box.h * kCentralFraction;
+            const auto px = std::clamp(static_cast<int32_t>(nx * static_cast<float>(width)), 0,
+                                       width - 1);
+            const auto py = std::clamp(static_cast<int32_t>(ny * static_cast<float>(height)), 0,
+                                       height - 1);
+            const uint8_t* p = pixels + static_cast<size_t>(py) * stride + px * 4;
+            const LabColor lab = SrgbToLab(p[0], p[1], p[2]);
+            ls.push_back(lab.l);
+            as.push_back(lab.a);
+            bs.push_back(lab.b);
+        }
+    }
+    // Mediane par canal. Une mediane vectorielle serait plus rigoureuse, mais sur
+    // une prise unie les trois medianes tombent sur le meme pixel type.
+    auto median = [](std::vector<float>& values) {
+        auto middle = values.begin() + static_cast<std::ptrdiff_t>(values.size() / 2);
+        std::nth_element(values.begin(), middle, values.end());
+        return *middle;
+    };
+    return {median(ls), median(as), median(bs)};
 }
 
 struct VisionProcessor::Impl {
@@ -262,12 +327,17 @@ std::vector<Detection> VisionProcessor::Detect(const uint8_t* pixels,
     auto detections = NonMaxSuppression(
             Decode(outputs[0].GetTensorData<float>(), shape[1], shape[2], box, width, height),
             kIouThreshold, static_cast<size_t>(kMaxDetections));
+    // Mesuree APRES le NMS : seules les detections conservees la meritent, soit
+    // quelques dizaines au lieu de plusieurs centaines de candidats.
+    for (auto& detection : detections) {
+        detection.color = MeasureColor(pixels, width, height, stride, detection);
+    }
     const auto finished = std::chrono::steady_clock::now();
 
     using Ms = std::chrono::duration<double, std::milli>;
     __android_log_print(ANDROID_LOG_INFO, kTag,
                         "Detect %dx%d : %zu prises | pretraitement %.1f ms, inference %.1f ms, "
-                        "NMS %.1f ms",
+                        "NMS et couleurs %.1f ms",
                         width, height, detections.size(), Ms(preprocessed - started).count(),
                         Ms(inferred - preprocessed).count(), Ms(finished - inferred).count());
     return detections;

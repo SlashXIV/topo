@@ -101,9 +101,10 @@ class HoldDetectionInstrumentedTest {
         )
 
         // Plus sure d'abord, puis la prise distincte ; le doublon disparait.
-        assertThat(kept.toList()).containsExactly(
-            0.51f, 0.50f, 0.20f, 0.20f, 0.90f,
-            0.20f, 0.20f, 0.10f, 0.10f, 0.40f,
+        val boxes = kept.toList().chunked(NativeBridge.DETECTION_STRIDE).map { it.take(5) }
+        assertThat(boxes).containsExactly(
+            listOf(0.51f, 0.50f, 0.20f, 0.20f, 0.90f),
+            listOf(0.20f, 0.20f, 0.10f, 0.10f, 0.40f),
         ).inOrder()
     }
 
@@ -121,6 +122,40 @@ class HoldDetectionInstrumentedTest {
         )
 
         assertThat(kept.size / NativeBridge.DETECTION_STRIDE).isEqualTo(2)
+    }
+
+    @Test
+    fun the_colour_is_read_at_the_centre_of_the_box_not_on_the_wall_around_it() {
+        // Prise rouge sur un mur beige : la boite deborde sur le mur a ses bords,
+        // comme une vraie boite englobante autour d'une prise ronde.
+        val bitmap = Bitmap.createBitmap(200, 200, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(android.graphics.Color.rgb(230, 215, 190))
+            for (y in 60 until 140) for (x in 60 until 140) {
+                setPixel(x, y, android.graphics.Color.rgb(200, 30, 40))
+            }
+        }
+
+        // Boite de 100 px pour une prise de 80 : 20 % de mur sur le pourtour.
+        val (l, a, b) = NativeBridge.nativeMeasureColor(bitmap, 0.5f, 0.5f, 0.5f, 0.5f).toList()
+
+        // Valeurs CIELAB de rgb(200, 30, 40) calculees par OpenCV (cvtColor,
+        // RGB2Lab en flottant) : une reference independante du code teste.
+        assertThat(l).isWithin(1.5f).of(43.3f)
+        assertThat(a).isWithin(1.5f).of(63.2f)
+        assertThat(b).isWithin(1.5f).of(40.0f)
+    }
+
+    @Test
+    fun a_white_hold_measures_as_bright_and_colourless() {
+        val bitmap = Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888).apply {
+            eraseColor(android.graphics.Color.rgb(245, 245, 242))
+        }
+
+        val (l, a, b) = NativeBridge.nativeMeasureColor(bitmap, 0.5f, 0.5f, 0.4f, 0.4f).toList()
+
+        // Le filtre distingue les neutres par leur saturation : elle doit etre ~0.
+        assertThat(l).isGreaterThan(90f)
+        assertThat(kotlin.math.hypot(a, b)).isLessThan(3f)
     }
 
     /**
