@@ -32,6 +32,14 @@ ml/.venv/Scripts/python ml/fetch_datasets.py   # telecharge et fusionne en une c
 ml/.venv/Scripts/python ml/train.py            # GPU, evaluation sur test, export FP32 + INT8
 ```
 
+Le modele embarque distingue les prises des volumes, pour que le filtre par couleur garde les
+volumes sans garder les petites prises grises :
+
+```bash
+ml/.venv/Scripts/python ml/fetch_datasets.py --volumes   # seul Blackcreed distingue les volumes
+ml/.venv/Scripts/python ml/train.py --volumes            # sortie : ml/runs/holds_volumes/export/
+```
+
 L'entrainement utilise le GPU s'il est disponible : installer PyTorch depuis l'index CUDA
 (`--index-url https://download.pytorch.org/whl/cu128`), la roue par defaut etant CPU.
 

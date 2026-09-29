@@ -355,7 +355,7 @@ echelle.
 
 ---
 
-### S11 — Ne garder que les prises du bloc
+### S11 — Ne garder que les prises du bloc *(en cours — validation sur appareil)*
 
 **Le constat.** La detection trouve TOUTES les prises du mur — 115 sur la photo de test — alors
 qu'un bloc n'en utilise qu'une quinzaine. Retirer les autres une a une annule le gain.
@@ -381,6 +381,29 @@ deduite du circuit.
 - Relancer la detection COMPLETE les prises deja posees (couleur, nature) au lieu de les ignorer.
   Sans cela, les prises detectees avant ce sprint restent sans couleur, et les recuperer
   oblige a tout effacer — beta compris.
+
+**Livre, en attente de validation sur appareil.**
+- Couleur CIELAB mesuree en natif sur le centre de chaque boite, persistee en base (v4, migration
+  executee sur la base reelle du Xiaomi : 76 prises conservees).
+- Modele a deux classes : sur le meme jeu de test que le modele a une classe, mAP50 0,883 contre
+  0,879 ; par classe, prises 0,876 et volumes 0,892.
+- Pipette « Garder une couleur », et relance de la detection qui complete les prises existantes.
+
+**Calibre sur une photo reelle, pas a l'intuition.**
+- Les prises VIOLETTES n'y sont saturees qu'a 7-9, les grises a 3-4 : le seuil de neutralite
+  intuitif (12) aurait pris le violet pour du gris. Il est a 6, et le test casse s'il remonte.
+- Deux petites prises grises y etaient prises pour des volumes, a 1 et 1,2 fois la prise
+  mediane de la photo ; les vrais volumes font 5 a 34 fois. Un volume sous 3 fois la mediane
+  redevient une prise.
+
+**Un defaut trouve sur appareil.** Le passage detection -> prise enregistree omettait nature et
+couleur ; leurs valeurs par defaut ont masque l'oubli a la compilation, et le filtre repondait
+« pas de couleur mesuree » partout. Corrige, avec un test sur la vraie base qui echoue sans le
+correctif.
+
+**Reste.** Validation du parcours complet sur le Xiaomi, et latence du modele a deux classes en
+release. La grande prise grise en croissant de la photo de test n'est detectee par aucun des deux
+modeles.
 
 ---
 
