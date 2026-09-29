@@ -28,6 +28,9 @@ object BetaColors {
     /** Halo de la prise actuellement magnetisee. */
     val SnapHalo = Color(0xFFFFE066)
 
+    /** Ligne du scan de detection : un cyan froid, absent des prises comme des membres. */
+    val Scan = Color(0xFF5FE3FF)
+
     // Statuts de progression. Progression volontairement lisible sans lire le
     // texte : gris (repere) -> ambre (en travail) -> vert (reussi), le flash se
     // distinguant du reussi par une teinte plus vive.

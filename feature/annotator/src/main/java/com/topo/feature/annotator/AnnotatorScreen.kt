@@ -114,6 +114,7 @@ fun AnnotatorScreen(
     //  puis revenir ne doit pas rembobiner la sequence.
     // -----------------------------------------------------------------------
     val playback = remember { BetaPlaybackState(movementCount = 0) }
+    val detectionScan = remember { DetectionScanState() }
     val movementCount = detail?.movements?.size ?: 0
     playback.movementCount = movementCount
 
@@ -218,14 +219,26 @@ fun AnnotatorScreen(
                 onDetect = {
                     scope.launch {
                         isDetecting = true
-                        val message = try {
-                            viewModel.detectHolds()?.message(resources)
+                        var failed = false
+                        val result = try {
+                            viewModel.detectHolds()
                         } catch (error: IllegalArgumentException) {
-                            resources.getString(R.string.annotator_detect_failed)
+                            failed = true
+                            null
                         } catch (error: IllegalStateException) {
-                            resources.getString(R.string.annotator_detect_failed)
+                            failed = true
+                            null
                         } finally {
                             isDetecting = false
+                        }
+                        // Le scan se joue pendant que le message s'affiche : il revele,
+                        // prise par prise, ce que le message annonce.
+                        val added = (result as? DetectHoldsUseCase.Result.Added)?.addedIds.orEmpty()
+                        if (added.isNotEmpty()) launch { detectionScan.play(added, uiState.detectionZone) }
+                        val message = if (failed) {
+                            resources.getString(R.string.annotator_detect_failed)
+                        } else {
+                            result?.message(resources)
                         }
                         message?.let { snackbarHostState.showSnackbar(it) }
                     }
@@ -290,6 +303,7 @@ fun AnnotatorScreen(
                         exportLayer = exportLayer,
                         detectionZone = uiState.detectionZone,
                         highlight = uiState.circuitColor?.let { Color(it.argb) },
+                        scan = detectionScan,
                         isDrawingZone = uiState.isDrawingZone,
                         onZoneDrawn = viewModel::setDetectionZone,
                     )

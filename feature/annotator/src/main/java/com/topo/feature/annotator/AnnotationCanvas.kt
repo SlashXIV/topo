@@ -31,6 +31,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -111,6 +117,7 @@ fun AnnotationCanvas(
     isDrawingZone: Boolean = false,
     onZoneDrawn: (BoundingBox) -> Unit = {},
     highlight: Color? = null,
+    scan: DetectionScanState? = null,
 ) {
     val context = LocalContext.current
     val imageRequest = remember(imageFile) {
@@ -164,6 +171,7 @@ fun AnnotationCanvas(
             isDrawingZone = isDrawingZone,
             onZoneDrawn = onZoneDrawn,
             highlight = highlight,
+            scan = scan,
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -185,6 +193,7 @@ private fun BetaTraceLayer(
     isDrawingZone: Boolean,
     onZoneDrawn: (BoundingBox) -> Unit,
     highlight: Color?,
+    scan: DetectionScanState?,
     modifier: Modifier = Modifier,
 ) {
     // ------------------------------------------------------------------------
@@ -216,6 +225,8 @@ private fun BetaTraceLayer(
 
     val currentZone by rememberUpdatedState(detectionZone)
     val currentHighlight by rememberUpdatedState(highlight)
+    val currentScan by rememberUpdatedState(scan)
+    val textMeasurer = rememberTextMeasurer()
     val currentIsDrawingZone by rememberUpdatedState(isDrawingZone)
     val currentOnZoneDrawn by rememberUpdatedState(onZoneDrawn)
     // Cadre en cours de trace, en pixels : lu seulement au dessin, comme le trace.
@@ -386,6 +397,14 @@ private fun BetaTraceLayer(
                         (liveZone ?: currentZone?.toPixels(size))?.let { drawZone(it, zoneStroke) }
                     }
 
+                    // scan.progress.value est lu ICI, comme la progression du rejeu :
+                    // l'animation n'invalide que le dessin.
+                    val scanState = currentScan?.takeIf { it.isRunning }
+                    val scanZone = scanState?.zone
+                    val zoneTop = scanZone?.top?.coerceAtLeast(0f) ?: 0f
+                    val zoneBottom = scanZone?.bottom?.coerceAtMost(1f) ?: 1f
+                    val lineY = scanState?.let { scanLineY(it.progress.value, zoneTop, zoneBottom) }
+
                     drawHolds(
                         holds = currentHolds,
                         radius = holdRadius,
@@ -393,7 +412,23 @@ private fun BetaTraceLayer(
                         highlight = currentHighlight,
                         highlightStroke = highlightStroke,
                         outlineStroke = outlineStroke,
+                        pending = if (lineY != null) scanState.revealing else emptySet(),
+                        lineY = lineY ?: 0f,
+                        pulseSpan = (zoneBottom - zoneTop) * DetectionScanState.PULSE_SPAN,
                     )
+
+                    if (scanState != null && lineY != null) {
+                        drawScan(
+                            state = scanState,
+                            holds = currentHolds,
+                            lineY = lineY,
+                            left = scanZone?.left?.coerceAtLeast(0f) ?: 0f,
+                            right = scanZone?.right?.coerceAtMost(1f) ?: 1f,
+                            labelSpan = (zoneBottom - zoneTop) * DetectionScanState.LABEL_SPAN,
+                            textMeasurer = textMeasurer,
+                            holdRadius = holdRadius,
+                        )
+                    }
 
                     // playback.progress.value est lu ICI et nulle part ailleurs.
                     // Une animation emet une valeur par trame : la lire en
@@ -451,17 +486,77 @@ private fun DrawScope.drawHolds(
     highlight: Color?,
     highlightStroke: Stroke,
     outlineStroke: Stroke,
+    pending: Set<String>,
+    lineY: Float,
+    pulseSpan: Float,
 ) {
     for (index in holds.indices) {
         val hold = holds[index]
+        var holdRadius = radius
+        if (hold.id in pending) {
+            // Prise tout juste detectee : cachee tant que le scan ne l'a pas atteinte,
+            // puis une breve pulsation a son allumage.
+            if (!isRevealed(hold.box.centerY, lineY)) continue
+            val sinceLine = hold.box.centerY - lineY
+            if (pulseSpan > 0f && sinceLine < pulseSpan) {
+                holdRadius *= 1f + PULSE_GAIN * (1f - sinceLine / pulseSpan)
+            }
+        }
         val center = hold.box.toOffset(size)
         if (highlight == null || hold.kind == HoldKind.VOLUME) {
-            drawCircle(color = BetaColors.Hold, radius = radius, center = center, style = neutralStroke)
+            drawCircle(color = BetaColors.Hold, radius = holdRadius, center = center, style = neutralStroke)
             continue
         }
-        drawHoldHalo(center, radius, highlight, highlightStroke, outlineStroke)
+        drawHoldHalo(center, holdRadius, highlight, highlightStroke, outlineStroke)
     }
 }
+
+/**
+ * Ligne du scan et scores des prises qu'elle vient de reveler.
+ *
+ * La ligne est faite de trois traits superposes, du plus large et transparent au plus
+ * fin et opaque : une lueur sans degrade, donc sans Brush a allouer a chaque trame.
+ */
+private fun DrawScope.drawScan(
+    state: DetectionScanState,
+    holds: List<Hold>,
+    lineY: Float,
+    left: Float,
+    right: Float,
+    labelSpan: Float,
+    textMeasurer: TextMeasurer,
+    holdRadius: Float,
+) {
+    val y = lineY * size.height
+    val start = Offset(left * size.width, y)
+    val end = Offset(right * size.width, y)
+    drawLine(BetaColors.Scan.copy(alpha = 0.18f), start, end, strokeWidth = 14.dp.toPx())
+    drawLine(BetaColors.Scan.copy(alpha = 0.35f), start, end, strokeWidth = 6.dp.toPx())
+    drawLine(BetaColors.Scan, start, end, strokeWidth = 1.5.dp.toPx())
+
+    for (index in holds.indices) {
+        val hold = holds[index]
+        if (hold.id !in state.revealing) continue
+        val sinceLine = hold.box.centerY - lineY
+        if (sinceLine < 0f || sinceLine > labelSpan) continue
+        // Mesure une fois par prise, puis relue : TextMeasurer alloue a chaque mesure.
+        val label = state.labels.getOrPut(hold.id) {
+            textMeasurer.measure(
+                text = "%.2f".format(hold.confidence), // texte-technique : format numerique du score
+                style = ScoreStyle,
+            )
+        }
+        val center = hold.box.toOffset(size)
+        drawText(
+            textLayoutResult = label,
+            color = Color.White.copy(alpha = 1f - sinceLine / labelSpan),
+            topLeft = Offset(center.x + holdRadius + 4.dp.toPx(), center.y - label.size.height / 2f),
+        )
+    }
+}
+
+private const val PULSE_GAIN = 0.6f
+private val ScoreStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp)
 
 /**
  * Dessine la sequence enregistree.

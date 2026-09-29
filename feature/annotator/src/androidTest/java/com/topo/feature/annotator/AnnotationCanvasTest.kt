@@ -281,6 +281,51 @@ class AnnotationCanvasTest {
     }
 
     /**
+     * Pendant le scan, une prise tout juste detectee attend le passage de la ligne ; une
+     * prise deja posee, elle, reste affichee. Le scan monte : a mi-course, la prise basse
+     * est revelee, la haute pas encore.
+     */
+    @Test
+    fun during_the_scan_a_new_hold_waits_for_the_line_to_reach_it() {
+        val purple = Color(0xFF7B3FA0)
+        val low = hold("basse", x = 0.3f, y = 0.8f)
+        val high = hold("haute", x = 0.7f, y = 0.2f)
+        val scan = DetectionScanState()
+        runBlocking(Dispatchers.Main) { scan.snapTo(0.5f, holdIds = setOf(low.id, high.id)) }
+        lateinit var layer: GraphicsLayer
+
+        composeRule.setContent {
+            layer = rememberGraphicsLayer()
+            AnnotationCanvas(
+                blocDetail = BlocDetail(bloc(), listOf(low, high), emptyList()),
+                imageFile = MissingImage,
+                mode = AnnotationMode.ADD_HOLD,
+                selectedLimb = Limb.RIGHT_HAND,
+                onHoldRequested = { _, _ -> },
+                onHoldRemoved = {},
+                onTraceCompleted = {},
+                modifier = Modifier.size(CanvasSize),
+                exportLayer = layer,
+                highlight = purple,
+                scan = scan,
+            )
+        }
+        composeRule.waitForIdle()
+
+        val bitmap = runBlocking(Dispatchers.Main) { layer.toImageBitmap() }
+            .asAndroidBitmap()
+            .copy(Bitmap.Config.ARGB_8888, false)
+        val canvasPx = with(composeRule.density) { CanvasSize.roundToPx() }
+        val ringPx = with(composeRule.density) { 14.dp.roundToPx() }
+
+        // Ligne a 0,5 : la prise basse (0,8) est passee, la haute (0,2) pas encore.
+        assertThat(bitmap.getPixel((canvasPx * 0.3f).toInt() + ringPx, (canvasPx * 0.8f).toInt()))
+            .isEqualTo(purple.toArgb())
+        assertThat(android.graphics.Color.alpha(bitmap.getPixel((canvasPx * 0.7f).toInt() + ringPx, (canvasPx * 0.2f).toInt())))
+            .isEqualTo(0)
+    }
+
+    /**
      * Cadrage de la zone de detection : un glissement d'un coin a l'autre la
      * rend normalisee, quel que soit le sens du glissement.
      */
