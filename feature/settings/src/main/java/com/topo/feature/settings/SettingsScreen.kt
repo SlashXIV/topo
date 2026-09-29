@@ -1,5 +1,6 @@
 package com.topo.feature.settings
 
+import com.topo.core.ui.R as CoreR
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -285,7 +286,7 @@ private fun AddColorDialog(
                 Text(stringResource(R.string.settings_new_color_confirm))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_new_color_cancel)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(CoreR.string.action_cancel)) } },
     )
 }
 

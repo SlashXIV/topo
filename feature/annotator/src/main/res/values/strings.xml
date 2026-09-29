@@ -25,7 +25,6 @@
     <string name="annotator_limb_right_foot">Pied D</string>
 
     <!-- Actions -->
-    <string name="annotator_cancel">Annuler</string>
     <string name="annotator_detecting">Détection…</string>
     <string name="annotator_detect_holds">Détecter les prises</string>
     <string name="annotator_keep_color">Garder une couleur</string>

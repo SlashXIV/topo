@@ -25,5 +25,4 @@
     <string name="settings_new_color_name">Nom</string>
     <string name="settings_new_color_hue">Teinte</string>
     <string name="settings_new_color_confirm">Ajouter</string>
-    <string name="settings_new_color_cancel">Annuler</string>
 </resources>

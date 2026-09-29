@@ -1,5 +1,6 @@
 package com.topo.feature.annotator
 
+import com.topo.core.ui.R as CoreR
 import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -367,9 +368,9 @@ private fun AnnotationToolbar(
                 // La detection PROPOSE des prises : elle vit donc avec la pose
                 // manuelle, et se corrige avec le meme geste — un appui retire.
                 if (mode == AnnotationMode.ADD_HOLD && isPickingColor) {
-                    FilledTonalButton(onClick = onCancelPick) { Text(stringResource(R.string.annotator_cancel)) }
+                    FilledTonalButton(onClick = onCancelPick) { Text(stringResource(CoreR.string.action_cancel)) }
                 } else if (mode == AnnotationMode.ADD_HOLD && isDrawingZone) {
-                    FilledTonalButton(onClick = onCancelZone) { Text(stringResource(R.string.annotator_cancel)) }
+                    FilledTonalButton(onClick = onCancelZone) { Text(stringResource(CoreR.string.action_cancel)) }
                 } else if (mode == AnnotationMode.ADD_HOLD) {
                     // Le cadrage d'abord : il decide de ce que la detection regardera.
                     if (hasZone) {
