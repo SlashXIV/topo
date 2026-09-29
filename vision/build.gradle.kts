@@ -32,6 +32,11 @@ val extractOnnxRuntime by tasks.registering(Sync::class) {
 android {
     namespace = "com.topo.vision"
 
+    // Les tests instrumentes tournent en debug, donc le code natif en -O0 : bien
+    // pour deboguer, faux pour mesurer une latence. -Ptopo.testBuildType=release
+    // les fait tourner contre le build optimise, celui qui sera livre.
+    testBuildType = providers.gradleProperty("topo.testBuildType").getOrElse("debug")
+
     defaultConfig {
         externalNativeBuild {
             cmake {

@@ -127,23 +127,33 @@ class HoldDetectionInstrumentedTest {
      * Latence sur ce materiel, a titre INDICATIF : l'emulateur x86_64 ne dit rien
      * de l'appareil ARM64 vise, et le code natif de test est compile en -O0. Le
      * critere des 100 ms se verifie sur telephone physique, en release.
+     *
+     * Chaque modele depose dans les assets `benchmark/` est mesure — typiquement
+     * les exports FP32 et INT8 de `ml/train.py` — pour comparer les variantes sur
+     * le meme materiel, dans la meme execution. Repertoire hors git, comme tout
+     * `.onnx`.
      */
     @Test
     fun inference_latency_is_logged() = runTest {
-        VisionEngine().use { engine ->
-            engine.loadModel(placeholderModel())
-            val source = VisionEngine.BitmapSource(testImage())
-            repeat(WARM_UP) { engine.detect(source) }
+        val models = assets.list(BENCHMARK).orEmpty().filter { it.endsWith(".onnx") }.sorted()
+        assumeTrue("Aucun modele a mesurer : copier des .onnx dans assets/$BENCHMARK", models.isNotEmpty())
 
-            val timings = (1..RUNS).map {
-                val started = System.nanoTime()
-                engine.detect(source)
-                (System.nanoTime() - started) / 1_000_000.0
-            }.sorted()
+        for (model in models) {
+            VisionEngine().use { engine ->
+                engine.loadModel(directBuffer("$BENCHMARK/$model"))
+                val source = VisionEngine.BitmapSource(testImage())
+                repeat(WARM_UP) { engine.detect(source) }
 
-            Log.i(TAG, "Latence de bout en bout sur $RUNS inferences : mediane %.1f ms, max %.1f ms"
-                .format(timings[RUNS / 2], timings.last()))
-            assertThat(timings).isNotEmpty()
+                val timings = (1..RUNS).map {
+                    val started = System.nanoTime()
+                    engine.detect(source)
+                    (System.nanoTime() - started) / 1_000_000.0
+                }.sorted()
+
+                Log.i(TAG, "Latence $model sur $RUNS inferences : mediane %.1f ms, max %.1f ms"
+                    .format(timings[RUNS / 2], timings.last()))
+                assertThat(timings).isNotEmpty()
+            }
         }
     }
 
@@ -152,7 +162,11 @@ class HoldDetectionInstrumentedTest {
             "Modele de substitution absent : lancer ml/export_placeholder.py",
             assets.list(PLACEHOLDER)?.contains(MODEL) == true,
         )
-        val bytes = assets.open("$PLACEHOLDER/$MODEL").use { it.readBytes() }
+        return directBuffer("$PLACEHOLDER/$MODEL")
+    }
+
+    private fun directBuffer(asset: String): ByteBuffer {
+        val bytes = assets.open(asset).use { it.readBytes() }
         return ByteBuffer.allocateDirect(bytes.size).put(bytes).apply { flip() }
     }
 
@@ -180,6 +194,7 @@ class HoldDetectionInstrumentedTest {
         const val TAG = "TopoVisionTest"
         const val PLACEHOLDER = "placeholder"
         const val MODEL = "yolo11n_coco.onnx"
+        const val BENCHMARK = "benchmark"
         const val WARM_UP = 3
         const val RUNS = 10
     }
