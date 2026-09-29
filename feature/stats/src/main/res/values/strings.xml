@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="stats_title">Progression</string>
+    <string name="stats_back">Retour</string>
+
+    <string name="stats_empty_title">Rien à mesurer</string>
+    <string name="stats_empty_message">Enregistre des blocs et note leur difficulté : la progression apparaîtra ici.</string>
+
+    <string name="stats_metric_blocs">Blocs</string>
+    <string name="stats_metric_sent">Réussis</string>
+    <string name="stats_metric_flashes">Flashs</string>
+    <string name="stats_metric_success_rate">Réussite</string>
+    <string name="stats_metric_flash_rate">Flash</string>
+    <string name="stats_metric_attempts_per_send">Essais / réussite</string>
+    <string name="stats_metric_best_grade">Meilleure cotation</string>
+    <string name="stats_metric_best_color">Meilleure couleur</string>
+
+    <string name="stats_by_color_title">Par couleur de circuit</string>
+    <string name="stats_by_color_hint">Du plus facile au plus dur</string>
+    <string name="stats_by_grade_title">Par cotation</string>
+    <string name="stats_by_grade_hint">Seules les cotations utilisées apparaissent</string>
+
+    <string name="stats_percent">%1$d %%</string>
+</resources>

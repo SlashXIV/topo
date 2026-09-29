@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -53,10 +54,10 @@ fun StatsScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("Progression") },
+                title = { Text(stringResource(R.string.stats_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.stats_back))
                     }
                 },
             )
@@ -66,9 +67,8 @@ fun StatsScreen(
             uiState.isLoading -> LoadingState(Modifier.padding(padding))
 
             uiState.statistics.isEmpty -> EmptyState(
-                title = "Rien a mesurer",
-                message = "Enregistre des blocs et note leur difficulte : " +
-                    "la progression apparaitra ici.",
+                title = stringResource(R.string.stats_empty_title),
+                message = stringResource(R.string.stats_empty_message),
                 modifier = Modifier.padding(padding),
             )
 
@@ -86,20 +86,28 @@ private fun StatsContent(stats: ClimbingStatistics, modifier: Modifier = Modifie
     ) {
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Metric("Blocs", "${stats.blocCount}", Modifier.weight(1f))
-                Metric("Reussis", "${stats.sentCount}", Modifier.weight(1f))
-                Metric("Flashs", "${stats.flashCount}", Modifier.weight(1f))
+                Metric(stringResource(R.string.stats_metric_blocs), "${stats.blocCount}", Modifier.weight(1f))
+                Metric(stringResource(R.string.stats_metric_sent), "${stats.sentCount}", Modifier.weight(1f))
+                Metric(stringResource(R.string.stats_metric_flashes), "${stats.flashCount}", Modifier.weight(1f))
             }
         }
 
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Metric("Reussite", stats.successRate.asPercent(), Modifier.weight(1f))
+                Metric(
+                    label = stringResource(R.string.stats_metric_success_rate),
+                    value = stats.successRate.asPercent(),
+                    modifier = Modifier.weight(1f),
+                )
                 // Rapporte aux reussites et non a tous les blocs : sinon ouvrir
                 // un projet difficile ferait chuter le taux.
-                Metric("Flash", stats.flashRate.asPercent(), Modifier.weight(1f))
                 Metric(
-                    label = "Essais / reussite",
+                    label = stringResource(R.string.stats_metric_flash_rate),
+                    value = stats.flashRate.asPercent(),
+                    modifier = Modifier.weight(1f),
+                )
+                Metric(
+                    label = stringResource(R.string.stats_metric_attempts_per_send),
                     value = stats.attemptsPerSend?.let { "%.1f".format(it) } ?: "-",
                     modifier = Modifier.weight(1f),
                 )
@@ -110,22 +118,40 @@ private fun StatsContent(stats: ClimbingStatistics, modifier: Modifier = Modifie
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     stats.bestGrade?.let {
-                        Metric("Meilleure cotation", it, Modifier.weight(1f))
+                        Metric(
+                            label = stringResource(R.string.stats_metric_best_grade),
+                            value = it,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                     stats.bestColor?.let {
-                        Metric("Meilleure couleur", it.name, Modifier.weight(1f))
+                        Metric(
+                            label = stringResource(R.string.stats_metric_best_color),
+                            value = it.name,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
             }
         }
 
         if (stats.colorBuckets.isNotEmpty()) {
-            item { SectionTitle("Par couleur de circuit", "Du plus facile au plus dur") }
+            item {
+                SectionTitle(
+                    stringResource(R.string.stats_by_color_title),
+                    stringResource(R.string.stats_by_color_hint),
+                )
+            }
             items(stats.colorBuckets) { bucket -> BucketRow(bucket, stats.maxBucketTotal()) }
         }
 
         if (stats.gradeBuckets.isNotEmpty()) {
-            item { SectionTitle("Par cotation", "Seules les cotations utilisees apparaissent") }
+            item {
+                SectionTitle(
+                    stringResource(R.string.stats_by_grade_title),
+                    stringResource(R.string.stats_by_grade_hint),
+                )
+            }
             items(stats.gradeBuckets) { bucket -> BucketRow(bucket, stats.maxBucketTotal()) }
         }
     }
@@ -225,4 +251,5 @@ private fun BucketRow(bucket: DifficultyBucket, maxTotal: Int) {
 private fun ClimbingStatistics.maxBucketTotal(): Int =
     ((colorBuckets + gradeBuckets).maxOfOrNull(DifficultyBucket::total) ?: 0).coerceAtLeast(1)
 
-private fun Float.asPercent(): String = "${(this * 100).roundToInt()} %"
+@Composable
+private fun Float.asPercent(): String = stringResource(R.string.stats_percent, (this * 100).roundToInt())

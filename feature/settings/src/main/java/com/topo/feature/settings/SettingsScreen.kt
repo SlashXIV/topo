@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,6 +55,7 @@ import com.topo.core.domain.model.DifficultyDisplay
 import com.topo.core.domain.model.GradeScale
 import com.topo.core.ui.component.ConfirmDialog
 import com.topo.core.ui.component.LoadingState
+import com.topo.core.ui.text.labelRes
 
 const val CircuitListTestTag = "circuit-list"
 const val AddColorTestTag = "add-color"
@@ -73,10 +75,10 @@ fun SettingsScreen(
         modifier = modifier,
         topBar = {
             TopAppBar(
-                title = { Text("Reglages") },
+                title = { Text(stringResource(R.string.settings_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back))
                     }
                 },
             )
@@ -97,16 +99,15 @@ fun SettingsScreen(
         ) {
             item {
                 Section(
-                    title = "Difficulte affichee",
-                    hint = "Ce que la vignette d'un bloc met en avant. Les deux restent " +
-                        "enregistrables : la salle etiquette une couleur, toi tu estimes un niveau.",
+                    title = stringResource(R.string.settings_difficulty_display_title),
+                    hint = stringResource(R.string.settings_difficulty_display_hint),
                 ) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         DifficultyDisplay.entries.forEach { display ->
                             FilterChip(
                                 selected = display == uiState.settings.difficultyDisplay,
                                 onClick = { viewModel.selectDisplay(display) },
-                                label = { Text(display.label) },
+                                label = { Text(stringResource(display.labelRes)) },
                             )
                         }
                     }
@@ -115,15 +116,15 @@ fun SettingsScreen(
 
             item {
                 Section(
-                    title = "Echelle de cotation",
-                    hint = "Utilisee partout ou une cotation chiffree est proposee.",
+                    title = stringResource(R.string.settings_grade_scale_title),
+                    hint = stringResource(R.string.settings_grade_scale_hint),
                 ) {
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         GradeScale.entries.forEach { scale ->
                             FilterChip(
                                 selected = scale == uiState.settings.gradeScale,
                                 onClick = { viewModel.selectScale(scale) },
-                                label = { Text(scale.label) },
+                                label = { Text(stringResource(scale.labelRes)) },
                             )
                         }
                     }
@@ -132,17 +133,16 @@ fun SettingsScreen(
 
             item {
                 Section(
-                    title = "Circuit de la salle",
+                    title = stringResource(R.string.settings_circuit_title),
                     // L'ordre porte un sens metier : il ne doit pas se deviner.
-                    hint = "Du plus facile en haut au plus dur en bas. Chaque salle a son " +
-                        "propre ordre : utilise les fleches pour le reproduire.",
+                    hint = stringResource(R.string.settings_circuit_hint),
                 ) {
                     TextButton(
                         onClick = { showAddDialog = true },
                         modifier = Modifier.testTag(AddColorTestTag),
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
-                        Text("Ajouter une couleur", Modifier.padding(start = 8.dp))
+                        Text(stringResource(R.string.settings_add_color), Modifier.padding(start = 8.dp))
                     }
                 }
             }
@@ -176,10 +176,10 @@ fun SettingsScreen(
 
     colorToDelete?.let { color ->
         ConfirmDialog(
-            title = "Supprimer ${color.name} ?",
+            title = stringResource(R.string.settings_delete_color_title, color.name),
             // Portee annoncee : la suppression touche des blocs deja enregistres.
-            message = "Les blocs de cette couleur la perdront, mais seront conserves.",
-            confirmLabel = "Supprimer",
+            message = stringResource(R.string.settings_delete_color_message),
+            confirmLabel = stringResource(R.string.settings_delete_confirm),
             onConfirm = {
                 viewModel.deleteColor(color.id)
                 colorToDelete = null
@@ -240,13 +240,13 @@ private fun ColorRow(
             Text(color.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
 
             IconButton(onClick = onMoveUp, enabled = canMoveUp) {
-                Icon(Icons.Default.ArrowUpward, contentDescription = "Rendre plus facile")
+                Icon(Icons.Default.ArrowUpward, contentDescription = stringResource(R.string.settings_move_easier))
             }
             IconButton(onClick = onMoveDown, enabled = canMoveDown) {
-                Icon(Icons.Default.ArrowDownward, contentDescription = "Rendre plus difficile")
+                Icon(Icons.Default.ArrowDownward, contentDescription = stringResource(R.string.settings_move_harder))
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Supprimer ${color.name}")
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.settings_delete_color, color.name))
             }
         }
     }
@@ -262,17 +262,17 @@ private fun AddColorDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Nouvelle couleur") },
+        title = { Text(stringResource(R.string.settings_new_color_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nom") },
+                    label = { Text(stringResource(R.string.settings_new_color_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Text("Teinte", style = MaterialTheme.typography.labelMedium)
+                Text(stringResource(R.string.settings_new_color_hue), style = MaterialTheme.typography.labelMedium)
                 // Palette fermee plutot qu'une roue chromatique : le nom porte
                 // l'information, la teinte ne sert qu'a la reconnaitre d'un coup
                 // d'oeil sur une vignette.
@@ -281,10 +281,10 @@ private fun AddColorDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(name, argb) }, enabled = name.isNotBlank()) {
-                Text("Ajouter")
+                Text(stringResource(R.string.settings_new_color_confirm))
             }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Annuler") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.settings_new_color_cancel)) } },
     )
 }
 

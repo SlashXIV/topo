@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_title">Réglages</string>
+    <string name="settings_back">Retour</string>
+
+    <string name="settings_difficulty_display_title">Difficulté affichée</string>
+    <string name="settings_difficulty_display_hint">Ce que la vignette d\'un bloc met en avant. Les deux restent enregistrables : la salle étiquette une couleur, toi tu estimes un niveau.</string>
+
+    <string name="settings_grade_scale_title">Échelle de cotation</string>
+    <string name="settings_grade_scale_hint">Utilisée partout où une cotation chiffrée est proposée.</string>
+
+    <string name="settings_circuit_title">Circuit de la salle</string>
+    <string name="settings_circuit_hint">Du plus facile en haut au plus dur en bas. Chaque salle a son propre ordre : utilise les flèches pour le reproduire.</string>
+    <string name="settings_add_color">Ajouter une couleur</string>
+
+    <string name="settings_move_easier">Rendre plus facile</string>
+    <string name="settings_move_harder">Rendre plus difficile</string>
+    <string name="settings_delete_color">Supprimer %1$s</string>
+
+    <string name="settings_delete_color_title">Supprimer %1$s ?</string>
+    <string name="settings_delete_color_message">Les blocs de cette couleur la perdront, mais seront conservés.</string>
+    <string name="settings_delete_confirm">Supprimer</string>
+
+    <string name="settings_new_color_title">Nouvelle couleur</string>
+    <string name="settings_new_color_name">Nom</string>
+    <string name="settings_new_color_hue">Teinte</string>
+    <string name="settings_new_color_confirm">Ajouter</string>
+    <string name="settings_new_color_cancel">Annuler</string>
+</resources>
