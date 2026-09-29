@@ -546,6 +546,31 @@ complete sans. La zone de detection (S11), elle, retire du travail a chaque bloc
 
 ---
 
+### S15 — Vitrine : relief 3D et scan de detection *(phases 1 et 2 livrees)*
+
+**Objectif.** Une demonstration visuelle du travail d'image et d'IA pour le portfolio, sans
+alourdir l'application : utile a montrer plus qu'a l'usage quotidien.
+
+**Phase 1 — demo 3D sur le portfolio (livree).** Une chaine hors ligne (`ml/scene3d`) exporte un
+bloc en paquet de scene d'environ 265 Ko : photo recadree, relief estime par Depth Anything V2
+Small, contour de chaque prise par SAM 2.1 tiny, a partir des prises gardees et corrigees dans
+l'application. La visionneuse WebGL du portfolio n'execute aucun modele. Deux corrections tirees
+des images de controle : le masque SAM est borne a la boite de detection (il debordait sur le mur
+et la fleche voisine), et une prise posee a la main — boite arbitraire, doigt a cote de la prise —
+recoit une boite de taille typique et le masque credible le plus sur, ou aucun contour.
+
+**Phase 2 — scan de detection dans l'application (livree).** Apres une detection, une ligne
+monte la zone analysee et chaque prise proposee s'allume a son passage, avec son score. Sur le
+Xiaomi a 120 Hz : 242 trames, 2 saccadees (0,8 %), aucune vsync manquee, 7 ms de mediane et
+2,4 ms de GPU par trame. L'emulateur affiche des trames de 200 ms passees cote GPU : sa couche de
+traduction GL, pas le dessin.
+
+**Phase 3 — 3D dans l'application (a decider).** Le modele de profondeur pese ~50 Mo et ne peut
+etre telecharge a la demande (aucune dependance reseau). A trancher apres usage de la demo web,
+idealement apres l'ONNX Runtime reduit.
+
+---
+
 ## Journal des decisions
 
 Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specifications initiales.
