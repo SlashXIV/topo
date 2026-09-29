@@ -1,7 +1,6 @@
 package com.topo.feature.annotator
 
 import androidx.lifecycle.SavedStateHandle
-import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.Limb
 
 /**
@@ -13,15 +12,15 @@ import com.topo.core.domain.model.Limb
  * l'editeur, lui, etait perdu : constate sur emulateur, le mode « Tracer » et son
  * membre revenaient a « Prises ».
  *
- * Sont sauves le mode, le membre et la zone de detection. PAS la pipette ni le
- * cadrage en cours : ce sont des gestes a moitie faits, et les retrouver actifs a
- * froid ferait qu'un appui ne fait pas ce que l'ecran laisse croire.
+ * Sont sauves le mode et le membre. La zone de detection, elle, vit avec le bloc
+ * en base. PAS la pipette ni le cadrage en cours : ce sont des gestes a moitie
+ * faits, et les retrouver actifs a froid ferait qu'un appui ne fait pas ce que
+ * l'ecran laisse croire.
  */
 internal object EditorStateSaver {
 
     private const val MODE = "editor.mode"
     private const val LIMB = "editor.limb"
-    private const val ZONE = "editor.zone"
 
     fun restore(handle: SavedStateHandle): AnnotatorUiState = AnnotatorUiState(
         mode = handle.get<String>(MODE)
@@ -30,9 +29,6 @@ internal object EditorStateSaver {
         selectedLimb = handle.get<String>(LIMB)
             ?.let { name -> Limb.entries.firstOrNull { it.name == name } }
             ?: Limb.RIGHT_HAND,
-        detectionZone = handle.get<FloatArray>(ZONE)
-            ?.takeIf { it.size == 4 }
-            ?.let { BoundingBox(it[0], it[1], it[2], it[3]) },
     )
 
     fun save(state: AnnotatorUiState, handle: SavedStateHandle) {
@@ -40,8 +36,5 @@ internal object EditorStateSaver {
         // revenir l'utilisateur dans un autre mode que celui qu'il avait quitte.
         handle[MODE] = state.mode.name
         handle[LIMB] = state.selectedLimb.name
-        handle[ZONE] = state.detectionZone?.let {
-            floatArrayOf(it.centerX, it.centerY, it.width, it.height)
-        }
     }
 }

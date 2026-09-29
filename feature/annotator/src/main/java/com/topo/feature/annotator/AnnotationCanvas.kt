@@ -43,6 +43,7 @@ import com.topo.core.domain.model.Limb
 import com.topo.core.domain.model.Movement
 import com.topo.core.domain.model.Viewport
 import com.topo.core.domain.usecase.FindSnapTargetUseCase
+import com.topo.core.ui.component.drawHoldHalo
 import com.topo.core.ui.theme.BetaColors
 import java.io.File
 
@@ -439,10 +440,9 @@ private fun BetaTraceLayer(
  * fois au pied du mur, rien sur la photo ne disait a quel niveau appartiennent
  * les prises gardees. Le halo le dit, a l'ecran comme sur l'image partagee.
  *
- * Trois couches pour rester lisible sur n'importe quel mur : un disque
- * translucide qui teinte la prise, un anneau plein de la couleur, et un liseré
- * sombre qui le detache d'un mur de la meme couleur. Les VOLUMES restent en blanc
- * neutre : ils appartiennent au mur, pas au bloc.
+ * Le halo lui-meme est dessine par [drawHoldHalo], partage avec la vignette de
+ * la seance. Les VOLUMES restent en blanc neutre : ils appartiennent au mur, pas
+ * au bloc.
  */
 private fun DrawScope.drawHolds(
     holds: List<Hold>,
@@ -459,19 +459,9 @@ private fun DrawScope.drawHolds(
             drawCircle(color = BetaColors.Hold, radius = radius, center = center, style = neutralStroke)
             continue
         }
-        drawCircle(color = highlight.copy(alpha = HALO_FILL_ALPHA), radius = radius, center = center)
-        drawCircle(color = highlight, radius = radius, center = center, style = highlightStroke)
-        drawCircle(
-            color = HaloOutline,
-            radius = radius + highlightStroke.width / 2f,
-            center = center,
-            style = outlineStroke,
-        )
+        drawHoldHalo(center, radius, highlight, highlightStroke, outlineStroke)
     }
 }
-
-private const val HALO_FILL_ALPHA = 0.30f
-private val HaloOutline = Color.Black.copy(alpha = 0.55f)
 
 /**
  * Dessine la sequence enregistree.

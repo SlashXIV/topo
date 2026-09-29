@@ -2,19 +2,17 @@ package com.topo.feature.annotator
 
 import androidx.lifecycle.SavedStateHandle
 import com.google.common.truth.Truth.assertThat
-import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.Limb
 import org.junit.Test
 
 class EditorStateSaverTest {
 
     @Test
-    fun mode_limb_and_zone_survive_a_process_death() {
+    fun mode_and_limb_survive_a_process_death() {
         val handle = SavedStateHandle()
-        val zone = BoundingBox(0.4f, 0.5f, 0.3f, 0.6f)
 
         EditorStateSaver.save(
-            AnnotatorUiState(mode = AnnotationMode.TRACE_BETA, selectedLimb = Limb.LEFT_FOOT, detectionZone = zone),
+            AnnotatorUiState(mode = AnnotationMode.TRACE_BETA, selectedLimb = Limb.LEFT_FOOT),
             handle,
         )
         // Le processus meurt : seul le contenu du handle est rendu au nouveau.
@@ -22,7 +20,6 @@ class EditorStateSaverTest {
 
         assertThat(restored.mode).isEqualTo(AnnotationMode.TRACE_BETA)
         assertThat(restored.selectedLimb).isEqualTo(Limb.LEFT_FOOT)
-        assertThat(restored.detectionZone).isEqualTo(zone)
     }
 
     @Test
@@ -44,6 +41,5 @@ class EditorStateSaverTest {
 
         assertThat(restored.mode).isEqualTo(AnnotationMode.ADD_HOLD)
         assertThat(restored.selectedLimb).isEqualTo(Limb.RIGHT_HAND)
-        assertThat(restored.detectionZone).isNull()
     }
 }

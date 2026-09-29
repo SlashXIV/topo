@@ -53,7 +53,7 @@ data class AnnotatorUiState(
     val isPickingColor: Boolean = false,
     /**
      * Zone du bloc tracee par l'utilisateur ; la detection ne regarde qu'elle.
-     * Gardee le temps de l'edition : relancer la detection la reutilise.
+     * Lue sur le bloc en base : elle recadre aussi sa vignette dans la seance.
      */
     val detectionZone: BoundingBox? = null,
     /** Le prochain glissement trace la zone. Etat explicite, comme la pipette. */
@@ -105,6 +105,7 @@ class AnnotatorViewModel @Inject constructor(
             circuitColor = detail?.bloc?.colorId?.let { id -> colors.firstOrNull { it.id == id } },
             circuit = colors,
             gradeScale = settings.gradeScale,
+            detectionZone = detail?.bloc?.detectionZone,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -135,11 +136,19 @@ class AnnotatorViewModel @Inject constructor(
     }
 
     fun setDetectionZone(zone: BoundingBox) {
-        edit { copy(detectionZone = zone, isDrawingZone = false) }
+        edit { copy(isDrawingZone = false) }
+        saveZone(zone)
     }
 
-    fun clearDetectionZone() {
-        edit { copy(detectionZone = null) }
+    fun clearDetectionZone() = saveZone(null)
+
+    /** Le cadre vit avec le bloc : il recadre sa vignette, et revient a chaque ouverture. */
+    private fun saveZone(zone: BoundingBox?) {
+        val currentBlocId = blocId.value ?: return
+        viewModelScope.launch {
+            val bloc = blocRepository.getBloc(currentBlocId) ?: return@launch
+            blocRepository.updateBloc(bloc.copy(detectionZone = zone))
+        }
     }
 
     fun startColorPick() {
