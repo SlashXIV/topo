@@ -40,8 +40,18 @@ class DetectHoldsUseCase @Inject constructor(
         data object Unavailable : Result
     }
 
-    suspend operator fun invoke(blocId: String, image: File, existing: List<Hold>): Result {
-        val detections = detector.detect(HoldDetector.ImageFile(image))
+    /**
+     * @param zone zone du bloc tracee par l'utilisateur, ou null pour toute la
+     *        photo. Une photo de pan contient souvent plusieurs blocs : ne
+     *        detecter que dans la zone ecarte les prises voisines a la source.
+     */
+    suspend operator fun invoke(
+        blocId: String,
+        image: File,
+        existing: List<Hold>,
+        zone: BoundingBox? = null,
+    ): Result {
+        val detections = detector.detect(HoldDetector.ImageFile(image, zone))
         // Lu APRES la detection : le modele est charge a la premiere demande.
         if (!detector.isReady) return Result.Unavailable
 

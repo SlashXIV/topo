@@ -1,5 +1,6 @@
 package com.topo.core.domain.repository
 
+import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.DetectedHold
 import java.io.File
 
@@ -43,6 +44,10 @@ interface HoldDetector : AutoCloseable {
      * La seule source qu'un ecran puisse construire sans connaitre la
      * plateforme : le decodage, le sous-echantillonnage et l'orientation EXIF
      * restent l'affaire de l'implementation.
+     *
+     * @param region zone a analyser, normalisee dans la photo REDRESSEE (telle
+     *        qu'affichee), ou null pour la photo entiere. Les detections sont
+     *        toujours rendues dans les coordonnees de la photo entiere.
      */
-    data class ImageFile(val file: File) : ImageSource
+    data class ImageFile(val file: File, val region: BoundingBox? = null) : ImageSource
 }

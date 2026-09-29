@@ -40,6 +40,16 @@ class DetectHoldsUseCaseTest {
     }
 
     @Test
+    fun the_drawn_zone_reaches_the_detector_with_the_photo() = runTest {
+        val detector = FakeDetector(ready = true)
+        val zone = BoundingBox(0.4f, 0.5f, 0.3f, 0.6f)
+
+        DetectHoldsUseCase(detector, RecordingBetaRepository())("bloc-1", photo, emptyList(), zone)
+
+        assertThat(detector.received).containsExactly(HoldDetector.ImageFile(photo, zone))
+    }
+
+    @Test
     fun only_confident_detections_are_proposed() = runTest {
         val beta = RecordingBetaRepository()
         val detector = FakeDetector(
