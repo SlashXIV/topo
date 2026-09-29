@@ -14,6 +14,14 @@ android {
         applicationId = "com.topo"
     }
 
+    // Le modele de detection reste non compresse dans l'APK : :vision le projette
+    // alors en memoire (openFd + map) au lieu d'en recopier ~10 Mo dans le tas
+    // Java. Regle posee ici : c'est l'application qui empaquette les assets de
+    // ses bibliotheques, le reglage d'un module library ne s'y propage pas.
+    androidResources {
+        noCompress += "onnx"
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
