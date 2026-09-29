@@ -1,5 +1,7 @@
 package com.topo.core.data.repository
 
+import com.topo.core.domain.model.Hold
+import com.topo.core.data.dao.HoldDao
 import com.topo.core.data.dao.BlocDao
 import com.topo.core.data.mapper.toDomain
 import com.topo.core.data.mapper.toEntity
@@ -17,11 +19,17 @@ import kotlinx.coroutines.flow.map
 @Singleton
 internal class BlocRepositoryImpl @Inject constructor(
     private val blocDao: BlocDao,
+    private val holdDao: HoldDao,
     private val imageStore: BlocImageStore,
 ) : BlocRepository {
 
     override fun observeBlocsForSession(sessionId: String): Flow<List<Bloc>> =
         blocDao.observeBlocsForSession(sessionId).map { rows -> rows.map { it.toDomain() } }
+
+    override fun observeHoldsForSession(sessionId: String): Flow<Map<String, List<Hold>>> =
+        holdDao.observeHoldsForSession(sessionId).map { rows ->
+            rows.map { it.toDomain() }.groupBy(Hold::blocId)
+        }
 
     override fun observeAllBlocs(): Flow<List<Bloc>> =
         blocDao.observeAllBlocs().map { rows -> rows.map { it.toDomain() } }

@@ -32,6 +32,14 @@ data class Bloc(
     /** Ressenti libre : sensations, cle du passage, ce qui a debloque. */
     val feeling: String?,
     val createdAt: Long,
+    /**
+     * Cadre du bloc trace sur la photo, normalise ; null pour toute la photo.
+     *
+     * Persiste avec le bloc et non plus le temps de l'edition : c'est lui qui
+     * recadre la vignette de la seance sur LE bloc, parmi les voisins que la photo
+     * d'un pan embarque presque toujours.
+     */
+    val detectionZone: BoundingBox? = null,
 ) {
     init {
         require(imagePath.isNotBlank()) { "Chemin d'image vide" }

@@ -8,6 +8,7 @@ import com.topo.core.data.database.TopoDatabase
 import com.topo.core.data.database.MIGRATION_1_2
 import com.topo.core.data.database.MIGRATION_2_3
 import com.topo.core.data.database.MIGRATION_3_4
+import com.topo.core.data.database.MIGRATION_4_5
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -195,6 +196,46 @@ class MigrationTest {
         db.query("SELECT COUNT(*) FROM holds").use { cursor ->
             cursor.moveToFirst()
             assertThat(cursor.getInt(0)).isEqualTo(1)
+        }
+    }
+
+    /**
+     * v4 -> v5 : un bloc existant n'a pas de cadre — il reste sur toute la photo —
+     * et son carnet, ses prises et leurs couleurs survivent.
+     */
+    @Test
+    fun migrating_from_v4_leaves_existing_blocs_unframed_and_intact() {
+        helper.createDatabase(databaseName, 4).use { db ->
+            db.execSQL(
+                "INSERT INTO sessions (id, date, location_name, notes) " +
+                    "VALUES ('s1', 1700000000000, 'Villenave', NULL)",
+            )
+            db.execSQL(
+                "INSERT INTO blocs (id, session_id, image_path, image_width, image_height, " +
+                    "grade, status, attempts, sent_at, feeling, created_at, grade_scale, color_id) " +
+                    "VALUES ('b1', 's1', 'mur.jpg', 3072, 4096, '6B', 1, 2, NULL, 'dur', 1700000001000, 0, NULL)",
+            )
+            db.execSQL(
+                "INSERT INTO holds (id, bloc_id, bbox_x_center, bbox_y_center, bbox_width, " +
+                    "bbox_height, confidence_score, origin, kind, color_l, color_a, color_b) " +
+                    "VALUES ('h1', 'b1', 0.2, 0.5, 0.08, 0.08, 0.9, 1, 1, 45.0, 0.1, 4.0)",
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(
+            databaseName, 5, true, MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
+        )
+
+        db.query("SELECT zone_center_x, zone_center_y, zone_width, zone_height, grade, feeling FROM blocs").use {
+            it.moveToFirst()
+            assertThat((0..3).all(it::isNull)).isTrue()
+            assertThat(it.getString(4)).isEqualTo("6B")
+            assertThat(it.getString(5)).isEqualTo("dur")
+        }
+        db.query("SELECT kind, color_l FROM holds").use {
+            it.moveToFirst()
+            assertThat(it.getInt(0)).isEqualTo(1)
+            assertThat(it.getFloat(1)).isEqualTo(45f)
         }
     }
 

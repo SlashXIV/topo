@@ -2,6 +2,7 @@ package com.topo.core.data
 
 import com.topo.core.data.mapper.toDomain
 import com.topo.core.data.repository.BetaRepositoryImpl
+import com.topo.core.data.repository.BlocRepositoryImpl
 import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.DetectedHold
 import com.topo.core.domain.model.HoldColor
@@ -222,6 +223,30 @@ class TopoDatabaseTest {
         assertThat(saved.color).isEqualTo(HoldColor(45f, 0.1f, 4f))
     }
 
+    /**
+     * Le cadre du bloc fait l'aller-retour par la vraie base, et les prises d'une
+     * seance reviennent groupees par bloc. Meme lecon que pour la couleur : c'est
+     * l'aller-retour qui se casse en silence quand un champ a une valeur par defaut.
+     */
+    @Test
+    fun a_bloc_zone_and_its_session_holds_round_trip_through_the_database() = runTest {
+        val session = session()
+        val bloc = bloc(sessionId = session.id)
+        database.sessionDao().upsert(session)
+        database.blocDao().insert(bloc)
+        val zone = BoundingBox(0.4f, 0.5f, 0.3f, 0.6f)
+        val repository = BlocRepositoryImpl(database.blocDao(), database.holdDao(), NoImageStore)
+
+        repository.updateBloc(repository.getBloc(bloc.id)!!.copy(detectionZone = zone))
+        database.holdDao().insertAll(listOf(hold(blocId = bloc.id), hold(blocId = bloc.id)))
+
+        assertThat(repository.getBloc(bloc.id)!!.detectionZone).isEqualTo(zone)
+        repository.observeHoldsForSession(session.id).test {
+            assertThat(awaitItem()[bloc.id]).hasSize(2)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     @Test
     fun hold_flow_emits_on_insert() = runTest {
         val session = session()
@@ -334,4 +359,14 @@ class TopoDatabaseTest {
             sourceHoldId = source,
             targetHoldId = target,
         )
+}
+
+/** Le magasin d'images n'est pas l'objet de ces tests : toute utilisation est une erreur. */
+private object NoImageStore : com.topo.core.domain.repository.BlocImageStore {
+    override suspend fun createCaptureTarget() = error("inutilise")
+    override fun relativePathOf(file: java.io.File) = error("inutilise")
+    override fun resolve(relativePath: String) = error("inutilise")
+    override suspend fun import(source: () -> java.io.InputStream) = error("inutilise")
+    override suspend fun delete(relativePath: String) = error("inutilise")
+    override suspend fun readDimensions(relativePath: String) = error("inutilise")
 }

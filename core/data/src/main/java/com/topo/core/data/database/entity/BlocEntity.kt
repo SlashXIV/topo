@@ -110,4 +110,17 @@ data class BlocEntity(
 
     @ColumnInfo(name = "created_at")
     val createdAt: Long,
+
+    /** Cadre du bloc, normalise. Quatre colonnes nulles ensemble : toute la photo. */
+    @ColumnInfo(name = "zone_center_x")
+    val zoneCenterX: Float? = null,
+
+    @ColumnInfo(name = "zone_center_y")
+    val zoneCenterY: Float? = null,
+
+    @ColumnInfo(name = "zone_width")
+    val zoneWidth: Float? = null,
+
+    @ColumnInfo(name = "zone_height")
+    val zoneHeight: Float? = null,
 )

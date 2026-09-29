@@ -4,6 +4,7 @@ import com.topo.core.domain.model.Bloc
 import com.topo.core.domain.model.BlocDetail
 import com.topo.core.domain.model.BlocStatus
 import com.topo.core.domain.model.GradeScale
+import com.topo.core.domain.model.Hold
 import com.topo.core.domain.repository.BlocImageStore
 import com.topo.core.domain.repository.BlocRepository
 import java.io.File
@@ -32,6 +33,9 @@ internal class FakeBlocRepository(
 
     override fun observeBlocsForSession(sessionId: String): Flow<List<Bloc>> =
         blocs.map { list -> list.filter { it.sessionId == sessionId } }
+
+    override fun observeHoldsForSession(sessionId: String): Flow<Map<String, List<Hold>>> =
+        blocs.map { emptyMap() }
 
     override fun observeAllBlocs(): Flow<List<Bloc>> = blocs
 

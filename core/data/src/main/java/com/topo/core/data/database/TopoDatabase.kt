@@ -36,7 +36,7 @@ import com.topo.core.data.database.entity.SettingsEntity
         CircuitColorEntity::class,
         SettingsEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class TopoDatabase : RoomDatabase() {

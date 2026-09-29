@@ -75,6 +75,11 @@ internal fun BlocEntity.toDomain(): Bloc = Bloc(
     sentAt = sentAt,
     feeling = feeling,
     createdAt = createdAt,
+    detectionZone = if (zoneCenterX != null && zoneCenterY != null && zoneWidth != null && zoneHeight != null) {
+        BoundingBox(zoneCenterX, zoneCenterY, zoneWidth, zoneHeight)
+    } else {
+        null
+    },
 )
 
 internal fun Bloc.toEntity(): BlocEntity = BlocEntity(
@@ -91,6 +96,10 @@ internal fun Bloc.toEntity(): BlocEntity = BlocEntity(
     sentAt = sentAt,
     feeling = feeling,
     createdAt = createdAt,
+    zoneCenterX = detectionZone?.centerX,
+    zoneCenterY = detectionZone?.centerY,
+    zoneWidth = detectionZone?.width,
+    zoneHeight = detectionZone?.height,
 )
 
 internal fun BlocWithBeta.toDomain(): BlocDetail = BlocDetail(

@@ -17,6 +17,17 @@ interface HoldDao {
     @Query("SELECT * FROM holds WHERE bloc_id = :blocId")
     suspend fun getHolds(blocId: String): List<HoldEntity>
 
+    /**
+     * Toutes les prises des blocs d'une seance, en UNE requete : la grille dessine
+     * les prises sur chaque vignette, et une requete par vignette en ferait des
+     * dizaines a chaque emission.
+     */
+    @Query(
+        "SELECT holds.* FROM holds INNER JOIN blocs ON blocs.id = holds.bloc_id " +
+            "WHERE blocs.session_id = :sessionId",
+    )
+    fun observeHoldsForSession(sessionId: String): Flow<List<HoldEntity>>
+
     @Insert
     suspend fun insert(hold: HoldEntity)
 

@@ -2,12 +2,16 @@ package com.topo.core.domain.repository
 
 import com.topo.core.domain.model.Bloc
 import com.topo.core.domain.model.BlocDetail
+import com.topo.core.domain.model.Hold
 import kotlinx.coroutines.flow.Flow
 
 /** Acces aux blocs et a leur annotation complete. */
 interface BlocRepository {
 
     fun observeBlocsForSession(sessionId: String): Flow<List<Bloc>>
+
+    /** Prises des blocs d'une seance, par identifiant de bloc, pour les vignettes. */
+    fun observeHoldsForSession(sessionId: String): Flow<Map<String, List<Hold>>>
 
     /**
      * Tous les blocs, toutes seances confondues.

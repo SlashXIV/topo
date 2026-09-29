@@ -201,5 +201,19 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
     }
 }
 
+/**
+ * v4 -> v5 : cadre du bloc sur sa photo.
+ *
+ * Simples ajouts de colonnes nulles : un bloc existant n'a pas de cadre, il
+ * s'affiche et se detecte sur toute la photo, comme avant.
+ */
+val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        for (column in listOf("zone_center_x", "zone_center_y", "zone_width", "zone_height")) {
+            db.execSQL("ALTER TABLE `blocs` ADD COLUMN `$column` REAL")
+        }
+    }
+}
+
 /** Toutes les migrations, dans l'ordre. */
-val TOPO_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+val TOPO_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
