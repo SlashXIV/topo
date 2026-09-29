@@ -32,6 +32,13 @@ internal class BetaRepositoryImpl @Inject constructor(
         return persisted
     }
 
+    override suspend fun addHolds(blocId: String, holds: List<DetectedHold>): List<Hold> {
+        // @Insert sur une liste : Room l'execute en une seule transaction.
+        val persisted = holds.map { it.toHold(blocId) }
+        holdDao.insertAll(persisted.map(Hold::toEntity))
+        return persisted
+    }
+
     override suspend fun updateHold(hold: Hold) {
         holdDao.update(hold.toEntity())
     }

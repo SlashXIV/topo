@@ -29,6 +29,17 @@ interface BetaRepository {
     /** @return la prise creee, avec son identifiant. */
     suspend fun addHold(blocId: String, hold: DetectedHold): Hold
 
+    /**
+     * Ajoute plusieurs prises en UNE transaction, sans toucher aux existantes.
+     *
+     * C'est l'ecriture d'une detection automatique. Une insertion par prise ferait
+     * reemettre le Flow du bloc une centaine de fois, et l'ecran se redessinerait
+     * a chaque prise.
+     *
+     * @return les prises creees, avec leurs identifiants.
+     */
+    suspend fun addHolds(blocId: String, holds: List<DetectedHold>): List<Hold>
+
     suspend fun updateHold(hold: Hold)
 
     /**

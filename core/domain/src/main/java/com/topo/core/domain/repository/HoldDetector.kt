@@ -1,6 +1,7 @@
 package com.topo.core.domain.repository
 
 import com.topo.core.domain.model.DetectedHold
+import java.io.File
 
 /**
  * Detection automatique des prises sur une image de bloc.
@@ -35,4 +36,13 @@ interface HoldDetector : AutoCloseable {
      * ByteBuffer, ce qui le garde compilable hors Android (tests unitaires JVM).
      */
     interface ImageSource
+
+    /**
+     * Photo d'un bloc, telle qu'enregistree par le [BlocImageStore].
+     *
+     * La seule source qu'un ecran puisse construire sans connaitre la
+     * plateforme : le decodage, le sous-echantillonnage et l'orientation EXIF
+     * restent l'affaire de l'implementation.
+     */
+    data class ImageFile(val file: File) : ImageSource
 }
