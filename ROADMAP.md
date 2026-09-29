@@ -407,7 +407,7 @@ modeles.
 
 ---
 
-### S12 — Textes en francais correct
+### S12 — Textes en francais correct *(livre)*
 
 **Le constat.** Toute l'interface est ecrite sans accents (« Detecter les prises », « Annuler la
 derniere prise ») : une application en francais doit s'ecrire en francais.
@@ -417,6 +417,17 @@ derniere prise ») : une application en francais doit s'ecrire en francais.
   Android, et le prealable a toute autre langue.
 - Pluriels geres par `plurals` : « 1 prise proposee », pas « 1 prises ».
 - Un test qui echoue si un texte visible est de nouveau code en dur dans un composable.
+
+**Livre.** Environ 150 textes deplaces dans `strings.xml`, module par module, accents,
+espaces insecables et vrais pluriels compris. Les libelles d'enumeration que portait le domaine
+(`GradeScale`, `DifficultyDisplay`) passent dans `core/ui` : un module JVM pur ne peut ni
+accentuer ni traduire. Les ViewModel ne portent plus de texte : leurs erreurs sont des etats
+types que l'ecran met en phrase. La verification `checkHardcodedUiText`, branchee sur `check`,
+fait echouer le build sur tout texte visible code en dur ; une exception exige une raison ecrite.
+
+**Reste.** L'erreur « flash apres plusieurs essais » est reconnue a son type d'exception : le
+domaine devrait renvoyer une erreur typee. Un message de flux introuvable a l'import peut encore
+atteindre l'utilisateur sans traduction, cas tres rare.
 
 **Pourquoi avant l'industrialisation.** Chaque ecran est concerne, le cout est faible, et
 l'industrialisation produit le build de publication : il ne doit pas partir avec ces textes.
