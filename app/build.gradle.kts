@@ -46,6 +46,10 @@ dependencies {
     implementation(projects.feature.settings)
     implementation(projects.feature.stats)
 
+    // Detection des fuites en DEBUG uniquement : LeakCanary s'installe tout seul
+    // et n'entre jamais dans le build de publication.
+    debugImplementation(libs.leakcanary.android)
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.ktx)

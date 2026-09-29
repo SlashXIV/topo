@@ -41,6 +41,10 @@ hilt = "2.60.1"
 hiltNavigationCompose = "1.3.0"
 javaxInject = "1"
 
+# --- Diagnostic (debug seulement) ---
+# 2.14 : derniere version stable ; la ligne 3.0 n'existe qu'en alpha.
+leakcanary = "2.14"
+
 # --- Tests ---
 junit = "4.13.2"
 androidxTestExt = "1.3.0"
@@ -101,6 +105,9 @@ javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "j
 hilt-android = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt" }
 hilt-compiler = { group = "com.google.dagger", name = "hilt-compiler", version.ref = "hilt" }
 androidx-hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
+
+# --- Diagnostic ---
+leakcanary-android = { group = "com.squareup.leakcanary", name = "leakcanary-android", version.ref = "leakcanary" }
 
 # --- Tests ---
 junit = { group = "junit", name = "junit", version.ref = "junit" }
