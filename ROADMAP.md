@@ -492,7 +492,9 @@ Les commentaires et la documentation du code restent hors perimetre.
   rien de retenu. Il ne surveille pas les ViewModel des destinations Compose.
 - **Baseline profile** : 17 400 regles, generees sur le parcours demarrage -> seances -> seance.
   Sur emulateur, 10 demarrages a froid par mode : mediane 1188 -> **1077 ms**, pire cas 6165 ->
-  **1248 ms**. Indicatif ; la mesure de reference se refait sur telephone avec le meme test.
+  **1248 ms**. Sur le Xiaomi, meme test : mediane 257 -> **237 ms** (-8 %). Gain modeste mais
+  reel sur un demarrage deja rapide ; la passe avec profil est bruitee (un minimum a 43 ms trahit
+  une iteration ou MIUI n'a pas vraiment tue le processus), d'ou une lecture prudente.
 - **Android App Bundle** : 67,3 Mo, 14 bibliotheques natives conformes 16 Ko. Non signe : la cle
   d'envoi Play reste a creer par l'auteur.
 - **Modele** : un build de publication refuse de se construire sans lui.
@@ -500,7 +502,7 @@ Les commentaires et la documentation du code restent hors perimetre.
 **Reste.**
 - **ONNX Runtime reduit aux operateurs du modele** : 33 Mo en arm64 aujourd'hui, quelques Mo
   attendus. Impose de compiler ORT depuis les sources : a decider.
-- Signature de publication, et mesure du demarrage sur telephone physique.
+- Signature de publication.
 
 ---
 
