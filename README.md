@@ -207,7 +207,7 @@ Le detail de chaque phase, ses criteres d'acceptation et le journal des decision
 | **S10** | Detection des prises : YOLO11n, ONNX Runtime / XNNPACK, 61 ms sur ARM64 | **termine** |
 | S11 | Ne garder que les prises du bloc : pipette de couleur, prises grises | a faire |
 | **S12** | Textes en francais correct : accents, `strings.xml`, pluriels | **termine** |
-| S13 | Profiling, R8, baseline profile, ORT reduit, audit final, AAB | a faire |
+| **S13** | Profiling, R8, baseline profile, restauration d'etat, audit final, AAB | **termine** (ORT reduit a decider) |
 | S14 | Mettre en valeur les prises du bloc : halo de la couleur de difficulte | a faire |
 | ∥ | `ml/` : dataset, fine-tuning, quantification INT8, export ONNX | en parallele |
 

@@ -457,7 +457,7 @@ Les commentaires et la documentation du code restent hors perimetre.
 
 ---
 
-### S13 — Industrialisation
+### S13 — Industrialisation *(livre, sauf ONNX Runtime reduit)*
 
 
 
@@ -469,6 +469,32 @@ Les commentaires et la documentation du code restent hors perimetre.
 - Baseline profile pour reduire le temps de demarrage.
 - Restauration d'etat apres terminaison du processus (`SavedStateHandle`).
 - Audit final d'alignement 16 Ko et production de l'Android App Bundle.
+
+**Resultats, tous mesures.**
+- **R8** : le build de publication tourne — les 8 methodes JNI s'enregistrent (la regle de
+  conservation de `NativeBridge` tient), detection, partage, reglages et statistiques
+  parcourus sans plantage sur emulateur.
+- **Terminaison du processus** : constatee avant correction — l'editeur revenait du mode
+  « Tracer » au mode « Prises ». Mode, membre, zone de detection et filtre de la grille vivent
+  desormais dans le `SavedStateHandle` ; textes en cours de saisie et dialogues ouverts dans
+  `rememberSaveable`. Verifie par `am kill` : mode, zone et texte saisi reviennent. La pipette et
+  le cadrage en cours ne sont PAS restaures, a dessein.
+- **Memoire native** : pas de fuite. 30 detections a la suite : 27 Mo avant, 106 Mo au
+  chargement du modele, puis stable autour de 130 Mo. Desactiver l'arena memoire d'ONNX Runtime
+  ne change rien (142 contre 143 Mo sur photos reelles) : reglage par defaut conserve.
+- **Fuites Java** : LeakCanary en debug. Six recreations de l'activite apres une detection :
+  rien de retenu. Il ne surveille pas les ViewModel des destinations Compose.
+- **Baseline profile** : 17 400 regles, generees sur le parcours demarrage -> seances -> seance.
+  Sur emulateur, 10 demarrages a froid par mode : mediane 1188 -> **1077 ms**, pire cas 6165 ->
+  **1248 ms**. Indicatif ; la mesure de reference se refait sur telephone avec le meme test.
+- **Android App Bundle** : 67,3 Mo, 14 bibliotheques natives conformes 16 Ko. Non signe : la cle
+  d'envoi Play reste a creer par l'auteur.
+- **Modele** : un build de publication refuse de se construire sans lui.
+
+**Reste.**
+- **ONNX Runtime reduit aux operateurs du modele** : 33 Mo en arm64 aujourd'hui, quelques Mo
+  attendus. Impose de compiler ORT depuis les sources : a decider.
+- Signature de publication, et latence du modele a deux classes sur appareil.
 
 ---
 
@@ -513,6 +539,9 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | PNG plutot que JPEG pour l'export | Le trace est fait d'aplats et d'aretes franches, exactement ce que JPEG degrade en halos. |
 | Fichier partage purge a l'export SUIVANT | L'application receptrice lit le fichier a un moment inconnu : le supprimer juste apres le selecteur ferait une course. Le repertoire ne contient ainsi jamais plus d'une image. |
 | Bitmaps materiels de Coil desactives sous l'API 28 | La capture d'un calque y rejoue le dessin sur un canevas logiciel, qui refuse de lire un bitmap materiel. |
+| Arena memoire d'ONNX Runtime conservee | Mesure : la desactiver ne reduit pas le tas natif (142 contre 143 Mo apres 10 detections sur photos reelles). La memoire tient au modele et aux tampons de XNNPACK, pas a l'arena. |
+| Etats a moitie faits non restaures apres terminaison | Retrouver la pipette ou le cadrage actifs a froid ferait qu'un appui ne fasse pas ce que l'ecran laisse croire. |
+| Build de publication refuse sans modele | Le modele est hors git : sans verrou, un clone produirait en silence une application privee de detection. |
 | Modele FP32 plutot qu'INT8 | Mesure sur le Xiaomi : l'INT8 est a la fois plus lent (97 ms contre 61) et moins precis (mAP50 0,819 contre 0,879), ONNX Runtime ne confiant pas ses noeuds de quantification a XNNPACK. |
 | Detection qui propose sans rien remplacer | Une prise posee a la main peut porter des mouvements : la remplacer emporterait le beta. Les propositions se corrigent avec le geste deja connu. |
 | Seuil de proposition a 0,5, au-dessus de celui du moteur | Mesure sur une photo reelle : sous 0,5, le corps d'un grimpeur et des taches sur le mur. Trente fausses prises a retirer rendraient la detection plus lente que la pose manuelle. |
