@@ -42,6 +42,9 @@ class CameraCaptureViewModel @Inject constructor(
      */
     val imageCapture: ImageCapture = photoCapture.newImageCapture()
 
+    /** Nouvel apercu a chaque liaison : un cas d'usage CameraX ne se lie qu'une fois. */
+    fun newPreview() = photoCapture.newPreview()
+
     /**
      * Capture puis enregistre le bloc.
      *

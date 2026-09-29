@@ -4,8 +4,10 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import android.annotation.SuppressLint
+import android.view.ScaleGestureDetector
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
-import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -129,6 +132,7 @@ fun CameraCaptureScreen(
  * materielle exclusive. Si elle n'etait pas deliee a la sortie de l'ecran, aucune
  * autre application — ni un autre ecran de celle-ci — ne pourrait l'ouvrir.
  */
+@SuppressLint("ClickableViewAccessibility") // pincement seul : aucun clic a annoncer
 @Composable
 private fun CameraPreview(
     viewModel: CameraCaptureViewModel,
@@ -136,7 +140,37 @@ private fun CameraPreview(
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val previewView = remember { PreviewView(context) }
+    var zoomRatio by remember { mutableFloatStateOf(1f) }
+    // Porteur hors snapshot : la camera change a chaque liaison, sans rien a recomposer.
+    val boundCamera = remember { arrayOfNulls<Camera>(1) }
+
+    val previewView = remember {
+        PreviewView(context).apply {
+            // L'apercu montre TOUTE la photo, bandes comprises, plutot que de
+            // remplir l'ecran en rognant : ce qui est vu est ce qui est capture.
+            scaleType = PreviewView.ScaleType.FIT_CENTER
+
+            // Pincer pour zoomer : resserrer le cadre sur le bloc, a la prise de
+            // vue plutot qu'en recadrant apres. Au-dela de 2x environ, la camera
+            // logique du telephone bascule d'elle-meme sur le teleobjectif, plus
+            // net qu'un recadrage de la photo grand angle.
+            val pinch = ScaleGestureDetector(
+                context,
+                object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                    override fun onScale(detector: ScaleGestureDetector): Boolean {
+                        val camera = boundCamera[0] ?: return false
+                        val state = camera.cameraInfo.zoomState.value ?: return false
+                        camera.cameraControl.setZoomRatio(
+                            (state.zoomRatio * detector.scaleFactor)
+                                .coerceIn(state.minZoomRatio, state.maxZoomRatio),
+                        )
+                        return true
+                    }
+                },
+            )
+            setOnTouchListener { _, event -> pinch.onTouchEvent(event) }
+        }
+    }
 
     DisposableEffect(lifecycleOwner) {
         val providerFuture = ProcessCameraProvider.getInstance(context)
@@ -144,24 +178,41 @@ private fun CameraPreview(
 
         providerFuture.addListener({
             provider = providerFuture.get().also { cameraProvider ->
-                val preview = Preview.Builder().build().apply {
+                val preview = viewModel.newPreview().apply {
                     surfaceProvider = previewView.surfaceProvider
                 }
 
                 // Toujours repartir d'un etat propre : lier deux fois le meme cas
                 // d'usage leve une exception cote CameraX.
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
+                boundCamera[0] = cameraProvider.bindToLifecycle(
                     lifecycleOwner,
                     CameraSelector.DEFAULT_BACK_CAMERA,
                     preview,
                     viewModel.imageCapture,
-                )
+                ).also { camera ->
+                    camera.cameraInfo.zoomState.observe(lifecycleOwner) { zoomRatio = it.zoomRatio }
+                }
             }
         }, ContextCompat.getMainExecutor(context))
 
-        onDispose { provider?.unbindAll() }
+        onDispose {
+            boundCamera[0] = null
+            provider?.unbindAll()
+        }
     }
 
-    AndroidView(factory = { previewView }, modifier = modifier)
+    Box(modifier = modifier) {
+        AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+        // Le zoom affiche : sans lui, rien ne dit qu'un pincement a eu lieu, ni
+        // qu'on est revenu a 1x.
+        Text(
+            text = stringResource(R.string.camera_zoom, zoomRatio),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(16.dp),
+        )
+    }
 }

@@ -8,4 +8,6 @@
     <string name="camera_permission_required">Autorisation requise</string>
     <string name="camera_capture_error">Capture impossible</string>
     <string name="camera_capture_error_detail">Capture impossible : %s</string>
+    <!-- Facteur de zoom de la camera, par exemple « 2,0× ». -->
+    <string name="camera_zoom">%1$.1f×</string>
 </resources>

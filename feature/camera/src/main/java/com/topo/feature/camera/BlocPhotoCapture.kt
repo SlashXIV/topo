@@ -3,6 +3,7 @@ package com.topo.feature.camera
 import android.content.Context
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.Preview
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.core.content.ContextCompat
@@ -49,14 +50,28 @@ class BlocPhotoCapture @Inject constructor(
         // facon sous-echantillonnee pour l'inference, et l'utilisateur photographie
         // debout au pied d'un bloc, pas en studio.
         .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
-        // ResolutionSelector remplace setTargetAspectRatio, deprecie : la strategie
-        // de repli laisse CameraX choisir si le capteur ne sait pas produire du 4:3,
-        // au lieu d'echouer.
-        .setResolutionSelector(
-            ResolutionSelector.Builder()
-                .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
-                .build(),
-        )
+        .setResolutionSelector(captureResolution)
+        .build()
+
+    /**
+     * Apercu au MEME format que la photo.
+     *
+     * Sans cela, l'apercu prend le format de l'ecran (20:9) et, rempli bord a bord,
+     * rogne les cotes d'une photo 4:3 : l'utilisateur cadre un bloc et la photo
+     * embarque les blocs voisins qu'il n'a jamais vus. Constate sur appareil, et
+     * contourne en photographiant avec l'application systeme.
+     */
+    fun newPreview(): Preview = Preview.Builder()
+        .setResolutionSelector(captureResolution)
+        .build()
+
+    /**
+     * ResolutionSelector remplace setTargetAspectRatio, deprecie : la strategie de
+     * repli laisse CameraX choisir si le capteur ne sait pas produire du 4:3, au
+     * lieu d'echouer. Partage par l'apercu et la capture, qui doivent cadrer pareil.
+     */
+    private val captureResolution = ResolutionSelector.Builder()
+        .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
         .build()
 
     /**
