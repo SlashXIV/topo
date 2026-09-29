@@ -8,12 +8,15 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -33,6 +36,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.topo.core.domain.model.BlocDetail
+import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.Hold
 import com.topo.core.domain.model.Limb
 import com.topo.core.domain.model.Movement
@@ -101,6 +105,9 @@ fun AnnotationCanvas(
     findSnapTarget: FindSnapTargetUseCase = remember { FindSnapTargetUseCase() },
     playback: BetaPlaybackState? = null,
     exportLayer: GraphicsLayer? = null,
+    detectionZone: BoundingBox? = null,
+    isDrawingZone: Boolean = false,
+    onZoneDrawn: (BoundingBox) -> Unit = {},
 ) {
     val context = LocalContext.current
     val imageRequest = remember(imageFile) {
@@ -150,6 +157,9 @@ fun AnnotationCanvas(
             onHoldRequested = onHoldRequested,
             onHoldRemoved = onHoldRemoved,
             onTraceCompleted = onTraceCompleted,
+            detectionZone = detectionZone,
+            isDrawingZone = isDrawingZone,
+            onZoneDrawn = onZoneDrawn,
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -167,6 +177,9 @@ private fun BetaTraceLayer(
     onHoldRequested: (Float, Float) -> Unit,
     onHoldRemoved: (String) -> Unit,
     onTraceCompleted: (List<String>) -> Unit,
+    detectionZone: BoundingBox?,
+    isDrawingZone: Boolean,
+    onZoneDrawn: (BoundingBox) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // ------------------------------------------------------------------------
@@ -195,6 +208,12 @@ private fun BetaTraceLayer(
     val currentOnHoldRequested by rememberUpdatedState(onHoldRequested)
     val currentOnHoldRemoved by rememberUpdatedState(onHoldRemoved)
     val currentOnTraceCompleted by rememberUpdatedState(onTraceCompleted)
+
+    val currentZone by rememberUpdatedState(detectionZone)
+    val currentIsDrawingZone by rememberUpdatedState(isDrawingZone)
+    val currentOnZoneDrawn by rememberUpdatedState(onZoneDrawn)
+    // Cadre en cours de trace, en pixels : lu seulement au dessin, comme le trace.
+    var liveZone by remember { mutableStateOf<Rect?>(null) }
 
     val currentMovements by rememberUpdatedState(blocDetail.movements)
     val currentLimb by rememberUpdatedState(selectedLimb)
@@ -238,9 +257,22 @@ private fun BetaTraceLayer(
             }
             .pointerInput(Unit) {
                 val density = Density(this.density, this.fontScale)
+                // Coin d'ancrage du cadre de zone en cours de trace.
+                var zoneAnchor = Offset.Zero
 
+                // UN SEUL detecteur de glissement pour le trace ET le cadrage de la
+                // zone. Deux detecteurs sur le meme noeud se disputent le geste : le
+                // premier a franchir le seuil de glissement le consomme, et l'autre
+                // ne recoit plus rien — c'est ce que le test du cadrage a revele.
                 detectDragGestures(
                     onDragStart = { offset ->
+                        // Cadrage : actif seulement sur demande explicite, sinon un
+                        // glissement en mode prises tracerait un cadre par megarde.
+                        if (currentIsDrawingZone) {
+                            zoneAnchor = offset
+                            liveZone = Rect(offset, offset)
+                            return@detectDragGestures
+                        }
                         if (currentMode != AnnotationMode.TRACE_BETA) return@detectDragGestures
                         traceState.begin(offset)
                         traceState.update(
@@ -253,6 +285,20 @@ private fun BetaTraceLayer(
                         )
                     },
                     onDrag = { change, _ ->
+                        if (liveZone != null) {
+                            change.consume()
+                            liveZone = Rect(
+                                topLeft = Offset(
+                                    minOf(zoneAnchor.x, change.position.x),
+                                    minOf(zoneAnchor.y, change.position.y),
+                                ),
+                                bottomRight = Offset(
+                                    maxOf(zoneAnchor.x, change.position.x),
+                                    maxOf(zoneAnchor.y, change.position.y),
+                                ),
+                            )
+                            return@detectDragGestures
+                        }
                         if (currentMode != AnnotationMode.TRACE_BETA) return@detectDragGestures
                         // consume() : le geste appartient au canevas. Sans cela, un
                         // conteneur defilant parent volerait le trace des que le
@@ -268,10 +314,20 @@ private fun BetaTraceLayer(
                         )
                     },
                     onDragEnd = {
+                        val drawn = liveZone
+                        if (drawn != null) {
+                            liveZone = null
+                            drawn.toZone(size.width.toFloat(), size.height.toFloat())
+                                ?.let(currentOnZoneDrawn)
+                            return@detectDragGestures
+                        }
                         val chain = traceState.finish()
                         if (chain.isNotEmpty()) currentOnTraceCompleted(chain)
                     },
-                    onDragCancel = { traceState.reset() },
+                    onDragCancel = {
+                        liveZone = null
+                        traceState.reset()
+                    },
                 )
             }
             // ----------------------------------------------------------------
@@ -288,6 +344,10 @@ private fun BetaTraceLayer(
             .drawWithCache {
                 val tracePath = Path()
                 val holdStroke = Stroke(width = 2.dp.toPx())
+                val zoneStroke = Stroke(
+                    width = 2.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx())),
+                )
                 val movementStroke = Stroke(
                     width = 4.dp.toPx(),
                     cap = StrokeCap.Round,
@@ -311,6 +371,13 @@ private fun BetaTraceLayer(
                     // Toutes les lectures d'etat mutable ont lieu ICI, dans la phase
                     // de dessin : un deplacement du doigt n'invalide que le dessin,
                     // jamais la composition.
+
+                    // La zone n'a de sens qu'en edition des prises : ni le trace, ni
+                    // le rejeu, ni l'image partagee depuis ces modes ne la montrent.
+                    if (currentMode == AnnotationMode.ADD_HOLD) {
+                        (liveZone ?: currentZone?.toPixels(size))?.let { drawZone(it, zoneStroke) }
+                    }
+
                     drawHolds(currentHolds, holdStroke, holdRadius)
 
                     // playback.progress.value est lu ICI et nulle part ailleurs.
@@ -465,6 +532,42 @@ private fun DrawScope.drawLiveTrace(
 
     drawPath(path = path, color = limb.color(), style = stroke)
 }
+
+/**
+ * Assombrit tout ce qui est HORS de la zone, puis la cerne : ce qui reste clair
+ * est ce qui sera analyse. Quatre bandes plutot qu'un chemin evide : aucune
+ * allocation, et le calcul tient en quatre rectangles.
+ */
+private fun DrawScope.drawZone(zone: Rect, stroke: Stroke) {
+    val scrim = Color.Black.copy(alpha = 0.45f)
+    drawRect(scrim, Offset.Zero, Size(size.width, zone.top))
+    drawRect(scrim, Offset(0f, zone.bottom), Size(size.width, size.height - zone.bottom))
+    drawRect(scrim, Offset(0f, zone.top), Size(zone.left, zone.height))
+    drawRect(scrim, Offset(zone.right, zone.top), Size(size.width - zone.right, zone.height))
+    drawRect(Color.White, zone.topLeft, zone.size, style = stroke)
+}
+
+/**
+ * Cadre en pixels -> zone normalisee, rognee au canevas.
+ *
+ * @return null pour un cadre trop petit pour etre voulu : un appui leger ou un
+ *         glissement de quelques pixels ne doit pas reduire l'analyse a rien.
+ */
+internal fun Rect.toZone(widthPx: Float, heightPx: Float): BoundingBox? {
+    if (widthPx <= 0f || heightPx <= 0f) return null
+    val left = (left / widthPx).coerceIn(0f, 1f)
+    val right = (right / widthPx).coerceIn(0f, 1f)
+    val top = (top / heightPx).coerceIn(0f, 1f)
+    val bottom = (bottom / heightPx).coerceIn(0f, 1f)
+    if (right - left < MIN_ZONE_FRACTION || bottom - top < MIN_ZONE_FRACTION) return null
+    return BoundingBox((left + right) / 2f, (top + bottom) / 2f, right - left, bottom - top)
+}
+
+/** Cote minimal d'une zone, en fraction de la photo. */
+private const val MIN_ZONE_FRACTION = 0.05f
+
+private fun BoundingBox.toPixels(size: Size): Rect =
+    Rect(left * size.width, top * size.height, right * size.width, bottom * size.height)
 
 private fun DrawScope.drawSnapHalo(hold: Hold, radius: Float) {
     drawCircle(

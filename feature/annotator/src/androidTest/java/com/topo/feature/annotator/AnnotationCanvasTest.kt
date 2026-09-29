@@ -16,6 +16,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.TouchInjectionScope
 import androidx.compose.ui.test.percentOffset
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.compose.ui.unit.dp
 import com.topo.core.domain.model.Bloc
 import com.topo.core.domain.model.BlocDetail
@@ -233,6 +234,73 @@ class AnnotationCanvasTest {
         }
 
         composeRule.onNodeWithTag(CanvasTestTag).assertExists()
+    }
+
+    /**
+     * Cadrage de la zone de detection : un glissement d'un coin a l'autre la
+     * rend normalisee, quel que soit le sens du glissement.
+     */
+    @Test
+    fun dragging_while_framing_reports_the_zone_normalized() {
+        var zone: BoundingBox? = null
+        setZoneCanvas(isDrawingZone = true, onZoneDrawn = { zone = it })
+
+        // De bas-droite vers haut-gauche : le cadre ne depend pas du sens.
+        composeRule.onNodeWithTag(CanvasTestTag).performTouchInput {
+            swipe(percentOffset(0.7f, 0.8f), percentOffset(0.2f, 0.3f), durationMillis = 300)
+        }
+        composeRule.waitForIdle()
+
+        val drawn = zone!!
+        assertThat(drawn.left).isWithin(0.03f).of(0.2f)
+        assertThat(drawn.top).isWithin(0.03f).of(0.3f)
+        assertThat(drawn.right).isWithin(0.03f).of(0.7f)
+        assertThat(drawn.bottom).isWithin(0.03f).of(0.8f)
+    }
+
+    @Test
+    fun dragging_in_hold_mode_without_framing_draws_no_zone() {
+        var zone: BoundingBox? = null
+        setZoneCanvas(isDrawingZone = false, onZoneDrawn = { zone = it })
+
+        composeRule.onNodeWithTag(CanvasTestTag).performTouchInput {
+            swipe(percentOffset(0.2f, 0.3f), percentOffset(0.7f, 0.8f), durationMillis = 300)
+        }
+        composeRule.waitForIdle()
+
+        // Sans demande explicite, un glissement en mode prises ne cadre rien.
+        assertThat(zone).isNull()
+    }
+
+    @Test
+    fun a_tiny_drag_is_not_taken_for_a_zone() {
+        var zone: BoundingBox? = null
+        setZoneCanvas(isDrawingZone = true, onZoneDrawn = { zone = it })
+
+        composeRule.onNodeWithTag(CanvasTestTag).performTouchInput {
+            swipe(percentOffset(0.50f, 0.50f), percentOffset(0.52f, 0.53f), durationMillis = 200)
+        }
+        composeRule.waitForIdle()
+
+        // Un glissement de quelques pixels ne doit pas reduire l'analyse a rien.
+        assertThat(zone).isNull()
+    }
+
+    private fun setZoneCanvas(isDrawingZone: Boolean, onZoneDrawn: (BoundingBox) -> Unit) {
+        composeRule.setContent {
+            AnnotationCanvas(
+                blocDetail = detail(emptyList()),
+                imageFile = MissingImage,
+                mode = AnnotationMode.ADD_HOLD,
+                selectedLimb = Limb.RIGHT_HAND,
+                onHoldRequested = { _, _ -> },
+                onHoldRemoved = {},
+                onTraceCompleted = {},
+                modifier = Modifier.size(CanvasSize),
+                isDrawingZone = isDrawingZone,
+                onZoneDrawn = onZoneDrawn,
+            )
+        }
     }
 
     /**

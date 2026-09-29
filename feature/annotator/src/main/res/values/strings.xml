@@ -80,4 +80,7 @@
     <string name="annotator_speed_half">0,5x</string>
     <string name="annotator_speed_normal">1x</string>
     <string name="annotator_speed_double">2x</string>
+    <string name="annotator_draw_zone">Cadrer le bloc</string>
+    <string name="annotator_clear_zone">Toute la photo</string>
+    <string name="annotator_hint_draw_zone">Fais glisser ton doigt pour encadrer ton bloc : seules ses prises seront détectées.</string>
 </resources>

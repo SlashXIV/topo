@@ -163,6 +163,11 @@ fun AnnotatorScreen(
                 isPickingColor = uiState.isPickingColor,
                 onPickColor = viewModel::startColorPick,
                 onCancelPick = viewModel::cancelColorPick,
+                isDrawingZone = uiState.isDrawingZone,
+                hasZone = uiState.detectionZone != null,
+                onDrawZone = viewModel::startZoneDrawing,
+                onCancelZone = viewModel::cancelZoneDrawing,
+                onClearZone = viewModel::clearDetectionZone,
                 selectedLimb = uiState.selectedLimb,
                 holdCount = detail?.holds?.size ?: 0,
                 movementCount = movementCount,
@@ -231,13 +236,15 @@ fun AnnotatorScreen(
                         selectedLimb = uiState.selectedLimb,
                         // Pendant la pipette, un appui sur le mur ne pose rien : le
                         // doigt vise une prise, un appui a cote serait un rate.
-                        onHoldRequested = if (uiState.isPickingColor) {
+                        onHoldRequested = if (uiState.isPickingColor || uiState.isDrawingZone) {
                             { _, _ -> }
                         } else {
                             viewModel::addHoldAt
                         },
                         onHoldRemoved = { holdId ->
-                            if (uiState.isPickingColor) {
+                            if (uiState.isDrawingZone) {
+                                // Le doigt cadre : un appui ne retire rien.
+                            } else if (uiState.isPickingColor) {
                                 scope.launch {
                                     viewModel.keepColorOf(holdId)?.message(resources)?.let {
                                         snackbarHostState.showSnackbar(it)
@@ -252,6 +259,9 @@ fun AnnotatorScreen(
                         // trace la sequence entiere : c'est le mode edition.
                         playback = playback.takeIf { uiState.mode == AnnotationMode.REPLAY },
                         exportLayer = exportLayer,
+                        detectionZone = uiState.detectionZone,
+                        isDrawingZone = uiState.isDrawingZone,
+                        onZoneDrawn = viewModel::setDetectionZone,
                     )
                 } else {
                     Text(stringResource(R.string.annotator_loading_bloc), style = MaterialTheme.typography.bodyMedium)
@@ -268,6 +278,11 @@ private fun AnnotationToolbar(
     isPickingColor: Boolean,
     onPickColor: () -> Unit,
     onCancelPick: () -> Unit,
+    isDrawingZone: Boolean,
+    hasZone: Boolean,
+    onDrawZone: () -> Unit,
+    onCancelZone: () -> Unit,
+    onClearZone: () -> Unit,
     selectedLimb: Limb,
     holdCount: Int,
     movementCount: Int,
@@ -307,7 +322,11 @@ private fun AnnotationToolbar(
         // mieux qu'une icone.
         Text(
             text = stringResource(
-                if (isPickingColor) R.string.annotator_hint_pick_color else mode.hint(),
+                when {
+                    isDrawingZone -> R.string.annotator_hint_draw_zone
+                    isPickingColor -> R.string.annotator_hint_pick_color
+                    else -> mode.hint()
+                },
             ),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -349,7 +368,19 @@ private fun AnnotationToolbar(
                 // manuelle, et se corrige avec le meme geste — un appui retire.
                 if (mode == AnnotationMode.ADD_HOLD && isPickingColor) {
                     FilledTonalButton(onClick = onCancelPick) { Text(stringResource(R.string.annotator_cancel)) }
+                } else if (mode == AnnotationMode.ADD_HOLD && isDrawingZone) {
+                    FilledTonalButton(onClick = onCancelZone) { Text(stringResource(R.string.annotator_cancel)) }
                 } else if (mode == AnnotationMode.ADD_HOLD) {
+                    // Le cadrage d'abord : il decide de ce que la detection regardera.
+                    if (hasZone) {
+                        FilledTonalButton(onClick = onClearZone) {
+                            Text(stringResource(R.string.annotator_clear_zone))
+                        }
+                    } else {
+                        FilledTonalButton(onClick = onDrawZone) {
+                            Text(stringResource(R.string.annotator_draw_zone))
+                        }
+                    }
                     FilledTonalButton(onClick = onDetect, enabled = !isDetecting) {
                         Text(
                             stringResource(

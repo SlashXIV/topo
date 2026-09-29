@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.topo.core.domain.model.BlocDetail
+import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.Limb
 import com.topo.core.domain.repository.BetaRepository
 import com.topo.core.domain.repository.BlocImageStore
@@ -37,6 +38,13 @@ data class AnnotatorUiState(
      * retirer. Etat explicite et visible : le meme geste change de sens.
      */
     val isPickingColor: Boolean = false,
+    /**
+     * Zone du bloc tracee par l'utilisateur ; la detection ne regarde qu'elle.
+     * Gardee le temps de l'edition : relancer la detection la reutilise.
+     */
+    val detectionZone: BoundingBox? = null,
+    /** Le prochain glissement trace la zone. Etat explicite, comme la pipette. */
+    val isDrawingZone: Boolean = false,
 )
 
 @HiltViewModel
@@ -90,7 +98,27 @@ class AnnotatorViewModel @Inject constructor(
     fun selectMode(mode: AnnotationMode) {
         // Changer de mode abandonne la pipette : revenir aux prises plus tard ne
         // doit pas trouver un appui encore detourne.
-        editorState.value = editorState.value.copy(mode = mode, isPickingColor = false)
+        editorState.value = editorState.value.copy(
+            mode = mode,
+            isPickingColor = false,
+            isDrawingZone = false,
+        )
+    }
+
+    fun startZoneDrawing() {
+        editorState.value = editorState.value.copy(isDrawingZone = true, isPickingColor = false)
+    }
+
+    fun cancelZoneDrawing() {
+        editorState.value = editorState.value.copy(isDrawingZone = false)
+    }
+
+    fun setDetectionZone(zone: BoundingBox) {
+        editorState.value = editorState.value.copy(detectionZone = zone, isDrawingZone = false)
+    }
+
+    fun clearDetectionZone() {
+        editorState.value = editorState.value.copy(detectionZone = null)
     }
 
     fun startColorPick() {
@@ -207,7 +235,12 @@ class AnnotatorViewModel @Inject constructor(
         val currentBlocId = blocId.value ?: return null
         val state = uiState.value
         val image = state.imageFile ?: return null
-        return detectHolds(currentBlocId, image, state.blocDetail?.holds.orEmpty())
+        return detectHolds(
+            currentBlocId,
+            image,
+            state.blocDetail?.holds.orEmpty(),
+            zone = state.detectionZone,
+        )
     }
 
     fun clearBeta() {
