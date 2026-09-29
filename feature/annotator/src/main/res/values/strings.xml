@@ -82,4 +82,6 @@
     <string name="annotator_draw_zone">Cadrer le bloc</string>
     <string name="annotator_clear_zone">Toute la photo</string>
     <string name="annotator_hint_draw_zone">Fais glisser ton doigt pour encadrer ton bloc : seules ses prises seront détectées.</string>
+    <!-- Difficulte du bloc : couleur du circuit puis cotation, par exemple « Bleu · 6B ». -->
+    <string name="annotator_title_color_grade">%1$s · %2$s</string>
 </resources>

@@ -7,10 +7,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.topo.core.domain.model.BlocDetail
 import com.topo.core.domain.model.BoundingBox
+import com.topo.core.domain.model.CircuitColor
 import com.topo.core.domain.model.Limb
 import com.topo.core.domain.repository.BetaRepository
 import com.topo.core.domain.repository.BlocImageStore
 import com.topo.core.domain.repository.BlocRepository
+import com.topo.core.domain.repository.CircuitColorRepository
 import com.topo.core.domain.usecase.AddManualHoldUseCase
 import com.topo.core.domain.usecase.BuildMovementSequenceUseCase
 import com.topo.core.domain.usecase.DetectHoldsUseCase
@@ -32,6 +34,11 @@ import kotlinx.coroutines.launch
 data class AnnotatorUiState(
     val blocDetail: BlocDetail? = null,
     val imageFile: File? = null,
+    /**
+     * Couleur de difficulte du bloc — celle de ses fleches de depart, saisie comme
+     * couleur du circuit. Null si le bloc n'en porte pas.
+     */
+    val circuitColor: CircuitColor? = null,
     val mode: AnnotationMode = AnnotationMode.ADD_HOLD,
     val selectedLimb: Limb = Limb.RIGHT_HAND,
     /**
@@ -59,6 +66,7 @@ class AnnotatorViewModel @Inject constructor(
     private val detectHolds: DetectHoldsUseCase,
     private val keepHoldColor: KeepHoldColorUseCase,
     private val savedState: SavedStateHandle,
+    circuitColorRepository: CircuitColorRepository,
 ) : ViewModel() {
 
     private val blocId = MutableStateFlow<String?>(null)
@@ -82,10 +90,12 @@ class AnnotatorViewModel @Inject constructor(
     val uiState: StateFlow<AnnotatorUiState> = combine(
         blocDetail,
         editorState,
-    ) { detail, editor ->
+        circuitColorRepository.observeColors(),
+    ) { detail, editor, colors ->
         editor.copy(
             blocDetail = detail,
             imageFile = detail?.let { imageStore.resolve(it.bloc.imagePath) },
+            circuitColor = detail?.bloc?.colorId?.let { id -> colors.firstOrNull { it.id == id } },
         )
     }.stateIn(
         scope = viewModelScope,

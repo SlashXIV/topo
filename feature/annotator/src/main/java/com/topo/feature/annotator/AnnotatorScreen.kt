@@ -123,7 +123,7 @@ fun AnnotatorScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(detail?.bloc?.grade ?: stringResource(R.string.annotator_title_fallback)) },
+                title = { Text(blocTitle(uiState.circuitColor?.name, detail?.bloc?.grade)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.annotator_back))
@@ -261,6 +261,7 @@ fun AnnotatorScreen(
                         playback = playback.takeIf { uiState.mode == AnnotationMode.REPLAY },
                         exportLayer = exportLayer,
                         detectionZone = uiState.detectionZone,
+                        highlight = uiState.circuitColor?.let { Color(it.argb) },
                         isDrawingZone = uiState.isDrawingZone,
                         onZoneDrawn = viewModel::setDetectionZone,
                     )
@@ -402,6 +403,18 @@ private fun AnnotationToolbar(
             }
         }
     }
+}
+
+/**
+ * Titre du bloc : sa difficulte, couleur puis cotation, comme on la lit au mur —
+ * la couleur des fleches d'abord, l'estimation du grimpeur ensuite.
+ */
+@Composable
+private fun blocTitle(color: String?, grade: String?): String = when {
+    color != null && grade != null -> stringResource(R.string.annotator_title_color_grade, color, grade)
+    color != null -> color
+    grade != null -> grade
+    else -> stringResource(R.string.annotator_title_fallback)
 }
 
 /**

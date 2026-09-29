@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -24,6 +25,7 @@ import com.topo.core.domain.model.BlocStatus
 import com.topo.core.domain.model.GradeScale
 import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.Hold
+import com.topo.core.domain.model.HoldKind
 import com.topo.core.domain.model.HoldOrigin
 import com.topo.core.domain.model.Limb
 import com.topo.core.domain.model.Movement
@@ -234,6 +236,48 @@ class AnnotationCanvasTest {
         }
 
         composeRule.onNodeWithTag(CanvasTestTag).assertExists()
+    }
+
+    /**
+     * Le halo porte la couleur de difficulte du bloc sur ses prises, et laisse les
+     * volumes en blanc neutre : ils appartiennent au mur, pas au bloc.
+     */
+    @Test
+    fun bloc_holds_wear_the_difficulty_colour_and_volumes_stay_white() {
+        val purple = Color(0xFF7B3FA0)
+        val hold = hold("prise", x = 0.3f, y = 0.5f)
+        val volume = hold("volume", x = 0.7f, y = 0.5f).copy(kind = HoldKind.VOLUME)
+        lateinit var layer: GraphicsLayer
+
+        composeRule.setContent {
+            layer = rememberGraphicsLayer()
+            AnnotationCanvas(
+                blocDetail = BlocDetail(bloc(), listOf(hold, volume), emptyList()),
+                imageFile = MissingImage,
+                mode = AnnotationMode.ADD_HOLD,
+                selectedLimb = Limb.RIGHT_HAND,
+                onHoldRequested = { _, _ -> },
+                onHoldRemoved = {},
+                onTraceCompleted = {},
+                modifier = Modifier.size(CanvasSize),
+                exportLayer = layer,
+                highlight = purple,
+            )
+        }
+        composeRule.waitForIdle()
+
+        val bitmap = runBlocking(Dispatchers.Main) { layer.toImageBitmap() }
+            .asAndroidBitmap()
+            .copy(Bitmap.Config.ARGB_8888, false)
+        val canvasPx = with(composeRule.density) { CanvasSize.roundToPx() }
+        val ringPx = with(composeRule.density) { 14.dp.roundToPx() }
+        val y = canvasPx / 2
+
+        // Sur l'anneau, a un rayon du centre de chaque prise.
+        assertThat(bitmap.getPixel((canvasPx * 0.3f).toInt() + ringPx, y)).isEqualTo(purple.toArgb())
+        val onVolume = bitmap.getPixel((canvasPx * 0.7f).toInt() + ringPx, y)
+        assertThat(android.graphics.Color.red(onVolume)).isGreaterThan(200)
+        assertThat(android.graphics.Color.blue(onVolume)).isGreaterThan(200)
     }
 
     /**

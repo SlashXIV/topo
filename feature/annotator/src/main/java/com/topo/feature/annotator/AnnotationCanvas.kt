@@ -38,6 +38,7 @@ import coil.request.ImageRequest
 import com.topo.core.domain.model.BlocDetail
 import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.Hold
+import com.topo.core.domain.model.HoldKind
 import com.topo.core.domain.model.Limb
 import com.topo.core.domain.model.Movement
 import com.topo.core.domain.model.Viewport
@@ -108,6 +109,7 @@ fun AnnotationCanvas(
     detectionZone: BoundingBox? = null,
     isDrawingZone: Boolean = false,
     onZoneDrawn: (BoundingBox) -> Unit = {},
+    highlight: Color? = null,
 ) {
     val context = LocalContext.current
     val imageRequest = remember(imageFile) {
@@ -160,6 +162,7 @@ fun AnnotationCanvas(
             detectionZone = detectionZone,
             isDrawingZone = isDrawingZone,
             onZoneDrawn = onZoneDrawn,
+            highlight = highlight,
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -180,6 +183,7 @@ private fun BetaTraceLayer(
     detectionZone: BoundingBox?,
     isDrawingZone: Boolean,
     onZoneDrawn: (BoundingBox) -> Unit,
+    highlight: Color?,
     modifier: Modifier = Modifier,
 ) {
     // ------------------------------------------------------------------------
@@ -210,6 +214,7 @@ private fun BetaTraceLayer(
     val currentOnTraceCompleted by rememberUpdatedState(onTraceCompleted)
 
     val currentZone by rememberUpdatedState(detectionZone)
+    val currentHighlight by rememberUpdatedState(highlight)
     val currentIsDrawingZone by rememberUpdatedState(isDrawingZone)
     val currentOnZoneDrawn by rememberUpdatedState(onZoneDrawn)
     // Cadre en cours de trace, en pixels : lu seulement au dessin, comme le trace.
@@ -344,6 +349,8 @@ private fun BetaTraceLayer(
             .drawWithCache {
                 val tracePath = Path()
                 val holdStroke = Stroke(width = 2.dp.toPx())
+                val highlightStroke = Stroke(width = 3.dp.toPx())
+                val outlineStroke = Stroke(width = 1.dp.toPx())
                 val zoneStroke = Stroke(
                     width = 2.dp.toPx(),
                     pathEffect = PathEffect.dashPathEffect(floatArrayOf(8.dp.toPx(), 6.dp.toPx())),
@@ -378,7 +385,14 @@ private fun BetaTraceLayer(
                         (liveZone ?: currentZone?.toPixels(size))?.let { drawZone(it, zoneStroke) }
                     }
 
-                    drawHolds(currentHolds, holdStroke, holdRadius)
+                    drawHolds(
+                        holds = currentHolds,
+                        radius = holdRadius,
+                        neutralStroke = holdStroke,
+                        highlight = currentHighlight,
+                        highlightStroke = highlightStroke,
+                        outlineStroke = outlineStroke,
+                    )
 
                     // playback.progress.value est lu ICI et nulle part ailleurs.
                     // Une animation emet une valeur par trame : la lire en
@@ -417,17 +431,47 @@ private fun BetaTraceLayer(
 //  Chacune recoit ses objets graphiques deja alloues : aucune n'en cree.
 // ---------------------------------------------------------------------------
 
-private fun DrawScope.drawHolds(holds: List<Hold>, stroke: Stroke, radius: Float) {
+/**
+ * Dessine les prises. Avec [highlight], celles du bloc portent un halo de sa
+ * couleur de difficulte.
+ *
+ * Sur le terrain, la difficulte n'est portee que par les fleches de depart : une
+ * fois au pied du mur, rien sur la photo ne disait a quel niveau appartiennent
+ * les prises gardees. Le halo le dit, a l'ecran comme sur l'image partagee.
+ *
+ * Trois couches pour rester lisible sur n'importe quel mur : un disque
+ * translucide qui teinte la prise, un anneau plein de la couleur, et un liseré
+ * sombre qui le detache d'un mur de la meme couleur. Les VOLUMES restent en blanc
+ * neutre : ils appartiennent au mur, pas au bloc.
+ */
+private fun DrawScope.drawHolds(
+    holds: List<Hold>,
+    radius: Float,
+    neutralStroke: Stroke,
+    highlight: Color?,
+    highlightStroke: Stroke,
+    outlineStroke: Stroke,
+) {
     for (index in holds.indices) {
         val hold = holds[index]
+        val center = hold.box.toOffset(size)
+        if (highlight == null || hold.kind == HoldKind.VOLUME) {
+            drawCircle(color = BetaColors.Hold, radius = radius, center = center, style = neutralStroke)
+            continue
+        }
+        drawCircle(color = highlight.copy(alpha = HALO_FILL_ALPHA), radius = radius, center = center)
+        drawCircle(color = highlight, radius = radius, center = center, style = highlightStroke)
         drawCircle(
-            color = BetaColors.Hold,
-            radius = radius,
-            center = hold.box.toOffset(size),
-            style = stroke,
+            color = HaloOutline,
+            radius = radius + highlightStroke.width / 2f,
+            center = center,
+            style = outlineStroke,
         )
     }
 }
+
+private const val HALO_FILL_ALPHA = 0.30f
+private val HaloOutline = Color.Black.copy(alpha = 0.55f)
 
 /**
  * Dessine la sequence enregistree.
