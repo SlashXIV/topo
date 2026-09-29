@@ -18,4 +18,8 @@
 
     <string name="difficulty_display_color">Couleur du circuit</string>
     <string name="difficulty_display_grade">Cotation chiffrée</string>
+
+    <string name="difficulty_circuit">Couleur du circuit</string>
+    <string name="difficulty_circuit_empty">Aucune couleur définie. Ajoute ton circuit dans les réglages.</string>
+    <string name="difficulty_grade">Cotation (%s)</string>
 </resources>

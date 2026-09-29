@@ -78,9 +78,6 @@
     <string name="session_bloc_feeling">Ressenti</string>
     <string name="session_bloc_feeling_placeholder">La clé du passage, les sensations…</string>
     <string name="session_bloc_feeling_save">Enregistrer le ressenti</string>
-    <string name="session_bloc_circuit">Couleur du circuit</string>
-    <string name="session_bloc_circuit_empty">Aucune couleur définie. Ajoute ton circuit dans les réglages.</string>
-    <string name="session_bloc_grade">Cotation (%s)</string>
     <string name="session_bloc_delete">Supprimer ce bloc</string>
     <string name="session_bloc_delete_title">Supprimer le bloc ?</string>
     <string name="session_bloc_delete_message">Ses prises, ses mouvements et sa photo seront supprimés.</string>

@@ -1,5 +1,7 @@
 package com.topo.feature.session
 
+import com.topo.core.ui.component.CircuitColorPicker
+import com.topo.core.ui.component.GradePicker
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -97,11 +99,11 @@ fun BlocProgressSheet(
             // reglages en premier : la salle etiquette une couleur, le grimpeur
             // estime un niveau, ce sont deux informations distinctes.
             if (settings.difficultyDisplay == DifficultyDisplay.COLOR) {
-                CircuitSection(circuit, bloc.colorId, onColorChange)
-                GradeSection(settings, bloc.grade, onGradeChange)
+                CircuitColorPicker(circuit, bloc.colorId, onColorChange)
+                GradePicker(settings.gradeScale, bloc.grade, onGradeChange)
             } else {
-                GradeSection(settings, bloc.grade, onGradeChange)
-                CircuitSection(circuit, bloc.colorId, onColorChange)
+                GradePicker(settings.gradeScale, bloc.grade, onGradeChange)
+                CircuitColorPicker(circuit, bloc.colorId, onColorChange)
             }
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -201,78 +203,6 @@ private fun FeelingField(
  * defaut releve sur les prises lors du test appareil.
  */
 @OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun CircuitSection(
-    circuit: List<CircuitColor>,
-    selectedId: String?,
-    onSelect: (String?) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(stringResource(R.string.session_bloc_circuit), style = MaterialTheme.typography.labelLarge)
-        if (circuit.isEmpty()) {
-            Text(
-                text = stringResource(R.string.session_bloc_circuit_empty),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            return@Column
-        }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            circuit.forEach { color ->
-                FilterChip(
-                    selected = color.id == selectedId,
-                    onClick = { onSelect(color.id.takeIf { it != selectedId }) },
-                    leadingIcon = {
-                        Box(
-                            Modifier
-                                .size(14.dp)
-                                .clip(CircleShape)
-                                .background(Color(color.argb)),
-                        )
-                    },
-                    label = { Text(color.name) },
-                )
-            }
-        }
-    }
-}
-
-/**
- * Cotation chiffree, en rangee ordonnee et defilante.
- *
- * Des puces plutot qu'un champ texte : aucune faute de frappe possible — et une
- * cotation mal orthographiee serait un niveau de plus dans les statistiques —
- * tandis que l'echelle devient visible dans son ordre.
- */
-@Composable
-private fun GradeSection(
-    settings: AppSettings,
-    selectedGrade: String?,
-    onSelect: (String?) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(
-            text = stringResource(R.string.session_bloc_grade, stringResource(settings.gradeScale.labelRes)),
-            style = MaterialTheme.typography.labelLarge,
-        )
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            settings.gradeScale.grades.forEach { grade ->
-                FilterChip(
-                    selected = grade == selectedGrade,
-                    onClick = { onSelect(grade.takeIf { it != selectedGrade }) },
-                    label = { Text(grade) },
-                )
-            }
-        }
-    }
-}
-
 @get:StringRes
 internal val BlocStatus.labelRes: Int
     get() = when (this) {
