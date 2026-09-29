@@ -23,6 +23,10 @@
 #  Usage :
 #    scripts/check_alignment.sh                 # audite les .so construites
 #    scripts/check_alignment.sh chemin/app.apk  # audite le contenu de l'APK
+#    scripts/check_alignment.sh chemin/app.aab  # audite le contenu du bundle
+#
+#  Pour un bundle, seul l'alignement ELF est verifie : ce sont les APK que
+#  Google Play en derive qui sont empaquetes, pas le bundle lui-meme.
 # ---------------------------------------------------------------------------
 set -uo pipefail
 
@@ -51,9 +55,11 @@ if [[ -n "$apk" ]]; then
   # l'audit signale des bibliotheques illisibles alors qu'elles sont la —
   # un faux negatif d'autant plus trompeur qu'il ressemble a un vrai echec.
   objdump_path() { command -v cygpath >/dev/null 2>&1 && cygpath -w "$1" || echo "$1"; }
-  unzip -q -o "$apk" 'lib/*/*.so' -d "$workdir" || true
+  # Un bundle range ses bibliotheques sous base/lib, un APK sous lib.
+  if [[ "$apk" == *.aab ]]; then libdir="base/lib"; else libdir="lib"; fi
+  unzip -q -o "$apk" "$libdir/*/*.so" -d "$workdir" || true
   echo "Source : $apk (bibliotheques empaquetees)"
-  mapfile -t libs < <(find "$workdir/lib" -name '*.so' 2>/dev/null | sort)
+  mapfile -t libs < <(find "$workdir/$libdir" -name '*.so' 2>/dev/null | sort)
 else
   echo "Source : artefacts de build (merged_native_libs)"
   mapfile -t libs < <(find "$ROOT" -path '*merged_native_libs*' -name '*.so' 2>/dev/null | sort -u)
@@ -96,7 +102,10 @@ done
 echo
 echo "${#libs[@]} bibliotheque(s) auditee(s)."
 
-if [[ -n "$apk" ]]; then
+if [[ "$apk" == *.aab ]]; then
+  echo
+  echo "Packaging : non verifie sur un bundle — l'alignement des APK derives releve de bundletool."
+elif [[ -n "$apk" ]]; then
   zipalign="$(find "$SDK/build-tools" -name 'zipalign*' 2>/dev/null | sort -r | head -1)"
   if [[ -z "$zipalign" ]]; then
     echo "zipalign introuvable sous $SDK/build-tools" >&2
