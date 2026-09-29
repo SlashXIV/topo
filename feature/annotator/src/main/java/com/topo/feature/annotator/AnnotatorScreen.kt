@@ -367,6 +367,12 @@ private fun DetectHoldsUseCase.Result.message(): String = when (this) {
     DetectHoldsUseCase.Result.Unavailable ->
         "Detection indisponible : aucun modele embarque. Pose les prises a la main."
     is DetectHoldsUseCase.Result.Added -> when {
+        // Les prises completees d'abord : c'est ce que l'utilisateur attend quand
+        // il relance la detection sur un bloc deja annote, pour filtrer ensuite.
+        completed > 0 && added > 0 ->
+            "$added prises proposees, $completed prises existantes ont maintenant une couleur."
+        completed > 0 ->
+            "$completed prises existantes ont maintenant une couleur : tu peux garder une couleur."
         added > 0 && alreadyPlaced > 0 ->
             "$added prises proposees, $alreadyPlaced deja posees. Appuie sur une prise pour la retirer."
         added > 0 ->
