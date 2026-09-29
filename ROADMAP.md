@@ -401,9 +401,24 @@ couleur ; leurs valeurs par defaut ont masque l'oubli a la compilation, et le fi
 « pas de couleur mesuree » partout. Corrige, avec un test sur la vraie base qui echoue sans le
 correctif.
 
-**Reste.** Validation du parcours complet sur le Xiaomi, et latence du modele a deux classes en
-release. La grande prise grise en croissant de la photo de test n'est detectee par aucun des deux
-modeles.
+**Valide sur appareil.** Sur les blocs de la seance Villenave, le filtre ne garde que les prises
+de la couleur designee — vertes sur l'un, rouges sur l'autre — plus les volumes gris ; les
+petites prises grises et blanches sont retirees. La detection se trompe parfois, et c'est
+acceptable : corriger au doigt les quelques prises en trop ou manquantes suffit.
+
+**Un second defaut trouve sur appareil : le cadrage.** L'apercu remplissait l'ecran (20:9) et
+rognait les cotes d'une photo 4:3 : l'utilisateur cadrait un bloc, la photo embarquait les blocs
+voisins, et la detection proposait leurs prises. Contourne sur le terrain en photographiant avec
+l'appareil photo systeme. L'EXIF a ecarte l'objectif : toutes les photos sont au 23 mm equivalent,
+zoom 1,0. L'apercu montre desormais toute la photo, et un pincement zoome — au-dela de 2x environ,
+la camera logique bascule d'elle-meme sur le teleobjectif.
+
+**Reste.**
+- **Zone de detection choisie par l'utilisateur.** Meme bien cadree, une photo de pan contient
+  souvent plusieurs blocs. Tracer au doigt un cadre avant la detection, et ne detecter — puis ne
+  filtrer — qu'a l'interieur, eliminerait les prises voisines a la source plutot qu'a la main.
+- Latence du modele a deux classes en release. La grande prise grise en croissant de la photo de
+  test n'est detectee par aucun des deux modeles.
 
 ---
 
@@ -450,6 +465,24 @@ Les commentaires et la documentation du code restent hors perimetre.
 
 ---
 
+### S14 — Mettre en valeur les prises du bloc
+
+**Le constat, venu du terrain.** La difficulte n'est portee que par les fleches de depart : une
+fois au pied du mur, rien sur la photo ne dit a quel niveau appartiennent les prises gardees.
+
+**Pistes.**
+- **Surligner les prises du bloc** d'un halo de la couleur de difficulte du bloc — celle de ses
+  fleches, deja saisissable comme « couleur du circuit » — plutot que du cercle blanc neutre
+  d'aujourd'hui. Le rendu du canevas et l'export PNG en profitent ensemble, puisqu'ils partagent
+  le meme code de dessin.
+- **Porter la difficulte dans le nom du bloc**, pour la retrouver dans la grille d'une seance sans
+  ouvrir le bloc.
+
+**Pourquoi apres l'industrialisation.** C'est un confort de lecture : l'application est
+complete sans. La zone de detection (S11), elle, retire du travail a chaque bloc.
+
+---
+
 ## Journal des decisions
 
 Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specifications initiales.
@@ -476,6 +509,8 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | Modele FP32 plutot qu'INT8 | Mesure sur le Xiaomi : l'INT8 est a la fois plus lent (97 ms contre 61) et moins precis (mAP50 0,819 contre 0,879), ONNX Runtime ne confiant pas ses noeuds de quantification a XNNPACK. |
 | Detection qui propose sans rien remplacer | Une prise posee a la main peut porter des mouvements : la remplacer emporterait le beta. Les propositions se corrigent avec le geste deja connu. |
 | Seuil de proposition a 0,5, au-dessus de celui du moteur | Mesure sur une photo reelle : sous 0,5, le corps d'un grimpeur et des taches sur le mur. Trente fausses prises a retirer rendraient la detection plus lente que la pose manuelle. |
+| Correction manuelle des erreurs de detection, pas de modele plus gros | Valide sur le terrain : quelques prises en trop ou manquantes se corrigent au doigt, avec le geste deja connu. Un modele plus lourd couterait en latence et en poids d'APK pour un gain que l'utilisateur ne demande pas. |
+| Apercu au format de la photo, pas plein ecran | Un apercu qui remplit l'ecran rogne la photo : on cadre un bloc et la photo embarque ses voisins. Ce qui est vu doit etre ce qui est capture. |
 | Filtre par couleur de prise designee, pas par couleur de difficulte | Climb Up ouvre desormais par couleur de depart : la difficulte est portee par des fleches, les prises du bloc peuvent etre d'une autre couleur. |
 | NMS toutes classes confondues | Le modele de prises n'a qu'une classe ; sur le modele de substitution, deux boites superposees de classes differentes restent une seule prise pour le grimpeur. |
 | XNNPACK avec le pool d'ORT reduit a un thread | XNNPACK gere ses propres threads : deux pools concurrents se disputeraient les coeurs. C'est la configuration prescrite par la documentation d'ONNX Runtime. |

@@ -208,6 +208,7 @@ Le detail de chaque phase, ses criteres d'acceptation et le journal des decision
 | S11 | Ne garder que les prises du bloc : pipette de couleur, prises grises | a faire |
 | **S12** | Textes en francais correct : accents, `strings.xml`, pluriels | **termine** |
 | S13 | Profiling, R8, baseline profile, ORT reduit, audit final, AAB | a faire |
+| S14 | Mettre en valeur les prises du bloc : halo de la couleur de difficulte | a faire |
 | ∥ | `ml/` : dataset, fine-tuning, quantification INT8, export ONNX | en parallele |
 
 Le modele de detection arrive tard **volontairement** : c'est la seule dependance externe du
