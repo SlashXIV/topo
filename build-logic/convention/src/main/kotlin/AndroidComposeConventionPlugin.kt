@@ -18,7 +18,21 @@ class AndroidComposeConventionPlugin : Plugin<Project> {
             extension.buildFeatures.compose = true
 
             configureComposeDependencies(libs)
+            registerHardcodedUiTextCheck()
         }
+    }
+
+    /**
+     * Tout module Compose affiche du texte : c'est donc ici, et nulle part
+     * ailleurs, que se branche la verification des textes codes en dur. Rattachee
+     * a `check`, elle tourne avec `./gradlew build` sans qu'on y pense.
+     */
+    private fun Project.registerHardcodedUiTextCheck() {
+        val checkTask = tasks.register("checkHardcodedUiText", HardcodedUiTextCheck::class.java) {
+            sources.from(fileTree("src/main/java") { include("**/*.kt") })
+            report.set(layout.buildDirectory.file("reports/hardcoded-ui-text.txt"))
+        }
+        tasks.matching { it.name == "check" }.configureEach { dependsOn(checkTask) }
     }
 
     private fun Project.configureComposeDependencies(libs: VersionCatalog) {
