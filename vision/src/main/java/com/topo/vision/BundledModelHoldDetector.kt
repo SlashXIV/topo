@@ -56,6 +56,8 @@ internal class BundledModelHoldDetector @Inject constructor(
      */
     override suspend fun detect(image: HoldDetector.ImageSource): List<DetectedHold> {
         ensureModelLoaded()
+        // Sans modele, inutile de decoder la photo pour une reponse vide connue.
+        if (!engine.isReady) return emptyList()
         return engine.detect(image)
     }
 

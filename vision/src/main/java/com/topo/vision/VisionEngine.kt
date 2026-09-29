@@ -1,10 +1,14 @@
 package com.topo.vision
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.DetectedHold
 import com.topo.core.domain.model.HoldOrigin
 import com.topo.core.domain.repository.HoldDetector
+import java.io.File
 import java.nio.ByteBuffer
 import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CoroutineDispatcher
@@ -79,6 +83,17 @@ class VisionEngine(
                 is BitmapSource ->
                     NativeBridge.nativeDetectFromBitmap(current, image.bitmap)
 
+                is HoldDetector.ImageFile -> {
+                    val bitmap = decodeForInference(image.file)
+                    try {
+                        NativeBridge.nativeDetectFromBitmap(current, bitmap)
+                    } finally {
+                        // Plusieurs Mo hors du tas geres par le GC : liberes des
+                        // l'inference faite, pas au bon vouloir du ramasse-miettes.
+                        bitmap.recycle()
+                    }
+                }
+
                 is DirectBufferSource ->
                     NativeBridge.nativeDetectFromDirectBuffer(
                         current,
@@ -101,6 +116,54 @@ class VisionEngine(
         }
     }
 
+    /**
+     * Decode une photo de bloc pour l'inference.
+     *
+     * Sous-echantillonnee : le modele ne voit que 640 pixels de cote, decoder une
+     * photo de 12 Mpx en entier couterait ~48 Mo pour les jeter aussitot. On garde
+     * au moins le double de l'entree, pour que le redimensionnement final reste
+     * un vrai filtrage et non un saut de pixels.
+     *
+     * Redressee selon l'EXIF : BitmapFactory l'ignore, alors que Coil l'applique a
+     * l'affichage. Sans correction, les prises detectees sur une photo prise en
+     * portrait tomberaient a cote de celles que l'ecran montre.
+     */
+    private fun decodeForInference(file: File): Bitmap {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.path, bounds)
+        require(bounds.outWidth > 0 && bounds.outHeight > 0) { "Image illisible : ${file.name}" }
+
+        var sample = 1
+        while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= MIN_DECODED_SIDE) {
+            sample *= 2
+        }
+        val decoded = BitmapFactory.decodeFile(
+            file.path,
+            BitmapFactory.Options().apply {
+                inSampleSize = sample
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            },
+        ) ?: throw IllegalArgumentException("Image illisible : ${file.name}")
+
+        val rotation = when (
+            ExifInterface(file.path).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL,
+            )
+        ) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+            ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+            ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+            else -> return decoded
+        }
+        val upright = Bitmap.createBitmap(
+            decoded, 0, 0, decoded.width, decoded.height,
+            Matrix().apply { postRotate(rotation) }, true,
+        )
+        decoded.recycle()
+        return upright
+    }
+
     private fun FloatArray.toDetections(): List<DetectedHold> {
         val stride = NativeBridge.DETECTION_STRIDE
         require(size % stride == 0) {
@@ -118,5 +181,10 @@ class VisionEngine(
                 origin = HoldOrigin.MODEL,
             )
         }
+    }
+
+    private companion object {
+        /** Deux fois l'entree du modele : cf. [decodeForInference]. */
+        const val MIN_DECODED_SIDE = 1280
     }
 }
