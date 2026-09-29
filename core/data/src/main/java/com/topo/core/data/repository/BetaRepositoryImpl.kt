@@ -39,6 +39,11 @@ internal class BetaRepositoryImpl @Inject constructor(
         return persisted
     }
 
+    override suspend fun updateHolds(holds: List<Hold>) {
+        // @Update sur une liste : une seule transaction, une seule emission du Flow.
+        holdDao.updateAll(holds.map(Hold::toEntity))
+    }
+
     override suspend fun updateHold(hold: Hold) {
         holdDao.update(hold.toEntity())
     }

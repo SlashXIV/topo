@@ -42,6 +42,9 @@ interface BetaRepository {
 
     suspend fun updateHold(hold: Hold)
 
+    /** Met a jour plusieurs prises en UNE transaction, comme [addHolds]. */
+    suspend fun updateHolds(holds: List<Hold>)
+
     /**
      * Supprime une prise.
      *

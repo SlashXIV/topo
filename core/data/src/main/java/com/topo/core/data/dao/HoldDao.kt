@@ -24,6 +24,9 @@ interface HoldDao {
     suspend fun insertAll(holds: List<HoldEntity>)
 
     @Update
+    suspend fun updateAll(holds: List<HoldEntity>)
+
+    @Update
     suspend fun update(hold: HoldEntity)
 
     @Query("DELETE FROM holds WHERE id = :holdId")

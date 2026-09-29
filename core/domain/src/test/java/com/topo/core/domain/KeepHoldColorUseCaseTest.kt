@@ -170,6 +170,7 @@ class KeepHoldColorUseCaseTest {
         override suspend fun addHold(blocId: String, hold: DetectedHold) = unexpected()
         override suspend fun addHolds(blocId: String, holds: List<DetectedHold>) = unexpected()
         override suspend fun updateHold(hold: Hold) = unexpected()
+        override suspend fun updateHolds(holds: List<Hold>) = unexpected()
         override suspend fun deleteHold(holdId: String) = unexpected()
         override suspend fun replaceMovements(blocId: String, movements: List<Movement>) = unexpected()
         override suspend fun deleteMovement(movementId: String) = unexpected()
