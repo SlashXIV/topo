@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Textes partages par tous les ecrans. Typographie francaise : espace insecable
+    (\u00A0) avant « : ; ! ? », pour qu'aucun signe ne se retrouve seul en debut
+    de ligne.
+-->
+<resources>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_retry">Réessayer</string>
+
+    <plurals name="attempt_count">
+        <item quantity="one">%d essai</item>
+        <item quantity="other">%d essais</item>
+    </plurals>
+
+    <string name="grade_scale_french">Française</string>
+    <string name="grade_scale_v">Échelle V</string>
+
+    <string name="difficulty_display_color">Couleur du circuit</string>
+    <string name="difficulty_display_grade">Cotation chiffrée</string>
+</resources>

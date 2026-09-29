@@ -1,5 +1,7 @@
 package com.topo.core.ui.component
 
+import androidx.compose.ui.res.stringResource
+import com.topo.core.ui.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -98,7 +100,7 @@ fun ErrorState(
                 textAlign = TextAlign.Center,
             )
             if (onRetry != null) {
-                Button(onClick = onRetry) { Text("Reessayer") }
+                Button(onClick = onRetry) { Text(stringResource(R.string.action_retry)) }
             }
         }
     }

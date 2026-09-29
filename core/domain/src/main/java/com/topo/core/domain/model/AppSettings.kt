@@ -10,9 +10,9 @@ package com.topo.core.domain.model
  *
  * Ordinaux persistes : ne jamais reordonner.
  */
-enum class DifficultyDisplay(val label: String) {
-    COLOR("Couleur du circuit"),
-    GRADE("Cotation chiffree"),
+enum class DifficultyDisplay {
+    COLOR,
+    GRADE,
 }
 
 /**

@@ -1,5 +1,7 @@
 package com.topo.core.ui.component
 
+import androidx.compose.ui.res.pluralStringResource
+import com.topo.core.ui.R
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
@@ -108,7 +110,7 @@ fun BlocThumbnail(
             // sur chaque bloc jamais touche ne dirait rien et chargerait la grille.
             if (attempts > 0) {
                 Badge(
-                    text = "$attempts essai${if (attempts > 1) "s" else ""}",
+                    text = pluralStringResource(R.plurals.attempt_count, attempts, attempts),
                     background = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                     foreground = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier

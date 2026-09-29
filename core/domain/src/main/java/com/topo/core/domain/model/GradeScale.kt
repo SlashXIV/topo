@@ -22,11 +22,10 @@ package com.topo.core.domain.model
  * `grade` — en ajouter est sans danger, en renommer une orphelinerait les blocs
  * existants.
  */
-enum class GradeScale(val label: String, val grades: List<String>) {
+enum class GradeScale(val grades: List<String>) {
 
     /** Echelle francaise, celle des salles et topos francophones. */
     FRENCH(
-        label = "Francaise",
         grades = listOf(
             "3", "4", "5A", "5B", "5C",
             "6A", "6A+", "6B", "6B+", "6C", "6C+",
@@ -38,7 +37,6 @@ enum class GradeScale(val label: String, val grades: List<String>) {
 
     /** Echelle V (Hueco), repandue dans le monde anglophone. */
     V_SCALE(
-        label = "Echelle V",
         grades = listOf(
             "V0", "V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8",
             "V9", "V10", "V11", "V12", "V13", "V14", "V15", "V16", "V17",
