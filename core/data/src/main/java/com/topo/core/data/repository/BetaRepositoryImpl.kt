@@ -74,11 +74,16 @@ internal class BetaRepositoryImpl @Inject constructor(
         movementDao.deleteById(movementId)
     }
 
+    // Tous les champs nommes, y compris ceux qui ont une valeur par defaut dans
+    // Hold : les omettre compile sans un avertissement et les remet a zero. C'est
+    // arrive — kind et color etaient perdus a l'enregistrement de chaque detection.
     private fun DetectedHold.toHold(blocId: String): Hold = Hold(
         id = UUID.randomUUID().toString(),
         blocId = blocId,
         box = box,
         confidence = confidence,
         origin = origin,
+        kind = kind,
+        color = color,
     )
 }

@@ -1,5 +1,12 @@
 package com.topo.core.data
 
+import com.topo.core.data.mapper.toDomain
+import com.topo.core.data.repository.BetaRepositoryImpl
+import com.topo.core.domain.model.BoundingBox
+import com.topo.core.domain.model.DetectedHold
+import com.topo.core.domain.model.HoldColor
+import com.topo.core.domain.model.HoldKind
+import com.topo.core.domain.model.HoldOrigin
 import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -183,6 +190,37 @@ class TopoDatabaseTest {
     }
 
     // --- Reactivite et volume ----------------------------------------------
+
+    /**
+     * Une detection enregistree garde sa nature et sa couleur.
+     *
+     * Regression : le passage DetectedHold -> Hold omettait ces deux champs, et
+     * leurs valeurs par defaut ont masque l'oubli a la compilation. Chaque prise
+     * detectee arrivait en base comme une prise sans couleur, et le filtre par
+     * couleur repondait « pas de couleur mesuree » sur toutes. Le test passe par
+     * le vrai depot et la vraie base : c'est l'aller-retour qui etait casse.
+     */
+    @Test
+    fun a_saved_detection_keeps_its_kind_and_colour() = runTest {
+        val session = session()
+        val bloc = bloc(sessionId = session.id)
+        database.sessionDao().upsert(session)
+        database.blocDao().insert(bloc)
+        val repository = BetaRepositoryImpl(database.holdDao(), database.movementDao())
+        val volume = DetectedHold(
+            box = BoundingBox(0.4f, 0.5f, 0.2f, 0.3f),
+            confidence = 0.8f,
+            origin = HoldOrigin.MODEL,
+            kind = HoldKind.VOLUME,
+            color = HoldColor(45f, 0.1f, 4f),
+        )
+
+        repository.addHolds(bloc.id, listOf(volume))
+
+        val saved = database.holdDao().getHolds(bloc.id).single().toDomain()
+        assertThat(saved.kind).isEqualTo(HoldKind.VOLUME)
+        assertThat(saved.color).isEqualTo(HoldColor(45f, 0.1f, 4f))
+    }
 
     @Test
     fun hold_flow_emits_on_insert() = runTest {
