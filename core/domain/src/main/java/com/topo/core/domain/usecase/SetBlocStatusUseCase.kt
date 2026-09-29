@@ -36,11 +36,7 @@ class SetBlocStatusUseCase @Inject constructor(
             ?: return Result.failure(IllegalArgumentException("Bloc introuvable : $blocId"))
 
         if (status == BlocStatus.FLASHED && bloc.attempts > 1) {
-            return Result.failure(
-                IllegalStateException(
-                    "Un flash est une reussite du premier essai : ${bloc.attempts} essais enregistres",
-                ),
-            )
+            return Result.failure(FlashAfterSeveralAttempts(bloc.attempts))
         }
 
         val updated = bloc.copy(
@@ -55,4 +51,12 @@ class SetBlocStatusUseCase @Inject constructor(
         blocRepository.updateBloc(updated)
         return Result.success(updated)
     }
+
+    /**
+     * Refus d'un flash, TYPE : l'ecran doit le reconnaitre pour l'expliquer, et
+     * le reconnaitre a sa seule classe d'origine (IllegalStateException) aurait
+     * pris pour un refus de flash n'importe quelle autre erreur d'etat.
+     */
+    class FlashAfterSeveralAttempts(val attempts: Int) :
+        IllegalStateException("Flash refuse : $attempts essais enregistres")
 }

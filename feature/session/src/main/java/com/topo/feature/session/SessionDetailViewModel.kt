@@ -180,7 +180,7 @@ class SessionDetailViewModel @Inject constructor(
         viewModelScope.launch {
             statusError.value = null
             setBlocStatus(blocId, status)
-                .onFailure { statusError.value = it.toStatusFailure(status) }
+                .onFailure { statusError.value = it.toStatusFailure() }
         }
     }
 
@@ -236,8 +236,8 @@ class SessionDetailViewModel @Inject constructor(
  * est remonte tel quel. Son message, redige pour les journaux, n'est jamais
  * affiche comme libelle.
  */
-private fun Throwable.toStatusFailure(requested: BlocStatus): StatusFailure =
-    if (requested == BlocStatus.FLASHED && this is IllegalStateException) {
+private fun Throwable.toStatusFailure(): StatusFailure =
+    if (this is SetBlocStatusUseCase.FlashAfterSeveralAttempts) {
         StatusFailure.FlashAfterSeveralAttempts
     } else {
         StatusFailure.Other(message)

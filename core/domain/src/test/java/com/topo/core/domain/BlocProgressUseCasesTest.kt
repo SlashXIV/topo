@@ -87,7 +87,8 @@ class BlocProgressUseCasesTest {
 
         // Refus explicite plutot que correction silencieuse : c'est l'utilisateur
         // qui sait s'il s'est trompe de bouton ou de compteur.
-        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull())
+            .isInstanceOf(SetBlocStatusUseCase.FlashAfterSeveralAttempts::class.java)
         assertThat(repository.getBloc("bloc-1")?.status).isEqualTo(BlocStatus.WORKING)
     }
 
