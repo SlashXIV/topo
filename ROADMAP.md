@@ -518,6 +518,21 @@ blanc neutre. Le titre du bloc se lit comme au mur : « Violet · 6B ». Verifie
 reelles de Villenave : halo violet lisible sur des prises rouges. Un test lit la couleur de
 l'anneau dans le rendu capture.
 
+**Suite, venue du terrain — livree et validee sur le Xiaomi.**
+- **La vignette montre le bloc.** En parcourant une seance, rien ne disait de quelles prises
+  etait fait chaque bloc : il fallait l'ouvrir. Le cadre trace au doigt est desormais PERSISTE
+  avec le bloc (schema v5), et la vignette zoome dessus en dessinant ses prises avec le halo de
+  sa difficulte — le meme dessin que dans l'editeur, partage depuis `core/ui`. Forme constante,
+  celle de la photo : suivre la forme du cadre faisait qu'un cadre etroit et haut etirait toute
+  la ligne de la grille, constate sur emulateur. Photo decodee a 1024 pixels au plus.
+- **La difficulte d'abord.** Un bloc tout juste photographie ou importe s'ouvre sur sa
+  difficulte (couleur des fleches, cotation facultative) : elle se lit sur la photo avant tout
+  essai, et c'est elle qui colore le halo des prises detectees ensuite. Statut et essais restent
+  dans la fiche de la seance. L'import depuis la galerie suit desormais le meme chemin.
+- **A la charge du grimpeur : cadrer ses blocs.** Sans cadre, la vignette montre toutes les
+  prises gardees par la detection globale. C'est assume : le cadre est un geste de l'utilisateur,
+  aucune heuristique ne devine quel bloc l'interesse sur un pan.
+
 **Pourquoi apres l'industrialisation.** C'est un confort de lecture : l'application est
 complete sans. La zone de detection (S11), elle, retire du travail a chaque bloc.
 
