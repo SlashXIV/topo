@@ -53,11 +53,13 @@ explicitement dans le journal des decisions.
 | **S7** | Cotation : echelles ordonnees et circuit de couleurs | Migration v2 -> v3 executee sur la base reelle du Xiaomi |
 | **S8** | Statistiques et progression | Regles d'agregation couvertes par les tests JVM du domaine |
 | **S9** | Export et partage d'une image du beta | PNG relu via le `FileProvider` ; selecteur systeme ouvert sur emulateur, export complet sur appareil |
+| **S10** | Detection automatique des prises | mAP50 **0,879** sur le jeu de test ; **60,7 ms** de bout en bout sur Xiaomi ARM64 en release |
 
-128 tests verts au total : 55 instrumentes, 73 unitaires JVM.
+134 tests verts au total : 55 instrumentes, 79 unitaires JVM.
 
-**S10 en cours** : chaine d'inference native livree et verifiee sur modele de substitution ;
-restent le modele de prises lui-meme et la mesure de latence sur appareil ARM64.
+**La detection automatique est en place.** Un appui propose les prises d'une photo, qui se
+corrigent avec les gestes de la pose manuelle. Elle detecte toutes les prises du mur : ne
+garder que celles d'un bloc est l'objet de S11.
 
 **L'application est complete sans modele.** La boucle seance -> bloc -> prises -> beta ->
 historique fonctionne de bout en bout sur appareil ; chaque bloc porte son statut, sa cotation et
@@ -265,7 +267,7 @@ cours, propre au GPU emule. A reverifier sur appareil si un utilisateur le signa
 
 ---
 
-### S10 — Detection automatique des prises *(chaine livree, modele attendu)*
+### S10 — Detection automatique des prises *(livre)*
 
 **Objectif.** Pre-remplir les prises au lieu de les poser une a une.
 
@@ -330,18 +332,55 @@ inverser les canaux RGB fait echouer le test. L'audit 16 Ko de l'APK final reste
 exception generique (`ORT_INVALID_PROTOBUF`) : sans traduction de son code d'erreur, un modele
 invalide aurait ete presente comme une panne du moteur.
 
-**Reste a faire.**
-- **Latence sur appareil ARM64** : 80 ms de mediane de bout en bout sur l'emulateur x86_64, dont
-  environ 30 ms de pretraitement compile en `-O0` (build debug). Indicatif seulement ; le critere
-  des 100 ms se mesure sur le telephone, en release.
-- **Le modele de prises** (voir `ml/`), et la licence du modele definitif.
-- **Le poids** : APK debug passe de 25 a 94 Mo avec les deux ABI. Build reduit d'ONNX Runtime a
-  planifier en S11.
-- Le bouton « detecter les prises » dans l'annotateur, une fois un modele utile disponible.
+**Le modele de prises.** YOLO11n affine depuis COCO sur trois jeux publics (CC BY 4.0, voir
+`ml/README.md`), fusionnes en une seule classe « prise » : 4 202 images d'entrainement, 154 de
+test. 32 minutes sur RTX 4070 SUPER. Sur le jeu de TEST, jamais vu pendant l'entrainement ni la
+selection du meilleur epoch : **mAP50 0,879**, precision 0,906, rappel 0,815.
+
+**Critere d'acceptation — atteint.** Sur le Xiaomi (ARM64), build release : **60,7 ms** de
+mediane de bout en bout — 3 ms de pretraitement, 56 ms d'inference. Detection validee a la main
+sur une photo de salle reelle : 115 prises proposees, posees sur les prises affichees.
+
+**FP32 et non INT8 — mesure, pas intuition.** La quantification INT8, prevue au plan, est
+ecartee : a la fois plus LENTE (97 ms contre 61) et moins precise (mAP50 0,819 contre 0,879).
+ONNX Runtime ne confie pas les noeuds de quantification a XNNPACK, et leur execution generique
+coute plus qu'elle ne fait gagner. Quatre configurations ont ete essayees : quantifier tout le
+graphe donnait une mAP de **zero**, la sortie concatenant coordonnees et scores sous une seule
+echelle.
+
+**Reste ouvert.**
+- **Distribution du modele** : `*.onnx` est hors git, un clone du depot construit donc une
+  application sans detection. A publier comme artefact de release (S12).
+- **Le poids** : APK release de 84 Mo avec les deux ABI. Build reduit d'ONNX Runtime en S12.
 
 ---
 
-### S11 — Industrialisation
+### S11 — Ne garder que les prises du bloc
+
+**Le constat.** La detection trouve TOUTES les prises du mur — 115 sur la photo de test — alors
+qu'un bloc n'en utilise qu'une quinzaine. Retirer les autres une a une annule le gain.
+
+**La contrainte, venue du terrain.** On ne peut pas se fier a la couleur de difficulte : Climb Up
+n'ouvre plus ses blocs par couleur de prises mais par couleur de DEPART. La difficulte est portee
+par des fleches (violettes, par exemple), et les prises du bloc peuvent etre d'une autre couleur
+(blanches). La couleur a conserver est donc celle des prises, designee par l'utilisateur, jamais
+deduite du circuit.
+
+**Livrables.**
+- **Pipette** : un appui sur une prise du bloc designe sa couleur, plutot qu'une liste de noms
+  de couleurs — « blanc » et « gris clair » ne se departagent pas par un nom.
+- **Option « garder les prises grises »** : les bacs et volumes gris, communs a tous les blocs.
+- Couleur de chaque prise mesuree a la detection, dans le code natif, sur le centre de la boite :
+  les bords debordent sur le mur. Espace Lab plutot que RVB, ou la distance suit la perception.
+- Prises neutres (blanc, gris, noir) distinguees par leur luminosite, leur teinte n'ayant pas de
+  sens.
+- Migration v3 -> v4 : couleur persistee avec la prise.
+
+---
+
+### S12 — Industrialisation
+
+
 
 **Objectif.** Transformer un code fonctionnel en produit livrable.
 
@@ -377,6 +416,10 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | PNG plutot que JPEG pour l'export | Le trace est fait d'aplats et d'aretes franches, exactement ce que JPEG degrade en halos. |
 | Fichier partage purge a l'export SUIVANT | L'application receptrice lit le fichier a un moment inconnu : le supprimer juste apres le selecteur ferait une course. Le repertoire ne contient ainsi jamais plus d'une image. |
 | Bitmaps materiels de Coil desactives sous l'API 28 | La capture d'un calque y rejoue le dessin sur un canevas logiciel, qui refuse de lire un bitmap materiel. |
+| Modele FP32 plutot qu'INT8 | Mesure sur le Xiaomi : l'INT8 est a la fois plus lent (97 ms contre 61) et moins precis (mAP50 0,819 contre 0,879), ONNX Runtime ne confiant pas ses noeuds de quantification a XNNPACK. |
+| Detection qui propose sans rien remplacer | Une prise posee a la main peut porter des mouvements : la remplacer emporterait le beta. Les propositions se corrigent avec le geste deja connu. |
+| Seuil de proposition a 0,5, au-dessus de celui du moteur | Mesure sur une photo reelle : sous 0,5, le corps d'un grimpeur et des taches sur le mur. Trente fausses prises a retirer rendraient la detection plus lente que la pose manuelle. |
+| Filtre par couleur de prise designee, pas par couleur de difficulte | Climb Up ouvre desormais par couleur de depart : la difficulte est portee par des fleches, les prises du bloc peuvent etre d'une autre couleur. |
 | NMS toutes classes confondues | Le modele de prises n'a qu'une classe ; sur le modele de substitution, deux boites superposees de classes differentes restent une seule prise pour le grimpeur. |
 | XNNPACK avec le pool d'ORT reduit a un thread | XNNPACK gere ses propres threads : deux pools concurrents se disputeraient les coeurs. C'est la configuration prescrite par la documentation d'ONNX Runtime. |
 | Chemin `DirectByteBuffer` en RGBA_8888, plus en YUV | CameraX sait livrer du RGBA directement ; un plan de luminance seul ne porte aucune couleur sur laquelle inferer. |

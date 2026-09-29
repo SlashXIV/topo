@@ -3,12 +3,11 @@
 Application Android native **hors-ligne** pour grimpeurs de bloc : photographier un pan de mur,
 identifier les prises, tracer sa sequence de mouvements ("beta") au doigt, tout conserver en local.
 
-> **Etat : Sprints 0 a 9 termines — l'application est complete sans modele.** Seances, blocs,
+> **Etat : Sprints 0 a 10 termines.** Seances, blocs,
 > prises posees a la main, beta trace et rejoue, carnet de progression, cotation, statistiques
-> et partage d'une image, le tout hors ligne et valide sur appareil.
-> 128 tests verts (55 instrumentes sur deux niveaux d'API, 73 unitaires JVM).
-> La chaine de detection automatique (ONNX Runtime + XNNPACK) est en place ; reste le modele de
-> prises, puis l'industrialisation
+> et partage d'une image, detection automatique des prises, le tout hors ligne et valide sur appareil.
+> 134 tests verts (55 instrumentes sur deux niveaux d'API, 79 unitaires JVM).
+> Reste a ne garder que les prises d'un bloc, puis l'industrialisation
 > (voir [Feuille de route](#feuille-de-route)).
 
 ---
@@ -205,8 +204,9 @@ Le detail de chaque phase, ses criteres d'acceptation et le journal des decision
 | **S3 – S4** | Boucle utilisateur complete, carnet du grimpeur, migration v2 | **termine** |
 | **S5 – S6** | Identite Topo (nom, icone, splash), rejeu anime du beta | **termine** |
 | **S7 – S9** | Cotation, statistiques, export et partage d'une image | **termine** |
-| S10 | Detection des prises : ONNX Runtime / XNNPACK, NMS | chaine livree — modele attendu |
-| S11 | Profiling, R8, baseline profile, audit final, AAB | a faire |
+| **S10** | Detection des prises : YOLO11n, ONNX Runtime / XNNPACK, 61 ms sur ARM64 | **termine** |
+| S11 | Ne garder que les prises du bloc : pipette de couleur, prises grises | a faire |
+| S12 | Profiling, R8, baseline profile, ORT reduit, audit final, AAB | a faire |
 | ∥ | `ml/` : dataset, fine-tuning, quantification INT8, export ONNX | en parallele |
 
 Le modele de detection arrive tard **volontairement** : c'est la seule dependance externe du
