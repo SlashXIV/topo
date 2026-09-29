@@ -10,6 +10,8 @@ data class DetectedHold(
     val box: BoundingBox,
     val confidence: Float,
     val origin: HoldOrigin,
+    val kind: HoldKind = HoldKind.HOLD,
+    val color: HoldColor? = null,
 ) {
     init {
         require(confidence in 0f..1f) { "Score de confiance hors bornes : $confidence" }

@@ -13,6 +13,9 @@ data class Hold(
     val box: BoundingBox,
     val confidence: Float,
     val origin: HoldOrigin,
+    val kind: HoldKind = HoldKind.HOLD,
+    /** Mesuree a la detection ; nulle pour une prise posee a la main. */
+    val color: HoldColor? = null,
 )
 
 /**

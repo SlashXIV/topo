@@ -29,6 +29,10 @@ interface HoldDao {
     @Query("DELETE FROM holds WHERE id = :holdId")
     suspend fun deleteById(holdId: String)
 
+    /** Une seule requete, donc une seule transaction et une seule emission du Flow. */
+    @Query("DELETE FROM holds WHERE id IN (:holdIds)")
+    suspend fun deleteByIds(holdIds: List<String>)
+
     @Query("DELETE FROM holds WHERE bloc_id = :blocId")
     suspend fun deleteAllForBloc(blocId: String)
 

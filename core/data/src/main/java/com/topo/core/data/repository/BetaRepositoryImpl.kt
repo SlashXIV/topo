@@ -43,6 +43,11 @@ internal class BetaRepositoryImpl @Inject constructor(
         holdDao.update(hold.toEntity())
     }
 
+    override suspend fun deleteHolds(holdIds: List<String>) {
+        if (holdIds.isEmpty()) return
+        holdDao.deleteByIds(holdIds)
+    }
+
     override suspend fun deleteHold(holdId: String) {
         // Les mouvements concernes sont traites par SQLite : CASCADE sur la cible,
         // SET NULL sur la source (cf. MovementEntity). Aucun nettoyage manuel ici,

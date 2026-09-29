@@ -54,6 +54,13 @@ interface BetaRepository {
     suspend fun deleteHold(holdId: String)
 
     /**
+     * Supprime plusieurs prises en UNE transaction, avec les memes effets de bord
+     * que [deleteHold]. C'est l'ecriture du filtre par couleur : une centaine de
+     * prises retirees d'un coup, qui ne doivent faire reemettre le bloc qu'une fois.
+     */
+    suspend fun deleteHolds(holdIds: List<String>)
+
+    /**
      * Remplace la sequence complete de mouvements d'un bloc, en UNE transaction.
      *
      * Le trace au doigt produit une sequence entiere, pas des mutations unitaires :
