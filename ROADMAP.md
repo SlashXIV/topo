@@ -350,8 +350,8 @@ echelle.
 
 **Reste ouvert.**
 - **Distribution du modele** : `*.onnx` est hors git, un clone du depot construit donc une
-  application sans detection. A publier comme artefact de release (S12).
-- **Le poids** : APK release de 84 Mo avec les deux ABI. Build reduit d'ONNX Runtime en S12.
+  application sans detection. A publier comme artefact de release (S13).
+- **Le poids** : APK release de 84 Mo avec les deux ABI. Build reduit d'ONNX Runtime en S13.
 
 ---
 
@@ -375,10 +375,33 @@ deduite du circuit.
 - Prises neutres (blanc, gris, noir) distinguees par leur luminosite, leur teinte n'ayant pas de
   sens.
 - Migration v3 -> v4 : couleur persistee avec la prise.
+- Modele a deux classes, prise et volume : un volume reste quelle que soit sa couleur, une
+  petite prise grise de desescalade part avec le filtre. La taille ne suffit pas a les separer,
+  un macro colore etant aussi gros qu'un petit volume.
+- Relancer la detection COMPLETE les prises deja posees (couleur, nature) au lieu de les ignorer.
+  Sans cela, les prises detectees avant ce sprint restent sans couleur, et les recuperer
+  oblige a tout effacer — beta compris.
 
 ---
 
-### S12 — Industrialisation
+### S12 — Textes en francais correct
+
+**Le constat.** Toute l'interface est ecrite sans accents (« Detecter les prises », « Annuler la
+derniere prise ») : une application en francais doit s'ecrire en francais.
+
+**Livrables.**
+- Tous les textes visibles extraits dans `strings.xml`, accents compris : c'est la pratique
+  Android, et le prealable a toute autre langue.
+- Pluriels geres par `plurals` : « 1 prise proposee », pas « 1 prises ».
+- Un test qui echoue si un texte visible est de nouveau code en dur dans un composable.
+
+**Pourquoi avant l'industrialisation.** Chaque ecran est concerne, le cout est faible, et
+l'industrialisation produit le build de publication : il ne doit pas partir avec ces textes.
+Les commentaires et la documentation du code restent hors perimetre.
+
+---
+
+### S13 — Industrialisation
 
 
 
