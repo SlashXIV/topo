@@ -49,6 +49,11 @@ fun TopoNavHost(
                 onBack = navController::popBackStack,
                 onCaptureBloc = { sessionId -> navController.navigate(CaptureRoute(sessionId)) },
                 onBlocClick = { blocId -> navController.navigate(AnnotatorRoute(blocId)) },
+                // Meme parcours que la photo : un bloc importe s'ouvre sur sa
+                // difficulte, puis sur ses prises.
+                onBlocImported = { blocId ->
+                    navController.navigate(AnnotatorRoute(blocId, askDifficulty = true))
+                },
             )
         }
 
@@ -61,7 +66,7 @@ fun TopoNavHost(
                     // l'annotation : un retour depuis l'annotation doit ramener a la
                     // seance, pas rouvrir l'appareil photo sur un bloc deja pris.
                     navController.popBackStack()
-                    navController.navigate(AnnotatorRoute(blocId))
+                    navController.navigate(AnnotatorRoute(blocId, askDifficulty = true))
                 },
             )
         }
@@ -76,7 +81,11 @@ fun TopoNavHost(
 
         composable<AnnotatorRoute> { entry ->
             val route: AnnotatorRoute = entry.toRoute()
-            AnnotatorScreen(blocId = route.blocId, onBack = navController::popBackStack)
+            AnnotatorScreen(
+                blocId = route.blocId,
+                askDifficulty = route.askDifficulty,
+                onBack = navController::popBackStack,
+            )
         }
     }
 }

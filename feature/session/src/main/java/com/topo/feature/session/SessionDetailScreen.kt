@@ -63,6 +63,7 @@ fun SessionDetailScreen(
     onBack: () -> Unit,
     onCaptureBloc: (sessionId: String) -> Unit,
     onBlocClick: (blocId: String) -> Unit,
+    onBlocImported: (blocId: String) -> Unit = onBlocClick,
     modifier: Modifier = Modifier,
     viewModel: SessionDetailViewModel = hiltViewModel(),
 ) {
@@ -84,13 +85,16 @@ fun SessionDetailScreen(
         ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? ->
         if (uri != null) {
-            viewModel.importFromGallery {
-                // L'autorisation sur cette URI est temporaire : le flux est ouvert
-                // immediatement et son contenu copie dans le stockage prive.
-                requireNotNull(context.contentResolver.openInputStream(uri)) {
-                    "Flux introuvable pour $uri"
-                }
-            }
+            viewModel.importFromGallery(
+                openStream = {
+                    // L'autorisation sur cette URI est temporaire : le flux est ouvert
+                    // immediatement et son contenu copie dans le stockage prive.
+                    requireNotNull(context.contentResolver.openInputStream(uri)) {
+                        "Flux introuvable pour $uri"
+                    }
+                },
+                onImported = onBlocImported,
+            )
         }
     }
 

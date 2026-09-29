@@ -21,8 +21,12 @@ data class SessionDetailRoute(val sessionId: String)
 @Serializable
 data class CaptureRoute(val sessionId: String)
 
+/**
+ * @param askDifficulty vrai pour un bloc tout juste photographie ou importe :
+ *        l'annotation s'ouvre sur l'etape de difficulte (couleur des fleches).
+ */
 @Serializable
-data class AnnotatorRoute(val blocId: String)
+data class AnnotatorRoute(val blocId: String, val askDifficulty: Boolean = false)
 
 @Serializable
 data object SettingsRoute

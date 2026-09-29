@@ -8,11 +8,13 @@ import androidx.lifecycle.viewModelScope
 import com.topo.core.domain.model.BlocDetail
 import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.CircuitColor
+import com.topo.core.domain.model.GradeScale
 import com.topo.core.domain.model.Limb
 import com.topo.core.domain.repository.BetaRepository
 import com.topo.core.domain.repository.BlocImageStore
 import com.topo.core.domain.repository.BlocRepository
 import com.topo.core.domain.repository.CircuitColorRepository
+import com.topo.core.domain.repository.SettingsRepository
 import com.topo.core.domain.usecase.AddManualHoldUseCase
 import com.topo.core.domain.usecase.BuildMovementSequenceUseCase
 import com.topo.core.domain.usecase.DetectHoldsUseCase
@@ -39,6 +41,9 @@ data class AnnotatorUiState(
      * couleur du circuit. Null si le bloc n'en porte pas.
      */
     val circuitColor: CircuitColor? = null,
+    /** Le circuit de la salle, pour l'etape de difficulte. */
+    val circuit: List<CircuitColor> = emptyList(),
+    val gradeScale: GradeScale = GradeScale.FRENCH,
     val mode: AnnotationMode = AnnotationMode.ADD_HOLD,
     val selectedLimb: Limb = Limb.RIGHT_HAND,
     /**
@@ -67,6 +72,7 @@ class AnnotatorViewModel @Inject constructor(
     private val keepHoldColor: KeepHoldColorUseCase,
     private val savedState: SavedStateHandle,
     circuitColorRepository: CircuitColorRepository,
+    settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     private val blocId = MutableStateFlow<String?>(null)
@@ -91,11 +97,14 @@ class AnnotatorViewModel @Inject constructor(
         blocDetail,
         editorState,
         circuitColorRepository.observeColors(),
-    ) { detail, editor, colors ->
+        settingsRepository.observeSettings(),
+    ) { detail, editor, colors, settings ->
         editor.copy(
             blocDetail = detail,
             imageFile = detail?.let { imageStore.resolve(it.bloc.imagePath) },
             circuitColor = detail?.bloc?.colorId?.let { id -> colors.firstOrNull { it.id == id } },
+            circuit = colors,
+            gradeScale = settings.gradeScale,
         )
     }.stateIn(
         scope = viewModelScope,
@@ -150,6 +159,28 @@ class AnnotatorViewModel @Inject constructor(
         cancelColorPick()
         val detail = uiState.value.blocDetail ?: return null
         return keepHoldColor(detail, holdId)
+    }
+
+    /** Couleur du circuit du bloc — celle de ses fleches ; null la retire. */
+    fun setBlocColor(colorId: String?) {
+        val currentBlocId = blocId.value ?: return
+        viewModelScope.launch {
+            val bloc = blocRepository.getBloc(currentBlocId) ?: return@launch
+            blocRepository.updateBloc(bloc.copy(colorId = colorId))
+        }
+    }
+
+    /**
+     * Cotation estimee du bloc. L'echelle est enregistree avec elle : « 6A » ne
+     * veut rien dire sans elle, et le rang de difficulte non plus.
+     */
+    fun setBlocGrade(grade: String?) {
+        val currentBlocId = blocId.value ?: return
+        val scale = uiState.value.gradeScale
+        viewModelScope.launch {
+            val bloc = blocRepository.getBloc(currentBlocId) ?: return@launch
+            blocRepository.updateBloc(bloc.copy(grade = grade, gradeScale = grade?.let { scale }))
+        }
     }
 
     fun selectLimb(limb: Limb) {

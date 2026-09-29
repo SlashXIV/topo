@@ -164,10 +164,12 @@ class SessionDetailViewModel @Inject constructor(
      * ViewModel n'a donc besoin d'aucun Context, et le cas d'usage reste testable
      * sur JVM.
      */
-    fun importFromGallery(openStream: () -> InputStream) {
+    /** @param onImported recoit l'identifiant du bloc cree, pour l'ouvrir. */
+    fun importFromGallery(openStream: () -> InputStream, onImported: (blocId: String) -> Unit) {
         val currentSessionId = sessionId.value ?: return
         viewModelScope.launch {
             importBloc(sessionId = currentSessionId, openStream = openStream)
+                .onSuccess(onImported)
                 .onFailure { importError.value = ImportFailure(it.message) }
         }
     }

@@ -1,5 +1,12 @@
 package com.topo.feature.annotator
 
+import androidx.compose.material3.Button
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.topo.core.domain.model.CircuitColor
+import com.topo.core.domain.model.GradeScale
+import com.topo.core.ui.component.CircuitColorPicker
+import com.topo.core.ui.component.GradePicker
 import com.topo.core.ui.R as CoreR
 import android.content.res.Resources
 import androidx.annotation.StringRes
@@ -71,10 +78,31 @@ fun AnnotatorScreen(
     blocId: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    askDifficulty: Boolean = false,
     viewModel: AnnotatorViewModel = hiltViewModel(),
 ) {
     LaunchedEffect(blocId) { viewModel.bind(blocId) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Etape de difficulte, pour un bloc tout juste photographie : la couleur des
+    // fleches se lit sur la photo avant meme d'avoir essaye, et c'est elle qui
+    // colore le halo des prises a detecter ensuite. Statut et essais, eux,
+    // n'existent qu'apres un essai : ils restent dans la fiche de la seance.
+    // Saveable : une rotation ou un retour ne la rouvre pas une fois fermee.
+    var showDifficultyStep by rememberSaveable { mutableStateOf(askDifficulty) }
+    uiState.blocDetail?.bloc?.let { bloc ->
+        if (showDifficultyStep) {
+            DifficultyStepSheet(
+                circuit = uiState.circuit,
+                selectedColorId = bloc.colorId,
+                gradeScale = uiState.gradeScale,
+                selectedGrade = bloc.grade,
+                onColorChange = viewModel::setBlocColor,
+                onGradeChange = viewModel::setBlocGrade,
+                onDone = { showDifficultyStep = false },
+            )
+        }
+    }
 
     val detail = uiState.blocDetail
     val imageFile = uiState.imageFile
@@ -400,6 +428,48 @@ private fun AnnotationToolbar(
                 TextButton(onClick = onClear, enabled = hasSomethingToUndo) {
                     Text(stringResource(mode.clearLabel()))
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DifficultyStepSheet(
+    circuit: List<CircuitColor>,
+    selectedColorId: String?,
+    gradeScale: GradeScale,
+    selectedGrade: String?,
+    onColorChange: (String?) -> Unit,
+    onGradeChange: (String?) -> Unit,
+    onDone: () -> Unit,
+) {
+    ModalBottomSheet(onDismissRequest = onDone) {
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text(stringResource(R.string.annotator_difficulty_title), style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.annotator_difficulty_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            CircuitColorPicker(circuit, selectedColorId, onColorChange)
+            GradePicker(gradeScale, selectedGrade, onGradeChange)
+            // « Passer » tant que rien n'est choisi : l'etape est facultative, et un
+            // bouton « Continuer » sans choix laisserait croire qu'il manque quelque
+            // chose.
+            Button(onClick = onDone, modifier = Modifier.align(Alignment.End)) {
+                Text(
+                    stringResource(
+                        if (selectedColorId == null && selectedGrade == null) {
+                            R.string.annotator_difficulty_skip
+                        } else {
+                            R.string.annotator_difficulty_continue
+                        },
+                    ),
+                )
             }
         }
     }

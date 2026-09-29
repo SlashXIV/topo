@@ -84,4 +84,8 @@
     <string name="annotator_hint_draw_zone">Fais glisser ton doigt pour encadrer ton bloc : seules ses prises seront détectées.</string>
     <!-- Difficulte du bloc : couleur du circuit puis cotation, par exemple « Bleu · 6B ». -->
     <string name="annotator_title_color_grade">%1$s · %2$s</string>
+    <string name="annotator_difficulty_title">Difficulté du bloc</string>
+    <string name="annotator_difficulty_hint">La couleur de ses flèches de départ : les prises du bloc en prendront le halo.</string>
+    <string name="annotator_difficulty_skip">Passer</string>
+    <string name="annotator_difficulty_continue">Continuer</string>
 </resources>
