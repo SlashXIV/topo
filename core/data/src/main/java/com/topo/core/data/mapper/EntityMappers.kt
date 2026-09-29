@@ -17,6 +17,8 @@ import com.topo.core.domain.model.DifficultyDisplay
 import com.topo.core.domain.model.GradeScale
 import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.Hold
+import com.topo.core.domain.model.HoldColor
+import com.topo.core.domain.model.HoldKind
 import com.topo.core.domain.model.HoldOrigin
 import com.topo.core.domain.model.Limb
 import com.topo.core.domain.model.Movement
@@ -110,6 +112,12 @@ internal fun HoldEntity.toDomain(): Hold = Hold(
     ),
     confidence = confidenceScore,
     origin = HoldOrigin.entries.getOrElse(origin) { HoldOrigin.MANUAL },
+    kind = HoldKind.entries.getOrElse(kind) { HoldKind.HOLD },
+    color = if (colorL != null && colorA != null && colorB != null) {
+        HoldColor(colorL, colorA, colorB)
+    } else {
+        null
+    },
 )
 
 internal fun Hold.toEntity(): HoldEntity = HoldEntity(
@@ -121,6 +129,10 @@ internal fun Hold.toEntity(): HoldEntity = HoldEntity(
     bboxHeight = box.height,
     confidenceScore = confidence,
     origin = origin.ordinal,
+    kind = kind.ordinal,
+    colorL = color?.l,
+    colorA = color?.a,
+    colorB = color?.b,
 )
 
 // --- Movement --------------------------------------------------------------

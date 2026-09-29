@@ -184,5 +184,22 @@ private val DEFAULT_CIRCUIT = listOf(
     "Noir" to 0xFF2B2A28.toInt(),
 )
 
+/**
+ * v3 -> v4 : nature (prise ou volume) et couleur de chaque prise.
+ *
+ * De simples ajouts de colonnes : rien n'est supprime, aucune reconstruction de
+ * table n'est necessaire. Les prises existantes deviennent des prises (kind = 0)
+ * sans couleur — ce qu'elles sont : posees a la main, ou detectees avant que la
+ * couleur ne soit mesuree. Relancer la detection la leur donnera.
+ */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `holds` ADD COLUMN `kind` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `holds` ADD COLUMN `color_l` REAL")
+        db.execSQL("ALTER TABLE `holds` ADD COLUMN `color_a` REAL")
+        db.execSQL("ALTER TABLE `holds` ADD COLUMN `color_b` REAL")
+    }
+}
+
 /** Toutes les migrations, dans l'ordre. */
-val TOPO_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
+val TOPO_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)

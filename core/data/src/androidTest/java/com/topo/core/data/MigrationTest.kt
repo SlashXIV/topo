@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.topo.core.data.database.TopoDatabase
 import com.topo.core.data.database.MIGRATION_1_2
 import com.topo.core.data.database.MIGRATION_2_3
+import com.topo.core.data.database.MIGRATION_3_4
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -192,6 +193,54 @@ class MigrationTest {
             assertThat(cursor.getString(3)).isEqualTo("cool")
         }
         db.query("SELECT COUNT(*) FROM holds").use { cursor ->
+            cursor.moveToFirst()
+            assertThat(cursor.getInt(0)).isEqualTo(1)
+        }
+    }
+
+    /**
+     * v3 -> v4 : les prises existantes restent des prises, sans couleur, et les
+     * mouvements qui s'y appuient survivent. Une prise sans couleur n'est pas une
+     * erreur : c'est une prise posee a la main, ou detectee avant ce sprint.
+     */
+    @Test
+    fun migrating_from_v3_keeps_holds_and_their_moves_as_uncoloured_holds() {
+        helper.createDatabase(databaseName, 3).use { db ->
+            db.execSQL(
+                "INSERT INTO sessions (id, date, location_name, notes) " +
+                    "VALUES ('s1', 1700000000000, 'Climb Up', NULL)",
+            )
+            db.execSQL(
+                "INSERT INTO blocs (id, session_id, image_path, image_width, image_height, " +
+                    "grade, status, attempts, sent_at, feeling, created_at, grade_scale, color_id) " +
+                    "VALUES ('b1', 's1', 'mur.jpg', 3072, 4096, NULL, 1, 3, NULL, NULL, 1700000001000, NULL, NULL)",
+            )
+            for (id in listOf("h1", "h2")) {
+                db.execSQL(
+                    "INSERT INTO holds (id, bloc_id, bbox_x_center, bbox_y_center, bbox_width, " +
+                        "bbox_height, confidence_score, origin) " +
+                        "VALUES ('$id', 'b1', 0.2, 0.5, 0.08, 0.08, 0.9, 1)",
+                )
+            }
+            db.execSQL(
+                "INSERT INTO movements (id, bloc_id, sequence_order, limb_type, " +
+                    "source_hold_id, target_hold_id) VALUES ('m1', 'b1', 0, 1, 'h1', 'h2')",
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(
+            databaseName, 4, true, MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4,
+        )
+
+        db.query("SELECT kind, color_l, color_a, color_b, origin FROM holds").use { cursor ->
+            assertThat(cursor.count).isEqualTo(2)
+            while (cursor.moveToNext()) {
+                assertThat(cursor.getInt(0)).isEqualTo(0)
+                assertThat(cursor.isNull(1) && cursor.isNull(2) && cursor.isNull(3)).isTrue()
+                assertThat(cursor.getInt(4)).isEqualTo(1)
+            }
+        }
+        db.query("SELECT COUNT(*) FROM movements").use { cursor ->
             cursor.moveToFirst()
             assertThat(cursor.getInt(0)).isEqualTo(1)
         }

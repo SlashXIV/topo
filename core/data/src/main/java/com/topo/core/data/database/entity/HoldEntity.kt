@@ -56,4 +56,24 @@ data class HoldEntity(
     /** Ordinal de `HoldOrigin`. Ne jamais reordonner l'enumeration. */
     @ColumnInfo(name = "origin")
     val origin: Int,
+
+    /**
+     * Ordinal de `HoldKind`. Valeur par defaut declaree : c'est elle que la
+     * migration v3 -> v4 applique aux prises existantes, toutes des prises.
+     */
+    @ColumnInfo(name = "kind", defaultValue = "0")
+    val kind: Int = 0,
+
+    /**
+     * Couleur CIELAB mesuree a la detection. Trois colonnes nulles ensemble pour
+     * une prise posee a la main : il n'y a rien a mesurer sous un doigt.
+     */
+    @ColumnInfo(name = "color_l")
+    val colorL: Float? = null,
+
+    @ColumnInfo(name = "color_a")
+    val colorA: Float? = null,
+
+    @ColumnInfo(name = "color_b")
+    val colorB: Float? = null,
 )
