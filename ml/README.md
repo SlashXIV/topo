@@ -32,6 +32,11 @@ ml/.venv/Scripts/python ml/fetch_datasets.py   # telecharge et fusionne en une c
 ml/.venv/Scripts/python ml/train.py            # GPU, evaluation sur test, export FP32 + INT8
 ```
 
+Le modele produit n'est pas versionne (`*.onnx`) : il se copie a la main dans
+`vision/src/main/assets/models/holds.onnx` apres lecture des metriques. Un build de publication
+**refuse de se construire** sans lui, pour ne jamais livrer une application privee de detection
+sans le savoir ; `-Ptopo.allowMissingModel=true` leve le verrou en connaissance de cause.
+
 Le modele embarque distingue les prises des volumes, pour que le filtre par couleur garde les
 volumes sans garder les petites prises grises :
 

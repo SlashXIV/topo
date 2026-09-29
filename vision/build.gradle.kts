@@ -49,6 +49,26 @@ android {
 tasks.matching { it.name.startsWith("configureCMake") || it.name.startsWith("buildCMake") }
     .configureEach { dependsOn(extractOnnxRuntime) }
 
+// Le modele de prises est hors git (*.onnx) : un clone du depot construit donc une
+// application SANS detection, et rien ne le signale — le detecteur reste
+// simplement inactif. Tolerable en debug, ou l'on travaille sur autre chose ; pas
+// dans un build de publication, qui partirait sans sa fonctionnalite phare.
+// Contournement explicite : -Ptopo.allowMissingModel=true.
+val bundledModel = layout.projectDirectory.file("src/main/assets/models/holds.onnx")
+val allowMissingModel = providers.gradleProperty("topo.allowMissingModel").map(String::toBoolean).orElse(false)
+tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+    val model = bundledModel.asFile
+    val allowed = allowMissingModel
+    doFirst {
+        if (!model.exists() && !allowed.get()) {
+            throw GradleException(
+                "Modele de detection absent : ${model.path}. Le produire avec ml/train.py " +
+                    "(cf. ml/README.md), ou construire sans avec -Ptopo.allowMissingModel=true.",
+            )
+        }
+    }
+}
+
 dependencies {
     implementation(projects.core.domain)
     implementation(projects.core.common)
