@@ -60,7 +60,9 @@ class DetectHoldsUseCaseTest {
         val result = DetectHoldsUseCase(detector, beta)("bloc-1", photo, emptyList())
 
         // 0,30 passe le seuil du moteur (0,25) mais pas celui de la proposition.
-        assertThat(result).isEqualTo(DetectHoldsUseCase.Result.Added(added = 1, alreadyPlaced = 0))
+        assertThat(result).isEqualTo(
+            DetectHoldsUseCase.Result.Added(added = 1, alreadyPlaced = 0, addedIds = listOf("h0")),
+        )
         assertThat(beta.batches.single().map { it.confidence }).containsExactly(0.90f)
     }
 
@@ -81,7 +83,9 @@ class DetectHoldsUseCaseTest {
 
         val result = DetectHoldsUseCase(detector, beta)("bloc-1", photo, listOf(manual))
 
-        assertThat(result).isEqualTo(DetectHoldsUseCase.Result.Added(added = 1, alreadyPlaced = 1))
+        assertThat(result).isEqualTo(
+            DetectHoldsUseCase.Result.Added(added = 1, alreadyPlaced = 1, addedIds = listOf("h0")),
+        )
         assertThat(beta.batches.single().single().box.centerX).isEqualTo(0.80f)
     }
 

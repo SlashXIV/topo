@@ -33,8 +33,15 @@ class DetectHoldsUseCase @Inject constructor(
          * @param added prises ajoutees au bloc.
          * @param alreadyPlaced detections tombant sur une prise existante.
          * @param completed prises existantes auxquelles la detection a donne une couleur.
+         * @param addedIds identifiants des prises ajoutees : l'ecran les revele au passage
+         *        du scan, et elles seules — les prises deja posees restent affichees.
          */
-        data class Added(val added: Int, val alreadyPlaced: Int, val completed: Int = 0) : Result
+        data class Added(
+            val added: Int,
+            val alreadyPlaced: Int,
+            val completed: Int = 0,
+            val addedIds: List<String> = emptyList(),
+        ) : Result
 
         /** Aucun modele embarque : le placement manuel reste le seul chemin. */
         data object Unavailable : Result
@@ -67,7 +74,7 @@ class DetectHoldsUseCase @Inject constructor(
                     completed += placed.copy(color = detection.color, kind = detection.kind)
             }
         }
-        if (fresh.isNotEmpty()) betaRepository.addHolds(blocId, fresh)
+        val addedIds = if (fresh.isNotEmpty()) betaRepository.addHolds(blocId, fresh).map { it.id } else emptyList()
         // Une prise existante peut recouvrir plusieurs detections : elle n'est
         // completee qu'une fois, par la plus sure, qui vient la premiere.
         val uniqueCompleted = completed.distinctBy { it.id }
@@ -77,6 +84,7 @@ class DetectHoldsUseCase @Inject constructor(
             added = fresh.size,
             alreadyPlaced = confident.size - fresh.size,
             completed = uniqueCompleted.size,
+            addedIds = addedIds,
         )
     }
 
