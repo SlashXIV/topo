@@ -14,7 +14,9 @@ android {
     namespace = "com.topo.app"
 
     defaultConfig {
-        applicationId = "com.topo"
+        // Identifiant publie, definitif une fois sur le Play Store : le domaine de l'auteur,
+        // a l'envers, pour qu'il soit unique. Le code garde ses packages com.topo.*.
+        applicationId = "com.gabrielifrim.topo"
     }
 
     // Le modele de detection reste non compresse dans l'APK : :vision le projette

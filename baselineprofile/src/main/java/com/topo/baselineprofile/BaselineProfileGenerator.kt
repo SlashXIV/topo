@@ -42,5 +42,5 @@ class BaselineProfileGenerator {
     }
 }
 
-internal const val TARGET_PACKAGE = "com.topo"
+internal const val TARGET_PACKAGE = "com.gabrielifrim.topo"
 private const val WAIT_MS = 5_000L
