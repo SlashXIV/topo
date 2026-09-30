@@ -27,8 +27,24 @@ android {
         noCompress += "onnx"
     }
 
+    // Signature de publication : cle et mots de passe hors du depot, dans
+    // ~/.gradle/gradle.properties (topo.signing.*), sauvegardes dans le coffre de l'auteur.
+    // Absents, le release reste non signe : un clone du depot se construit toujours.
+    val signingProperties = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+        .associateWith { providers.gradleProperty("topo.signing.$it").orNull }
+    val canSign = signingProperties.values.all { it != null }
+    if (canSign) {
+        signingConfigs.create("release") {
+            storeFile = file(signingProperties.getValue("storeFile")!!)
+            storePassword = signingProperties.getValue("storePassword")
+            keyAlias = signingProperties.getValue("keyAlias")
+            keyPassword = signingProperties.getValue("keyPassword")
+        }
+    }
+
     buildTypes {
         release {
+            if (canSign) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
