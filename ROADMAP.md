@@ -499,9 +499,19 @@ Les commentaires et la documentation du code restent hors perimetre.
   d'envoi Play reste a creer par l'auteur.
 - **Modele** : un build de publication refuse de se construire sans lui.
 
+**Poids de l'APK (2026-09-30).** 115,6 Mo -> **57,2 Mo** en release :
+- x86_64 retire de la publication (-40,9 Mo) : il ne servait qu'aux emulateurs, et un AAB est
+  de toute facon decoupe par ABI ; le debug le garde.
+- ONNX Runtime 1.30.0 recompile dans WSL, reduit aux ~40 operateurs de nos deux modeles, sans
+  NNAPI ni WebGPU (`third_party/onnxruntime`) : `libonnxruntime.so` arm64 de 33,0 a 15,5 Mo.
+  Les 40 tests instrumentes passent sur le Xiaomi, references Python des deux modeles
+  comprises ; latence inchangee au repos (detection 58-61 ms contre 62 ms avec l'officiel,
+  relief ~410 ms). Une premiere mesure a 98 ms venait de l'echauffement du telephone, le
+  benchmark du relief tournant juste avant. Le reste du binaire est le socle d'ORT (lecteur
+  ONNX, XNNPACK, MLAS) ; une build minimale au format ORT le reduirait encore, au prix d'une
+  conversion des modeles.
+
 **Reste.**
-- **ONNX Runtime reduit aux operateurs du modele** : 33 Mo en arm64 aujourd'hui, quelques Mo
-  attendus. Impose de compiler ORT depuis les sources : a decider.
 - Signature de publication.
 
 ---
