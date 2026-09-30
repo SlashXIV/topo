@@ -513,8 +513,20 @@ Les commentaires et la documentation du code restent hors perimetre.
   ONNX, XNNPACK, MLAS) ; une build minimale au format ORT le reduirait encore, au prix d'une
   conversion des modeles.
 
+**Publication (2026-09-30).** Identifiant definitif `com.gabrielifrim.topo`, version 1.0.0.
+Cle d'envoi RSA 4096 (PKCS12, valable jusqu'en 2054) hors du depot, sauvegardee dans le coffre
+de l'auteur ; Gradle signe le release quand `topo.signing.*` est defini dans
+`~/.gradle/gradle.properties`, et le laisse non signe sinon. APK (57,2 Mo, schema v2) et AAB
+(49,4 Mo) signes et verifies (`apksigner`, `jarsigner`), conformes 16 Ko ; l'APK s'installe sur
+le Xiaomi a cote de l'ancienne `com.topo`.
+
 **Reste.**
-- Signature de publication.
+- **Export / import des donnees** (zip de la base et des photos) : AVANT de basculer sur la
+  version publiee. Changer d'identifiant ou de signature cree une autre application, et les
+  seances de l'ancienne n'y passent pas ; c'est aussi la seule sauvegarde d'une application
+  sans cloud.
+- Fiche Play Store (textes, captures, politique de confidentialite : aucune donnee collectee),
+  compte developpeur ; release GitHub avec l'APK signe.
 
 ---
 
