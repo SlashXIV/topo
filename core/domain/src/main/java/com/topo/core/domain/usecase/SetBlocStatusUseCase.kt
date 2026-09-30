@@ -22,6 +22,9 @@ import javax.inject.Inject
  *
  * Les essais, eux, ne sont jamais remis a zero : ils racontent le travail fourni,
  * et repasser un bloc en projet ne l'efface pas.
+ *
+ * Les refus sont des RESULTATS, pas des exceptions : l'ecran doit pouvoir les
+ * enumerer pour les expliquer, et un `when` exhaustif le force a les traiter tous.
  */
 class SetBlocStatusUseCase @Inject constructor(
     private val blocRepository: BlocRepository,
@@ -31,12 +34,11 @@ class SetBlocStatusUseCase @Inject constructor(
         blocId: String,
         status: BlocStatus,
         now: Long = System.currentTimeMillis(),
-    ): Result<Bloc> {
-        val bloc = blocRepository.getBloc(blocId)
-            ?: return Result.failure(IllegalArgumentException("Bloc introuvable : $blocId"))
+    ): Outcome {
+        val bloc = blocRepository.getBloc(blocId) ?: return Outcome.BlocNotFound
 
         if (status == BlocStatus.FLASHED && bloc.attempts > 1) {
-            return Result.failure(FlashAfterSeveralAttempts(bloc.attempts))
+            return Outcome.FlashRefused(bloc.attempts)
         }
 
         val updated = bloc.copy(
@@ -49,14 +51,16 @@ class SetBlocStatusUseCase @Inject constructor(
             },
         )
         blocRepository.updateBloc(updated)
-        return Result.success(updated)
+        return Outcome.Updated(updated)
     }
 
-    /**
-     * Refus d'un flash, TYPE : l'ecran doit le reconnaitre pour l'expliquer, et
-     * le reconnaitre a sa seule classe d'origine (IllegalStateException) aurait
-     * pris pour un refus de flash n'importe quelle autre erreur d'etat.
-     */
-    class FlashAfterSeveralAttempts(val attempts: Int) :
-        IllegalStateException("Flash refuse : $attempts essais enregistres")
+    sealed interface Outcome {
+        data class Updated(val bloc: Bloc) : Outcome
+
+        /** Flash declare alors que plusieurs essais sont deja enregistres. */
+        data class FlashRefused(val attempts: Int) : Outcome
+
+        /** Le bloc a disparu entre l'affichage et l'appui (supprime ailleurs). */
+        data object BlocNotFound : Outcome
+    }
 }

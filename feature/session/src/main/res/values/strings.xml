@@ -49,7 +49,8 @@
     <string name="session_detail_filter_empty_message">Change de filtre pour revoir les autres blocs de la séance.</string>
     <string name="session_detail_filter_empty_action">Tout afficher</string>
     <string name="session_import_error">Import impossible</string>
-    <string name="session_import_error_detail">Import impossible : %s</string>
+    <string name="session_import_error_unreadable">Impossible de lire cette image : elle a peut-être été supprimée ou n’est plus accessible.</string>
+    <string name="session_import_error_not_image">Ce fichier n’est pas une image lisible.</string>
 
     <!-- Filtres de la grille -->
     <string name="session_filter_all">Tous</string>
@@ -66,8 +67,7 @@
         <item quantity="one">Un flash est une réussite du premier essai : %d essai enregistré</item>
         <item quantity="other">Un flash est une réussite du premier essai : %d essais enregistrés</item>
     </plurals>
-    <string name="session_status_error">Changement de statut impossible</string>
-    <string name="session_status_error_detail">Changement de statut impossible : %s</string>
+    <string name="session_status_error_missing">Ce bloc n’existe plus.</string>
 
     <!-- Fiche de progression d'un bloc -->
     <string name="session_bloc_title">Bloc</string>

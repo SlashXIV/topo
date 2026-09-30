@@ -1,5 +1,6 @@
 package com.topo.feature.session
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -50,17 +51,18 @@ enum class BlocFilter {
 }
 
 /**
- * Echec d'import depuis la galerie. Le ViewModel ne porte aucun texte d'interface :
- * seul le detail technique transite, l'ecran compose le message.
+ * Echec d'import depuis la galerie, par cause. Le ViewModel ne porte aucun texte :
+ * l'ecran met chaque cause en phrase, et aucun message technique n'y transite.
  */
-data class ImportFailure(val detail: String?)
+enum class ImportFailure { SOURCE_UNREADABLE, NOT_AN_IMAGE, INTERNAL }
 
 /** Refus d'un changement de statut, traduit en message par l'ecran. */
 sealed interface StatusFailure {
     /** Flash declare alors que plusieurs essais sont deja enregistres. */
     data object FlashAfterSeveralAttempts : StatusFailure
 
-    data class Other(val detail: String?) : StatusFailure
+    /** Le bloc a ete supprime entre-temps. */
+    data object BlocNotFound : StatusFailure
 }
 
 data class SessionDetailUiState(
@@ -180,9 +182,15 @@ class SessionDetailViewModel @Inject constructor(
     fun importFromGallery(openStream: () -> InputStream, onImported: (blocId: String) -> Unit) {
         val currentSessionId = sessionId.value ?: return
         viewModelScope.launch {
-            importBloc(sessionId = currentSessionId, openStream = openStream)
-                .onSuccess(onImported)
-                .onFailure { importError.value = ImportFailure(it.message) }
+            when (val outcome = importBloc(sessionId = currentSessionId, openStream = openStream)) {
+                is ImportBlocUseCase.Outcome.Imported -> onImported(outcome.blocId)
+                is ImportBlocUseCase.Outcome.SourceUnreadable ->
+                    importError.value = ImportFailure.SOURCE_UNREADABLE.also { log(outcome.cause) }
+                is ImportBlocUseCase.Outcome.NotAnImage ->
+                    importError.value = ImportFailure.NOT_AN_IMAGE.also { log(outcome.cause) }
+                is ImportBlocUseCase.Outcome.Failed ->
+                    importError.value = ImportFailure.INTERNAL.also { log(outcome.cause) }
+            }
         }
     }
 
@@ -193,8 +201,11 @@ class SessionDetailViewModel @Inject constructor(
     fun changeStatus(blocId: String, status: BlocStatus) {
         viewModelScope.launch {
             statusError.value = null
-            setBlocStatus(blocId, status)
-                .onFailure { statusError.value = it.toStatusFailure() }
+            statusError.value = when (setBlocStatus(blocId, status)) {
+                is SetBlocStatusUseCase.Outcome.Updated -> null
+                is SetBlocStatusUseCase.Outcome.FlashRefused -> StatusFailure.FlashAfterSeveralAttempts
+                SetBlocStatusUseCase.Outcome.BlocNotFound -> StatusFailure.BlocNotFound
+            }
         }
     }
 
@@ -244,18 +255,10 @@ class SessionDetailViewModel @Inject constructor(
     }
 }
 
-/**
- * Le cas d'usage ne refuse un statut qu'a un seul titre, le flash apres plusieurs
- * essais, signale par une IllegalStateException ; tout autre echec (bloc disparu)
- * est remonte tel quel. Son message, redige pour les journaux, n'est jamais
- * affiche comme libelle.
- */
-private fun Throwable.toStatusFailure(): StatusFailure =
-    if (this is SetBlocStatusUseCase.FlashAfterSeveralAttempts) {
-        StatusFailure.FlashAfterSeveralAttempts
-    } else {
-        StatusFailure.Other(message)
-    }
+/** Le detail technique d'un echec va aux journaux, jamais a l'ecran. */
+private fun log(cause: Throwable) {
+    Log.w("TopoSession", "Import depuis la galerie impossible", cause)
+}
 
 /** Les deux sources d'erreur de l'ecran, regroupees pour tenir dans un `combine` type. */
 private data class Errors(val import: ImportFailure?, val status: StatusFailure?)

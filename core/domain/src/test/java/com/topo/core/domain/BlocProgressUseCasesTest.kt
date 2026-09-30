@@ -51,7 +51,7 @@ class BlocProgressUseCasesTest {
     fun `sending stamps the moment of success`() = runTest {
         repository.seed(testBloc(status = BlocStatus.WORKING, attempts = 6))
 
-        val bloc = setStatus("bloc-1", BlocStatus.SENT, now = 42_000L).getOrThrow()
+        val bloc = setStatus("bloc-1", BlocStatus.SENT, now = 42_000L).updatedBloc()
 
         assertThat(bloc.sentAt).isEqualTo(42_000L)
     }
@@ -60,7 +60,7 @@ class BlocProgressUseCasesTest {
     fun `an already stamped send keeps its original date`() = runTest {
         repository.seed(testBloc(status = BlocStatus.SENT, attempts = 3, sentAt = 1_000L))
 
-        val bloc = setStatus("bloc-1", BlocStatus.SENT, now = 99_000L).getOrThrow()
+        val bloc = setStatus("bloc-1", BlocStatus.SENT, now = 99_000L).updatedBloc()
 
         // Re-confirmer une reussite ne doit pas la redater : ce serait perdre la
         // seule information de progression que le carnet conserve.
@@ -71,7 +71,7 @@ class BlocProgressUseCasesTest {
     fun `reverting to working clears the send date`() = runTest {
         repository.seed(testBloc(status = BlocStatus.SENT, attempts = 3, sentAt = 1_000L))
 
-        val bloc = setStatus("bloc-1", BlocStatus.WORKING).getOrThrow()
+        val bloc = setStatus("bloc-1", BlocStatus.WORKING).updatedBloc()
 
         assertThat(bloc.sentAt).isNull()
         // Les essais racontent le travail fourni : repasser un bloc en projet ne
@@ -87,8 +87,7 @@ class BlocProgressUseCasesTest {
 
         // Refus explicite plutot que correction silencieuse : c'est l'utilisateur
         // qui sait s'il s'est trompe de bouton ou de compteur.
-        assertThat(result.exceptionOrNull())
-            .isInstanceOf(SetBlocStatusUseCase.FlashAfterSeveralAttempts::class.java)
+        assertThat(result).isEqualTo(SetBlocStatusUseCase.Outcome.FlashRefused(attempts = 5))
         assertThat(repository.getBloc("bloc-1")?.status).isEqualTo(BlocStatus.WORKING)
     }
 
@@ -96,7 +95,7 @@ class BlocProgressUseCasesTest {
     fun `a flash declared without any attempt counts as one`() = runTest {
         repository.seed(testBloc(status = BlocStatus.PROJECT, attempts = 0))
 
-        val bloc = setStatus("bloc-1", BlocStatus.FLASHED, now = 7_000L).getOrThrow()
+        val bloc = setStatus("bloc-1", BlocStatus.FLASHED, now = 7_000L).updatedBloc()
 
         // On ne reussit pas un bloc sans l'avoir essaye une fois.
         assertThat(bloc.attempts).isEqualTo(1)
@@ -106,7 +105,7 @@ class BlocProgressUseCasesTest {
     @Test
     fun `acting on an unknown bloc fails instead of creating one`() = runTest {
         assertThat(recordAttempt("inconnu").isFailure).isTrue()
-        assertThat(setStatus("inconnu", BlocStatus.SENT).isFailure).isTrue()
+        assertThat(setStatus("inconnu", BlocStatus.SENT)).isEqualTo(SetBlocStatusUseCase.Outcome.BlocNotFound)
     }
 
     /**
@@ -132,3 +131,6 @@ class BlocProgressUseCasesTest {
         assertThat(HoldOrigin.MODEL.ordinal).isEqualTo(1)
     }
 }
+
+private fun SetBlocStatusUseCase.Outcome.updatedBloc() =
+    (this as SetBlocStatusUseCase.Outcome.Updated).bloc

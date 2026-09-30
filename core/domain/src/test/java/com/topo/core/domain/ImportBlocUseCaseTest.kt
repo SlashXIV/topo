@@ -25,7 +25,7 @@ class ImportBlocUseCaseTest {
             openStream = source,
         )
 
-        assertThat(result.getOrNull()).isEqualTo("bloc-1")
+        assertThat(result).isEqualTo(ImportBlocUseCase.Outcome.Imported("bloc-1"))
         assertThat(repository.created).containsExactly("imported.jpg")
         assertThat(imageStore.deletedPaths).isEmpty()
     }
@@ -40,7 +40,7 @@ class ImportBlocUseCaseTest {
             openStream = source,
         )
 
-        assertThat(result.isFailure).isTrue()
+        assertThat(result).isInstanceOf(ImportBlocUseCase.Outcome.SourceUnreadable::class.java)
         assertThat(repository.created).isEmpty()
         // Rien a nettoyer : l'import atomique du magasin a deja retire son fichier
         // de travail, il n'y a aucun chemin a supprimer.
@@ -57,7 +57,7 @@ class ImportBlocUseCaseTest {
             openStream = source,
         )
 
-        assertThat(result.isFailure).isTrue()
+        assertThat(result).isInstanceOf(ImportBlocUseCase.Outcome.Failed::class.java)
         // Sans ce rattrapage, chaque echec laisserait une copie de plusieurs Mo
         // dans le stockage interne, que rien ne viendrait jamais reclamer.
         assertThat(imageStore.deletedPaths).containsExactly("imported.jpg")
@@ -73,7 +73,7 @@ class ImportBlocUseCaseTest {
             openStream = source,
         )
 
-        assertThat(result.isFailure).isTrue()
+        assertThat(result).isInstanceOf(ImportBlocUseCase.Outcome.NotAnImage::class.java)
         assertThat(repository.created).isEmpty()
         assertThat(imageStore.deletedPaths).containsExactly("imported.jpg")
     }

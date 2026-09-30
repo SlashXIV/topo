@@ -21,6 +21,9 @@ import javax.inject.Inject
  * raison : il n'existe aucune transaction commune au systeme de fichiers et a
  * SQLite. Une photo orpheline se rattrape ; une ligne pointant vers un fichier
  * absent laisserait l'ecran de detail sans recours.
+ *
+ * Les echecs sont des resultats types : leur message technique (flux introuvable,
+ * permission revoquee) est pour les journaux, jamais pour l'ecran.
  */
 class ImportBlocUseCase @Inject constructor(
     private val blocRepository: BlocRepository,
@@ -37,12 +40,17 @@ class ImportBlocUseCase @Inject constructor(
         sessionId: String,
         openStream: () -> InputStream,
         grade: String? = null,
-    ): Result<String> {
+    ): Outcome {
         val relativePath = runCatching { imageStore.import(openStream) }
-            .getOrElse { return Result.failure(it) }
+            .getOrElse { return Outcome.SourceUnreadable(it) }
 
+        // La copie a reussi : tout echec qui suit la retire, pour ne pas la laisser.
+        val dimensions = runCatching { imageStore.readDimensions(relativePath) }
+            .getOrElse {
+                imageStore.delete(relativePath)
+                return Outcome.NotAnImage(it)
+            }
         return runCatching {
-            val dimensions = imageStore.readDimensions(relativePath)
             blocRepository.createBloc(
                 sessionId = sessionId,
                 imagePath = relativePath,
@@ -50,9 +58,26 @@ class ImportBlocUseCase @Inject constructor(
                 imageHeight = dimensions.height,
                 grade = grade,
             )
-        }.onFailure {
-            // La copie a reussi mais la suite non : on ne laisse pas la copie.
-            imageStore.delete(relativePath)
-        }
+        }.fold(
+            onSuccess = { Outcome.Imported(it) },
+            onFailure = {
+                imageStore.delete(relativePath)
+                Outcome.Failed(it)
+            },
+        )
+    }
+
+    /** [cause] est gardee pour les journaux ; l'ecran ne lit que le type. */
+    sealed interface Outcome {
+        data class Imported(val blocId: String) : Outcome
+
+        /** L'image source n'a pas pu etre lue : supprimee, deplacee, permission revoquee. */
+        data class SourceUnreadable(val cause: Throwable) : Outcome
+
+        /** Copiee, mais ce n'est pas une image que l'on sache decoder. */
+        data class NotAnImage(val cause: Throwable) : Outcome
+
+        /** Echec interne (base de donnees) : rien que l'utilisateur puisse corriger. */
+        data class Failed(val cause: Throwable) : Outcome
     }
 }

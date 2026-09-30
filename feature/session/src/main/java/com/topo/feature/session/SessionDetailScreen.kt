@@ -99,9 +99,13 @@ fun SessionDetailScreen(
     }
 
     uiState.importError?.let { failure ->
-        val message = failure.detail
-            ?.let { stringResource(R.string.session_import_error_detail, it) }
-            ?: stringResource(R.string.session_import_error)
+        val message = stringResource(
+            when (failure) {
+                ImportFailure.SOURCE_UNREADABLE -> R.string.session_import_error_unreadable
+                ImportFailure.NOT_AN_IMAGE -> R.string.session_import_error_not_image
+                ImportFailure.INTERNAL -> R.string.session_import_error
+            },
+        )
         LaunchedEffect(failure) {
             snackbarHostState.showSnackbar(message)
             viewModel.acknowledgeImportError()
@@ -294,7 +298,5 @@ private fun statusFailureMessage(failure: StatusFailure, attempts: Int): String 
     StatusFailure.FlashAfterSeveralAttempts ->
         pluralStringResource(R.plurals.session_status_error_flash, attempts, attempts)
 
-    is StatusFailure.Other -> failure.detail
-        ?.let { stringResource(R.string.session_status_error_detail, it) }
-        ?: stringResource(R.string.session_status_error)
+    StatusFailure.BlocNotFound -> stringResource(R.string.session_status_error_missing)
 }
