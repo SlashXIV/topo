@@ -65,8 +65,8 @@ explicitement dans le journal des decisions.
 
 **L'application est complete et hors ligne.** Seance -> photo -> cadre du bloc -> detection des
 prises -> tri par couleur -> beta -> rejeu, partage en image et vue en relief : tout fonctionne
-de bout en bout sur le Xiaomi, sans reseau. La suite (S16) accentue le relief des prises dans la
-vue 3D ; la publication (signature, AAB signe) viendra en dernier.
+de bout en bout sur le Xiaomi, sans reseau. S16 (accentuer le relief des prises) a ete essaye puis
+abandonne ; la publication (signature, AAB signe) viendra en dernier.
 
 ---
 
@@ -600,7 +600,7 @@ chargement retires ; inference 361-367 ms). Calculer le relief lui-meme a l'avan
 instantanee, mais disputerait le processeur a la detection, souvent lancee juste apres le
 cadrage : ecarte pour l'instant.
 
-### S16 — Accentuer le relief des prises *(a faire)*
+### S16 — Accentuer le relief des prises *(essaye, abandonne)*
 
 **Constat (essai sur le Xiaomi).** Le relief se lit bien sur les gros volumes, peu sur les
 prises. L'amplitude est globale (`DEPTH_SCALE`, 0,22 de la largeur du mur) : une prise de
@@ -617,6 +617,18 @@ quelques centimetres y pese le meme poids qu'un pan de mur incline, et disparait
 
 **Critere.** Sur une photo de bloc, les prises du beta se distinguent a l'oeil en rotation
 lente, sans pointes ni trous dans le maillage ; aucune regression de cadence (`FrameStats`).
+
+**Resultat (2026-09-30).** Prototypes sur trois blocs de Villenave, meme relief que l'application :
+- **Bosses sous les prises connues** : ecartees au prototype. Etroites, elles font des pointes ;
+  elargies en domes, des plots qui depassent du mur. Une geometrie inventee, pas lue sur la photo.
+- **Detail amplifie (passe-bande)**, essaye sur le Xiaomi avec un curseur de 1 a 5 : le mur
+  garde ses pans, seul le relief a l'echelle d'une prise est multiplie, et l'eclairage suit le
+  reglage (normale par triangle, tiree des derivees dans le shader). Verdict de l'utilisateur :
+  le plus propre au plus bas, trop sombre et peu lisible des qu'on accentue.
+
+Abandonne : la vue garde le relief du modele tel quel. Le relief monoculaire n'a pas la
+resolution des prises ; l'amplifier grossit surtout son imprecision. Les prises restent
+designees par leurs halos. L'essai est conserve en correctif hors depot, pour memoire.
 
 ---
 
