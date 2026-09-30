@@ -453,9 +453,9 @@ accentuer ni traduire. Les ViewModel ne portent plus de texte : leurs erreurs so
 types que l'ecran met en phrase. La verification `checkHardcodedUiText`, branchee sur `check`,
 fait echouer le build sur tout texte visible code en dur ; une exception exige une raison ecrite.
 
-**Reste.** L'erreur « flash apres plusieurs essais » est reconnue a son type d'exception : le
-domaine devrait renvoyer une erreur typee. Un message de flux introuvable a l'import peut encore
-atteindre l'utilisateur sans traduction, cas tres rare.
+**Solde (2026-09-30).** Statut et import renvoient des resultats types (`Outcome`) que l'ecran
+traduit de facon exhaustive ; aucun message technique n'atteint plus l'interface, les causes vont
+aux journaux.
 
 **Pourquoi avant l'industrialisation.** Chaque ecran est concerne, le cout est faible, et
 l'industrialisation produit le build de publication : il ne doit pas partir avec ces textes.
@@ -592,8 +592,11 @@ SurfaceFlinger ne publie plus l'historique par couche) sur le Xiaomi a 120 Hz : 
 intervalle median 8,3 ms, mais des rafales de trames en retard (0 a 19 % par fenetre, pire
 31 ms) au repos comme en manipulation, sans lien avec les gestes ni le rejeu. Jugees
 imperceptibles par l'utilisateur : laissees telles quelles. Piste si besoin : figer la vue a
-60 Hz (`Surface.setFrameRate`). Reste : eventuellement precharger le modele a l'ouverture de
-l'annotation.
+60 Hz (`Surface.setFrameRate`). Le modele est precharge pendant l'annotation, a chaque photo ou
+cadre sans relief en cache : la premiere vue 3D passe de ~0,8 s a ~0,5 s a l'oeil (272 ms de
+chargement retires ; inference 361-367 ms). Calculer le relief lui-meme a l'avance la rendrait
+instantanee, mais disputerait le processeur a la detection, souvent lancee juste apres le
+cadrage : ecarte pour l'instant.
 
 ### S16 — Accentuer le relief des prises *(a faire)*
 
