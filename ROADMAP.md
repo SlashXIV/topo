@@ -556,7 +556,7 @@ complete sans. La zone de detection (S11), elle, retire du travail a chaque bloc
 
 ---
 
-### S15 — Vitrine : relief 3D et scan de detection *(phases 1 et 2 livrees)*
+### S15 — Vitrine : relief 3D et scan de detection *(livre)*
 
 **Objectif.** Une demonstration visuelle du travail d'image et d'IA pour le portfolio, sans
 alourdir l'application : utile a montrer plus qu'a l'usage quotidien.
@@ -594,6 +594,24 @@ intervalle median 8,3 ms, mais des rafales de trames en retard (0 a 19 % par fen
 imperceptibles par l'utilisateur : laissees telles quelles. Piste si besoin : figer la vue a
 60 Hz (`Surface.setFrameRate`). Reste : eventuellement precharger le modele a l'ouverture de
 l'annotation.
+
+### S16 — Accentuer le relief des prises *(a faire)*
+
+**Constat (essai sur le Xiaomi).** Le relief se lit bien sur les gros volumes, peu sur les
+prises. L'amplitude est globale (`DEPTH_SCALE`, 0,22 de la largeur du mur) : une prise de
+quelques centimetres y pese le meme poids qu'un pan de mur incline, et disparait a cote.
+
+**Pistes, a mesurer sur les blocs de Villenave :**
+- **Separer le mur et le detail** : base = relief tres lisse (le plan du mur, ses pans),
+  detail = relief - base. Afficher base * a + detail * b, avec b > a : les prises ressortent
+  sans exagerer l'inclinaison du mur. Calcul sur la grille de relief, une fois par bloc.
+- **Relever les prises connues** : les boites des prises sont en base ; ajouter une bosse
+  douce sous chaque prise (gaussienne a la taille de sa boite), les volumes a part.
+- **Reglage par l'utilisateur** : un curseur d'accentuation dans la vue 3D, lu comme uniforme
+  par le shader, sans recalcul du maillage.
+
+**Critere.** Sur une photo de bloc, les prises du beta se distinguent a l'oeil en rotation
+lente, sans pointes ni trous dans le maillage ; aucune regression de cadence (`FrameStats`).
 
 ---
 
