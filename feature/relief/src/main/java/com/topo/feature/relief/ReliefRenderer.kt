@@ -64,7 +64,10 @@ internal class ReliefRenderer(private val clearColor: Int) : GLSurfaceView.Rende
     private val view = FloatArray(16)
     private val mvp = FloatArray(16)
 
+    @Volatile private var handedOverNanos = 0L
+
     fun setScene(scene: ReliefScene, texture: Bitmap) {
+        handedOverNanos = System.nanoTime()
         pendingScene = scene to texture
     }
 
@@ -112,6 +115,9 @@ internal class ReliefRenderer(private val clearColor: Int) : GLSurfaceView.Rende
             scene = next
             texture = bitmap
             upload(next, bitmap)
+            // Delai entre la scene prete et sa premiere trame : c'est lui qui mesure
+            // l'attente de la surface GL, pas l'inference.
+            Log.i(TAG, "Premiere trame %.0f ms apres la scene".format((now - handedOverNanos) / 1e6))
             sceneStartNanos = now
             replayStartNanos = now + INTRO_NANOS
         }

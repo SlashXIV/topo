@@ -54,6 +54,15 @@ internal class ReliefSurfaceView(context: Context, val renderer: ReliefRenderer)
         renderMode = RENDERMODE_CONTINUOUSLY
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // Une SurfaceView cree sa surface au pre-dessin de la PROCHAINE traversee de la
+        // fenetre. Ajoutee par Compose sur un ecran immobile (fin du calcul du relief),
+        // aucune traversee ne venait : la surface attendait le prochain geste ou la sortie
+        // de l'ecran — 3 s constatees sur le Xiaomi, indefiniment sur l'emulateur.
+        post { requestLayout() }
+    }
+
     @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
         scale.onTouchEvent(event)
