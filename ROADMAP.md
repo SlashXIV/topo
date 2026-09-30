@@ -573,11 +573,12 @@ premiere ouverture paie l'inference. Rendu OpenGL ES 3 (`:feature:relief`) : mur
 eclaire, halos a la couleur de difficulte, volumes en blanc, arcs du beta rejoues, rotation,
 zoom et balancement au repos. Halos seulement, pas de contours SAM sur l'appareil.
 
-Reste : sur l'emulateur API 37, la surface GL n'est jamais creee (vue attachee et visible, aucun
-`surfaceCreated`) ; sur le Xiaomi, la premiere ouverture apres un calcul a vu sa surface creee
-avec ~3 s de retard. Piste : forcer la creation (TextureView, ou `SurfaceView` hors d'un
-`AndroidView` recompose), a verifier sur les deux appareils. Les trames du fil GL ne sont pas
-encore mesurees : `gfxinfo` ne couvre que l'interface Compose.
+Surface GL : une `SurfaceView` ajoutee sur un ecran immobile attendait la traversee suivante de
+la fenetre (~3 s sur le Xiaomi, indefiniment sur l'emulateur API 37) ; la vue la demande
+desormais a son attachement. Mesure sur le Xiaomi : premiere trame 17 a 35 ms apres la scene,
+calcul frais compris (chargement du modele et inference a froid : ~1,5 s a l'oeil, 690 ms
+d'inference). Reste : mesurer les trames du fil GL (`gfxinfo` ne couvre que l'interface
+Compose) ; eventuellement precharger le modele a l'ouverture de l'annotation.
 
 ---
 
