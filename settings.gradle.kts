@@ -14,6 +14,12 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // ONNX Runtime reduit, construit par third_party/onnxruntime/build_reduced_aar.sh.
+        // Limite a ses versions « -topo » : rien d'autre ne peut etre resolu ici.
+        maven {
+            url = uri("third_party/onnxruntime/dist/maven")
+            content { includeVersionByRegex("com\\.microsoft\\.onnxruntime","onnxruntime-android", ".*-topo") }
+        }
     }
 }
 

@@ -22,6 +22,20 @@ val onnxRuntimeAar: Configuration by configurations.creating {
 
 val onnxRuntimeRoot = layout.buildDirectory.dir("onnxruntime")
 
+// ONNX Runtime reduit aux operateurs de nos modeles s'il a ete construit
+// (third_party/onnxruntime/build_reduced_aar.sh), l'officiel sinon : un clone du depot se
+// construit toujours. -Ptopo.stockOnnxRuntime=true force l'officiel, pour comparer.
+val reducedOnnxRuntime = libs.onnxruntime.android.reduced.get()
+val reducedOnnxRuntimeBuilt = rootDir.resolve(
+    "third_party/onnxruntime/dist/maven/com/microsoft/onnxruntime/onnxruntime-android/${reducedOnnxRuntime.version}",
+).isDirectory
+val forceStockOnnxRuntime = providers.gradleProperty("topo.stockOnnxRuntime").map(String::toBoolean).getOrElse(false)
+val onnxRuntime = if (reducedOnnxRuntimeBuilt && !forceStockOnnxRuntime) {
+    libs.onnxruntime.android.reduced
+} else {
+    libs.onnxruntime.android
+}
+
 val extractOnnxRuntime by tasks.registering(Sync::class) {
     from({ zipTree(onnxRuntimeAar.singleFile) }) {
         include("headers/**", "jni/**")
@@ -82,8 +96,8 @@ dependencies {
     implementation(projects.core.domain)
     implementation(projects.core.common)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.onnxruntime.android)
-    onnxRuntimeAar(libs.onnxruntime.android)
+    implementation(onnxRuntime)
+    onnxRuntimeAar(onnxRuntime)
 
     testImplementation(libs.junit)
     testImplementation(libs.truth)

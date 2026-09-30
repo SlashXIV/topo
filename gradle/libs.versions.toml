@@ -35,6 +35,9 @@ coil = "2.7.0"
 # chaque montee de version : l'historique de conformite 16 Ko de ce binaire
 # n'est pas une garantie pour la suivante.
 onnxruntime = "1.30.0"
+# Meme version, compilee reduite aux operateurs de nos modeles (third_party/onnxruntime) :
+# preferee par :vision quand elle a ete construite, l'officielle sinon.
+onnxruntime-reduced = "1.30.0-topo"
 
 # --- DI ---
 hilt = "2.60.1"
@@ -104,6 +107,7 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 
 # --- Inference (Sprint 10) ---
 onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime" }
+onnxruntime-android-reduced = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime-reduced" }
 
 # --- Hilt ---
 javax-inject = { group = "javax.inject", name = "javax.inject", version.ref = "javaxInject" }

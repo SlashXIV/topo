@@ -77,3 +77,5 @@ desktop.ini
 vision/src/androidTest/assets/placeholder/
 # Reference du relief, produite par ml/depth_model.py.
 vision/src/androidTest/assets/depth/
+# ONNX Runtime reduit, produit par third_party/onnxruntime/build_reduced_aar.sh.
+third_party/onnxruntime/dist/
