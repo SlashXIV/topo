@@ -30,6 +30,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -74,7 +76,7 @@ class AnnotatorViewModel @Inject constructor(
     private val detectHolds: DetectHoldsUseCase,
     private val keepHoldColor: KeepHoldColorUseCase,
     private val savedState: SavedStateHandle,
-    reliefEstimator: ReliefEstimator,
+    private val reliefEstimator: ReliefEstimator,
     circuitColorRepository: CircuitColorRepository,
     settingsRepository: SettingsRepository,
 ) : ViewModel() {
@@ -124,6 +126,22 @@ class AnnotatorViewModel @Inject constructor(
     /** Point d'entree tant que la navigation n'est pas cablee (sprint d'assemblage). */
     fun bind(blocId: String) {
         this.blocId.value = blocId
+    }
+
+    init {
+        // Le modele de relief se charge pendant qu'on regarde les prises, pour la photo ET
+        // le cadre en cours : recadrer demande un nouveau relief, donc une nouvelle
+        // preparation (constate sur le Xiaomi : sans cela, le chargement retombait sur
+        // l'ouverture de la vue 3D).
+        if (reliefEstimator.isAvailable) {
+            viewModelScope.launch {
+                blocDetail
+                    .map { it?.bloc?.let { bloc -> bloc.imagePath to bloc.detectionZone } }
+                    .filterNotNull()
+                    .distinctUntilChanged()
+                    .collect { (path, zone) -> reliefEstimator.prepare(imageStore.resolve(path), zone) }
+            }
+        }
     }
 
     fun selectMode(mode: AnnotationMode) {

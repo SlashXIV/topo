@@ -30,8 +30,10 @@ import kotlinx.coroutines.withContext
  * des blocs : il se reconstruit, et le systeme peut le vider sans rien perdre.
  * La cle couvre la photo, sa zone et le modele : changer l'un recalcule.
  *
- * Le modele n'est charge qu'a la premiere estimation SANS cache : ouvrir une vue
- * 3D deja calculee ne paie pas les 27 Mo de la session.
+ * Le modele n'est charge que pour une photo SANS relief en cache : ouvrir une vue
+ * 3D deja calculee ne paie pas les 27 Mo de la session. Il l'est des l'ouverture du
+ * bloc ([prepare]) plutot qu'a la premiere vue 3D : ~0,3 s de moins a attendre (284 ms
+ * mesurees sur le Xiaomi) ; le reste de l'attente est l'inference.
  */
 @Singleton
 internal class BundledModelReliefEstimator @Inject constructor(
@@ -46,9 +48,17 @@ internal class BundledModelReliefEstimator @Inject constructor(
 
     override val isAvailable: Boolean by lazy { context.assets.hasAsset(MODEL_ASSET) }
 
+    override suspend fun prepare(file: File, region: BoundingBox?) {
+        if (!isAvailable || engine.isReady) return
+        // Relief deja en cache : la vue 3D n'aura pas besoin du modele, inutile d'en payer
+        // la memoire.
+        val known = withContext(ioDispatcher) { cacheFile(file, region).exists() }
+        if (!known) ensureModelLoaded()
+    }
+
     override suspend fun estimate(file: File, region: BoundingBox?): ReliefMap? {
         if (!isAvailable) return null
-        val cached = File(context.cacheDir, "$CACHE_DIR/${cacheKey(file, region)}.bin")
+        val cached = cacheFile(file, region)
         withContext(ioDispatcher) { readCache(cached) }?.let { return it }
 
         ensureModelLoaded()
@@ -68,10 +78,15 @@ internal class BundledModelReliefEstimator @Inject constructor(
     private suspend fun ensureModelLoaded() = loading.withLock {
         if (loadAttempted) return@withLock
         loadAttempted = true
+        val started = System.nanoTime()
         val model = withContext(ioDispatcher) { readModelAsset(context.assets, MODEL_ASSET) }
             ?: return@withLock
         engine.loadModel(model)
+        Log.i(TAG, "Modele de relief pret en %.0f ms".format(Locale.ROOT, (System.nanoTime() - started) / 1e6))
     }
+
+    private fun cacheFile(file: File, region: BoundingBox?) =
+        File(context.cacheDir, "$CACHE_DIR/${cacheKey(file, region)}.bin")
 
     private fun cacheKey(file: File, region: BoundingBox?): String {
         val zone = region?.let {

@@ -30,4 +30,11 @@ interface ReliefEstimator {
      * @return null si aucun modele n'est disponible.
      */
     suspend fun estimate(file: File, region: BoundingBox?): ReliefMap?
+
+    /**
+     * Prepare une future [estimate] de cette photo sans la lancer : charge le modele si
+     * son relief n'est pas deja connu. Appele a l'ouverture d'un bloc, pour que la
+     * premiere vue 3D n'attende plus que l'inference.
+     */
+    suspend fun prepare(file: File, region: BoundingBox?)
 }
