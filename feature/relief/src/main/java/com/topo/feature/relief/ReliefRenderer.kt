@@ -60,6 +60,8 @@ internal class ReliefRenderer(private val clearColor: Int) : GLSurfaceView.Rende
     private var sceneStartNanos = 0L
     private var replayStartNanos = 0L
 
+    private val frameStats = FrameStats()
+
     private val projection = FloatArray(16)
     private val view = FloatArray(16)
     private val mvp = FloatArray(16)
@@ -175,6 +177,7 @@ internal class ReliefRenderer(private val clearColor: Int) : GLSurfaceView.Rende
         }
         GLES30.glDisable(GLES30.GL_BLEND)
         GLES30.glBindVertexArray(0)
+        frameStats.record(now, System.nanoTime() - now)?.let { Log.i(TAG, it) }
     }
 
     private fun ribbonPass(widthPx: Float, override: FloatArray?, count: Int) {
