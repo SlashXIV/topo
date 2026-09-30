@@ -54,17 +54,19 @@ explicitement dans le journal des decisions.
 | **S8** | Statistiques et progression | Regles d'agregation couvertes par les tests JVM du domaine |
 | **S9** | Export et partage d'une image du beta | PNG relu via le `FileProvider` ; selecteur systeme ouvert sur emulateur, export complet sur appareil |
 | **S10** | Detection automatique des prises | mAP50 **0,879** sur le jeu de test ; **60,7 ms** de bout en bout sur Xiaomi ARM64 en release |
+| **S11** | Ne garder que les prises du bloc : pipette de couleur, prises et volumes | Modele a deux classes, mAP50 **0,883** ; **58,2 ms** sur le Xiaomi ; migration v3 -> v4 sur la base reelle (76 prises conservees) |
+| **S12** | Textes en francais correct | ~150 textes dans `strings.xml` ; `checkHardcodedUiText` fait echouer le build sur tout texte code en dur |
+| **S13** | Industrialisation : R8, baseline profile, restauration d'etat, AAB | Demarrage a froid Xiaomi 257 -> **237 ms** ; memoire native stable sur 30 detections ; etat restaure apres `am kill` |
+| **S14** | Halos a la couleur de difficulte, zone du bloc, vignettes cadrees | Valide sur les blocs de Villenave ; test de couleur des halos, migration v4 -> v5 |
+| **S15** | Vitrine : demo 3D du portfolio, scan de detection, vue 3D dans l'app | Scan : **0,8 %** de trames saccadees a 120 Hz ; relief INT8 **~400 ms**, correlation >= 0,997 avec FP32 ; 1re trame 3D **17-39 ms** apres la scene |
+| **Poids** | APK release allege | **115,6 -> 57,2 Mo** : x86_64 retire de la publication, ONNX Runtime reduit a nos operateurs (33,0 -> 15,5 Mo) a latence egale |
 
-134 tests verts au total : 55 instrumentes, 79 unitaires JVM.
+184 tests : 72 instrumentes, 112 unitaires JVM.
 
-**La detection automatique est en place.** Un appui propose les prises d'une photo, qui se
-corrigent avec les gestes de la pose manuelle. Elle detecte toutes les prises du mur : ne
-garder que celles d'un bloc est l'objet de S11.
-
-**L'application est complete sans modele.** La boucle seance -> bloc -> prises -> beta ->
-historique fonctionne de bout en bout sur appareil ; chaque bloc porte son statut, sa cotation et
-son ressenti, le beta se rejoue et se partage en image. La suite est la detection automatique des
-prises, seule phase qui depende d'un livrable externe.
+**L'application est complete et hors ligne.** Seance -> photo -> cadre du bloc -> detection des
+prises -> tri par couleur -> beta -> rejeu, partage en image et vue en relief : tout fonctionne
+de bout en bout sur le Xiaomi, sans reseau. La suite (S16) accentue le relief des prises dans la
+vue 3D ; la publication (signature, AAB signe) viendra en dernier.
 
 ---
 
