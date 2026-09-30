@@ -577,8 +577,13 @@ Surface GL : une `SurfaceView` ajoutee sur un ecran immobile attendait la traver
 la fenetre (~3 s sur le Xiaomi, indefiniment sur l'emulateur API 37) ; la vue la demande
 desormais a son attachement. Mesure sur le Xiaomi : premiere trame 17 a 35 ms apres la scene,
 calcul frais compris (chargement du modele et inference a froid : ~1,5 s a l'oeil, 690 ms
-d'inference). Reste : mesurer les trames du fil GL (`gfxinfo` ne couvre que l'interface
-Compose) ; eventuellement precharger le modele a l'ouverture de l'annotation.
+d'inference). Cadence du fil GL, mesuree par la vue elle-meme (`FrameStats`, bilan toutes les 5 s :
+SurfaceFlinger ne publie plus l'historique par couche) sur le Xiaomi a 120 Hz : 119-120 i/s,
+intervalle median 8,3 ms, mais des rafales de trames en retard (0 a 19 % par fenetre, pire
+31 ms) au repos comme en manipulation, sans lien avec les gestes ni le rejeu. Jugees
+imperceptibles par l'utilisateur : laissees telles quelles. Piste si besoin : figer la vue a
+60 Hz (`Surface.setFrameRate`). Reste : eventuellement precharger le modele a l'ouverture de
+l'annotation.
 
 ---
 
