@@ -27,7 +27,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -100,7 +100,7 @@ private fun StatsContent(stats: ClimbingStatistics) {
         }
 
         item {
-            val resources = LocalContext.current.resources
+            val resources = LocalResources.current
             val percent: (Double) -> String = { resources.getString(R.string.stats_percent, it.roundToInt()) }
             MetricRow {
                 Metric(
@@ -226,7 +226,7 @@ private fun BucketRow(bucket: DifficultyBucket, maxTotal: Int, index: Int) {
     val tried = if (maxTotal == 0) 0f else bucket.total.toFloat() / maxTotal
     val sent = if (maxTotal == 0) 0f else bucket.sent.toFloat() / maxTotal
     val growth = rememberGrowth(index)
-    val description = stringResource(R.string.stats_bucket_description, bucket.label, bucket.sent, bucket.total)
+    val description = pluralStringResource(R.plurals.stats_bucket_description, bucket.sent, bucket.label, bucket.sent, bucket.total)
 
     Row(
         modifier = Modifier

@@ -21,7 +21,10 @@
     <string name="stats_by_grade_hint">Seules les cotations utilisées apparaissent</string>
 
     <!-- Lecture d'une barre par TalkBack : nom, reussis, tentes. -->
-    <string name="stats_bucket_description">%1$s : %2$d réussis sur %3$d</string>
+    <plurals name="stats_bucket_description">
+        <item quantity="one">%1$s : %2$d réussi sur %3$d</item>
+        <item quantity="other">%1$s : %2$d réussis sur %3$d</item>
+    </plurals>
     <string name="stats_legend_sent">Réussis</string>
     <string name="stats_legend_tried">Tentés</string>
     <plurals name="stats_eyebrow">

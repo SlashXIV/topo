@@ -42,9 +42,9 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.semantics.dismiss
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
@@ -115,7 +115,7 @@ fun TopoSheet(
     val colors = TopoTheme.colors
     val animates = LocalMotionLevel.current.animates
     val scope = rememberCoroutineScope()
-    val screenPx = with(LocalDensity.current) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
+    val screenPx = LocalWindowInfo.current.containerSize.height.toFloat()
     val offset = remember { Animatable(if (animates) screenPx else 0f) }
     val sheetHeight = remember { floatArrayOf(screenPx) }
     LaunchedEffect(Unit) {
@@ -150,7 +150,7 @@ fun TopoSheet(
                 modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .heightIn(max = LocalConfiguration.current.screenHeightDp.dp * 0.92f)
+                    .heightIn(max = with(LocalDensity.current) { (screenPx * 0.92f).toDp() })
                     .onSizeChanged { sheetHeight[0] = it.height.toFloat().coerceAtLeast(1f) }
                     .offset { IntOffset(0, offset.value.roundToInt()) }
                     .background(colors.paper)
