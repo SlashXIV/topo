@@ -21,6 +21,13 @@
         <item name="postSplashScreenTheme">@style/Theme.Topo</item>
     </style>
 
-    <style name="Theme.Topo" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+        Theme de l'application une fois demarree. Compose dessine tout : la fenetre
+        ne fournit que le papier, visible le temps d'une recomposition ou sous le
+        clavier. Theme du framework, pas la bibliotheque Material.
+    -->
+    <style name="Theme.Topo" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/paper</item>
+    </style>
 
 </resources>

@@ -25,11 +25,11 @@ object TopoIcons {
     val Down = line("down", "M6 10l6 6 6-6")
     val Delete = line("delete", "M5 7h14", "M9 7V4h6v3", "M7 7l1 13h8l1-13", "M10.5 11v5", "M13.5 11v5")
     val Chart = line("chart", "M4 20h16", "M7 16v-5", "M12 16V6", "M17 16v-8")
+    // Des curseurs plutot qu'un engrenage : au trait fin, l'engrenage se lisait comme un soleil.
     val Settings = line(
         "settings",
-        circle(12f, 12f, 3f),
-        "M12 3v3", "M12 18v3", "M3 12h3", "M18 12h3",
-        "M5.6 5.6l2.1 2.1", "M16.3 16.3l2.1 2.1", "M5.6 18.4l2.1-2.1", "M16.3 7.7l2.1-2.1",
+        "M4 7h9", "M19 7h1", "M4 17h3", "M13 17h7",
+        circle(16f, 7f, 2.5f), circle(10f, 17f, 2.5f),
     )
     val Camera = line("camera", "M4 8h3l2-3h6l2 3h3v11H4z", circle(12f, 13f, 3.5f))
     val Gallery = line("gallery", "M4 5h16v14H4z", "M4 16l5-5 4 4 2-2 5 5", circle(15.5f, 9f, 1.3f))

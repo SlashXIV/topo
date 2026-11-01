@@ -5,7 +5,23 @@ import androidx.annotation.StringRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import com.topo.core.ui.component.IconAction
+import com.topo.core.ui.component.PageHeader
+import com.topo.core.ui.component.Tag
+import com.topo.core.ui.component.TopoButton
+import com.topo.core.ui.component.TopoIcons
+import com.topo.core.ui.component.TopoSnackbarHost
+import com.topo.core.ui.component.TopoSnackbarState
+import com.topo.core.ui.motion.rememberHaptics
+import com.topo.core.ui.theme.TopoTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,20 +31,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.PhotoCamera
-import androidx.compose.material.icons.filled.PhotoLibrary
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -56,7 +58,6 @@ const val BlocGridTestTag = "bloc-grid"
 const val ImportBlocTestTag = "import-bloc"
 const val CaptureBlocTestTag = "capture-bloc"
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionDetailScreen(
     sessionId: String,
@@ -71,7 +72,7 @@ fun SessionDetailScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarState = remember { TopoSnackbarState() }
     var progressBlocId by rememberSaveable { mutableStateOf<String?>(null) }
     var blocToDelete by remember { mutableStateOf<Bloc?>(null) }
 
@@ -107,65 +108,36 @@ fun SessionDetailScreen(
             },
         )
         LaunchedEffect(failure) {
-            snackbarHostState.showSnackbar(message)
+            snackbarState.show(message)
             viewModel.acknowledgeImportError()
         }
     }
 
-    Scaffold(
-        modifier = modifier,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text(uiState.session?.locationName ?: stringResource(R.string.session_detail_title_fallback)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.session_detail_back))
-                    }
-                },
-                actions = {
-                    // L'import reste atteignable une fois la grille remplie : le
-                    // proposer uniquement dans l'etat vide le rendrait introuvable
-                    // des le premier bloc ajoute.
-                    IconButton(
-                        onClick = { pickImage.launch(imageOnlyRequest) },
-                        modifier = Modifier.testTag(ImportBlocTestTag),
-                    ) {
-                        Icon(
-                            Icons.Default.PhotoLibrary,
-                            contentDescription = stringResource(R.string.session_detail_import),
-                        )
-                    }
-                },
+    Box(modifier.fillMaxSize()) {
+      Column(Modifier.fillMaxSize()) {
+        PageHeader(
+            title = uiState.session?.locationName ?: stringResource(R.string.session_detail_title_fallback),
+            eyebrow = uiState.session?.date?.formatAsDate(),
+            onBack = onBack,
+            backLabel = stringResource(R.string.session_detail_back),
+            compact = true,
+        )
+        // Les filtres n'apparaissent qu'a partir du deuxieme bloc : sur une
+        // seance qui en contient un seul, ils n'ont rien a filtrer.
+        if (uiState.totalBlocs > 1) {
+            BlocFilterRow(
+                selected = uiState.filter,
+                onSelect = viewModel::selectFilter,
             )
-        },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = { onCaptureBloc(sessionId) },
-                modifier = Modifier.testTag(CaptureBlocTestTag),
-                text = { Text(stringResource(R.string.session_detail_capture)) },
-                icon = { Icon(Icons.Default.PhotoCamera, contentDescription = null) },
-            )
-        },
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Les filtres n'apparaissent qu'a partir du deuxieme bloc : sur une
-            // seance qui en contient un seul, ils n'ont rien a filtrer.
-            if (uiState.totalBlocs > 1) {
-                BlocFilterRow(
-                    selected = uiState.filter,
-                    onSelect = viewModel::selectFilter,
-                )
-            }
+        }
 
+        Box(Modifier.weight(1f)) {
             when {
                 uiState.isLoading -> LoadingState()
 
                 uiState.totalBlocs == 0 -> EmptyState(
                     title = stringResource(R.string.session_detail_empty_title),
                     message = stringResource(R.string.session_detail_empty_message),
-                    actionLabel = stringResource(R.string.session_detail_import),
-                    onAction = { pickImage.launch(imageOnlyRequest) },
                 )
 
                 uiState.blocs.isEmpty() -> EmptyState(
@@ -180,7 +152,7 @@ fun SessionDetailScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .testTag(BlocGridTestTag),
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -200,7 +172,7 @@ fun SessionDetailScreen(
                             circuitColor = color?.let { Color(it.argb) },
                             circuitName = color?.name,
                             statusLabel = stringResource(bloc.status.labelRes),
-                            statusColor = bloc.status.color(),
+                            statusColor = TopoTheme.colors.status(bloc.status),
                             attempts = bloc.attempts,
                             isCompleted = bloc.isCompleted,
                             onClick = { onBlocClick(bloc.id) },
@@ -212,6 +184,29 @@ fun SessionDetailScreen(
                 }
             }
         }
+        // L'import reste a cote de la photo, toujours atteignable : le proposer
+        // uniquement dans l'etat vide le rendrait introuvable des le premier bloc.
+        Row(
+            Modifier.fillMaxWidth().navigationBarsPadding().padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            TopoButton(
+                text = stringResource(R.string.session_detail_capture),
+                onClick = { onCaptureBloc(sessionId) },
+                icon = TopoIcons.Camera,
+                modifier = Modifier.weight(1f).testTag(CaptureBlocTestTag),
+            )
+            Box(Modifier.border(1.5.dp, TopoTheme.colors.ink, RoundedCornerShape(3.dp))) {
+                IconAction(
+                    TopoIcons.Gallery,
+                    contentDescription = stringResource(R.string.session_detail_import),
+                    onClick = { pickImage.launch(imageOnlyRequest) },
+                    modifier = Modifier.testTag(ImportBlocTestTag),
+                )
+            }
+        }
+      }
+      TopoSnackbarHost(snackbarState, Modifier.align(Alignment.BottomCenter).padding(bottom = 72.dp))
     }
 
     // La feuille lit le bloc dans l'etat courant plutot que d'en garder une copie :
@@ -264,17 +259,22 @@ private fun BlocFilterRow(
     onSelect: (BlocFilter) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val haptics = rememberHaptics()
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
             .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         BlocFilter.entries.forEach { filter ->
-            FilterChip(
+            Tag(
+                text = stringResource(filter.labelRes),
                 selected = filter == selected,
-                onClick = { onSelect(filter) },
-                label = { Text(stringResource(filter.labelRes)) },
+                onClick = {
+                    if (filter != selected) haptics.tick()
+                    onSelect(filter)
+                },
             )
         }
     }

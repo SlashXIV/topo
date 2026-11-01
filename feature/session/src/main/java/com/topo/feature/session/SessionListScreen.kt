@@ -1,29 +1,20 @@
 package com.topo.feature.session
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.InsertChart
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,13 +26,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.topo.core.domain.model.SessionSummary
+import com.topo.core.ui.component.ButtonStyle
 import com.topo.core.ui.component.ConfirmDialog
 import com.topo.core.ui.component.EmptyState
+import com.topo.core.ui.component.IconAction
 import com.topo.core.ui.component.LoadingState
+import com.topo.core.ui.component.NumberMark
+import com.topo.core.ui.component.PageHeader
+import com.topo.core.ui.component.Rule
+import com.topo.core.ui.component.TopoButton
+import com.topo.core.ui.component.TopoDialog
+import com.topo.core.ui.component.TopoIcons
+import com.topo.core.ui.component.TopoText
+import com.topo.core.ui.component.TopoTextField
+import com.topo.core.ui.component.UppercaseText
+import com.topo.core.ui.component.hatched
+import com.topo.core.ui.motion.riseIn
+import com.topo.core.ui.theme.TopoTheme
 import com.topo.core.ui.R as CoreR
 import java.time.Instant
 import java.time.ZoneId
@@ -51,7 +57,6 @@ import java.util.Locale
 const val SessionListTestTag = "session-list"
 const val AddSessionTestTag = "add-session"
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionListScreen(
     onSessionClick: (sessionId: String) -> Unit,
@@ -63,61 +68,57 @@ fun SessionListScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     var sessionToDelete by remember { mutableStateOf<SessionSummary?>(null) }
+    val sessionCount = (uiState as? SessionListUiState.Content)?.sessions?.size ?: 0
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.session_list_title)) },
-                actions = {
-                    IconButton(onClick = onStatsClick) {
-                        Icon(Icons.Default.InsertChart, contentDescription = stringResource(R.string.session_list_stats))
+    Column(modifier.fillMaxSize()) {
+        PageHeader(
+            title = stringResource(R.string.session_list_title),
+            eyebrow = pluralStringResource(R.plurals.session_list_eyebrow, sessionCount, sessionCount),
+            actions = {
+                IconAction(TopoIcons.Chart, stringResource(R.string.session_list_stats), onStatsClick)
+                IconAction(TopoIcons.Settings, stringResource(R.string.session_list_settings), onSettingsClick)
+            },
+        )
+        Rule(Modifier.padding(horizontal = 20.dp))
+        Box(Modifier.weight(1f)) {
+            when (val state = uiState) {
+                SessionListUiState.Loading -> LoadingState()
+
+                // Pas de bouton dans l'etat vide : celui du bas de page est toujours la.
+                SessionListUiState.Empty -> EmptyState(
+                    title = stringResource(R.string.session_list_empty_title),
+                    message = stringResource(R.string.session_list_empty_message),
+                )
+
+                is SessionListUiState.Content -> LazyColumn(
+                    modifier = Modifier.fillMaxSize().testTag(SessionListTestTag),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 4.dp),
+                ) {
+                    // key : sans elle, une suppression ferait reutiliser l'etat de
+                    // composition d'une autre ligne a la reemission de la liste.
+                    itemsIndexed(state.sessions, key = { _, it -> it.session.id }) { index, summary ->
+                        SessionRow(
+                            // Numerotee comme une voie de topo : la plus ancienne porte le 1.
+                            number = state.sessions.size - index,
+                            summary = summary,
+                            onClick = { onSessionClick(summary.session.id) },
+                            onDelete = { sessionToDelete = summary },
+                            modifier = Modifier.riseIn(index),
+                        )
                     }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.session_list_settings))
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showCreateDialog = true },
-                modifier = Modifier.testTag(AddSessionTestTag),
-            ) {
-                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.session_new))
-            }
-        },
-    ) { padding ->
-        when (val state = uiState) {
-            SessionListUiState.Loading -> LoadingState(Modifier.padding(padding))
-
-            SessionListUiState.Empty -> EmptyState(
-                title = stringResource(R.string.session_list_empty_title),
-                message = stringResource(R.string.session_list_empty_message),
-                actionLabel = stringResource(R.string.session_list_empty_action),
-                onAction = { showCreateDialog = true },
-                modifier = Modifier.padding(padding),
-            )
-
-            is SessionListUiState.Content -> LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .testTag(SessionListTestTag),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                // key : sans elle, une suppression ferait reutiliser l'etat de
-                // composition d'une autre ligne a la reemission de la liste.
-                items(state.sessions, key = { it.session.id }) { summary ->
-                    SessionCard(
-                        summary = summary,
-                        onClick = { onSessionClick(summary.session.id) },
-                        onDelete = { sessionToDelete = summary },
-                    )
                 }
             }
         }
+        TopoButton(
+            text = stringResource(R.string.session_new),
+            onClick = { showCreateDialog = true },
+            icon = TopoIcons.Add,
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(16.dp)
+                .testTag(AddSessionTestTag),
+        )
     }
 
     if (showCreateDialog) {
@@ -149,37 +150,54 @@ fun SessionListScreen(
     }
 }
 
+/**
+ * Une seance comme une entree de topo : son numero cercle, le lieu, la date en
+ * cote, et une reglette d'un trait par bloc — plein s'il est reussi, hachure
+ * sinon. Les cartes Material ont disparu : un filet separe les seances.
+ */
 @Composable
-private fun SessionCard(
+private fun SessionRow(
+    number: Int,
     summary: SessionSummary,
     onClick: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(modifier = modifier.fillMaxWidth(), onClick = onClick) {
+    val colors = TopoTheme.colors
+    Column(modifier.fillMaxWidth()) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = summary.session.locationName,
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Text(
-                    text = summary.session.date.formatAsDate(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = summary.describeProgress(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
+            NumberMark(number, Modifier.clearAndSetSemantics { })
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                TopoText(summary.session.locationName, style = TopoTheme.type.heading)
+                UppercaseText(summary.session.date.formatAsDate(), style = TopoTheme.type.cote, color = colors.ink2)
+                TopoText(summary.describeProgress(), style = TopoTheme.type.bodySmall, color = colors.ink2)
+                if (summary.blocCount > 0) Tally(summary.completedCount, summary.blocCount)
             }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.session_card_delete))
-            }
+            IconAction(TopoIcons.Delete, stringResource(R.string.session_card_delete), onDelete, tint = colors.ink2)
+        }
+        Rule(color = colors.rule)
+    }
+}
+
+/** Un trait par bloc : plein s'il est reussi, hachure sinon. Plafonne pour tenir sur la ligne. */
+@Composable
+private fun Tally(completed: Int, total: Int) {
+    val colors = TopoTheme.colors
+    val shown = total.coerceAtMost(MAX_TALLY)
+    Row(
+        Modifier.padding(top = 4.dp).clearAndSetSemantics { },
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        repeat(shown) { i ->
+            val mark = Modifier.width(4.dp).height(14.dp)
+            Spacer(if (i < completed) mark.background(colors.ink) else mark.hatched(colors.ink2, spacing = 3.dp))
         }
     }
 }
@@ -192,36 +210,32 @@ private fun CreateSessionDialog(
     var location by rememberSaveable { mutableStateOf("") }
     var notes by rememberSaveable { mutableStateOf("") }
 
-    androidx.compose.material3.AlertDialog(
+    TopoDialog(
+        title = stringResource(R.string.session_new),
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.session_new)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = location,
-                    onValueChange = { location = it },
-                    label = { Text(stringResource(R.string.session_create_location)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = notes,
-                    onValueChange = { notes = it },
-                    label = { Text(stringResource(R.string.session_create_notes)) },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
+        actions = {
+            TopoButton(stringResource(CoreR.string.action_cancel), onClick = onDismiss, style = ButtonStyle.Text)
+            TopoButton(
+                text = stringResource(R.string.session_create_confirm),
                 onClick = { onConfirm(location, notes) },
                 // Un lieu vide est refuse par le domaine : mieux vaut desactiver
                 // le bouton que laisser l'utilisateur declencher un echec muet.
                 enabled = location.isNotBlank(),
-            ) { Text(stringResource(R.string.session_create_confirm)) }
+            )
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(CoreR.string.action_cancel)) } },
-    )
+    ) {
+        TopoTextField(
+            value = location,
+            onValueChange = { location = it },
+            label = stringResource(R.string.session_create_location),
+        )
+        TopoTextField(
+            value = notes,
+            onValueChange = { notes = it },
+            label = stringResource(R.string.session_create_notes),
+            singleLine = false,
+        )
+    }
 }
 
 @Composable
@@ -232,6 +246,8 @@ private fun SessionSummary.describeProgress(): String = when {
 }
 
 /** Conversion en date LOCALE : l'instant est stocke en UTC (cf. `Session.date`). */
-private fun Long.formatAsDate(): String = DateTimeFormatter
-    .ofPattern("d MMMM yyyy", Locale.FRENCH)
+internal fun Long.formatAsDate(): String = DateTimeFormatter
+    .ofPattern("EEE d MMMM yyyy", Locale.FRENCH)
     .format(Instant.ofEpochMilli(this).atZone(ZoneId.systemDefault()))
+
+private const val MAX_TALLY = 30

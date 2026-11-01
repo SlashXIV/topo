@@ -31,4 +31,7 @@
     <color name="icon_hold_bolt">#55000000</color>
     <color name="icon_hold_screw">#D9DDE2</color>
     <color name="icon_hold_slot">#66000000</color>
+
+    <!-- Papier de la fenetre, celui de TopoPalettes.Paper ; values-night porte l'ardoise. -->
+    <color name="paper">#EEEAE0</color>
 </resources>

@@ -14,6 +14,11 @@
     <string name="session_list_empty_action">Créer une séance</string>
     <string name="session_card_delete">Supprimer la séance</string>
     <string name="session_card_no_bloc">Aucun bloc</string>
+    <!-- Ligne au-dessus du titre de la liste. -->
+    <plurals name="session_list_eyebrow">
+        <item quantity="one">Topo · %d séance</item>
+        <item quantity="other">Topo · %d séances</item>
+    </plurals>
     <plurals name="session_card_bloc_count">
         <item quantity="one">%d bloc</item>
         <item quantity="other">%d blocs</item>
