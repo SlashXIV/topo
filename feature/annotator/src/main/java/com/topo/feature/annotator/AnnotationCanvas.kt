@@ -120,6 +120,12 @@ fun AnnotationCanvas(
     onZoneDrawn: (BoundingBox) -> Unit = {},
     highlight: Color? = null,
     scan: DetectionScanState? = null,
+    /**
+     * Progression de l'encrage a l'ouverture, en mouvements traces (0 a leur
+     * nombre). Lue au dessin seulement ; null ou au-dela de la sequence, tout est
+     * trace.
+     */
+    inking: (() -> Float)? = null,
 ) {
     val context = LocalContext.current
     val imageRequest = remember(imageFile) {
@@ -174,6 +180,7 @@ fun AnnotationCanvas(
             onZoneDrawn = onZoneDrawn,
             highlight = highlight,
             scan = scan,
+            inking = inking,
             modifier = Modifier.fillMaxSize(),
         )
     }
@@ -196,6 +203,7 @@ private fun BetaTraceLayer(
     onZoneDrawn: (BoundingBox) -> Unit,
     highlight: Color?,
     scan: DetectionScanState?,
+    inking: (() -> Float)?,
     modifier: Modifier = Modifier,
 ) {
     // ------------------------------------------------------------------------
@@ -228,6 +236,7 @@ private fun BetaTraceLayer(
     val currentZone by rememberUpdatedState(detectionZone)
     val currentHighlight by rememberUpdatedState(highlight)
     val currentScan by rememberUpdatedState(scan)
+    val currentInking by rememberUpdatedState(inking)
     val textMeasurer = rememberTextMeasurer()
     val currentIsDrawingZone by rememberUpdatedState(isDrawingZone)
     val currentOnZoneDrawn by rememberUpdatedState(onZoneDrawn)
@@ -454,7 +463,9 @@ private fun BetaTraceLayer(
                         numberOf = numberOf,
                         frame = playback?.let {
                             playbackFrameAt(it.progress.value, currentMovements.size)
-                        },
+                        } ?: currentInking?.invoke()
+                            ?.takeIf { it < currentMovements.size }
+                            ?.let { playbackFrameAt(it, currentMovements.size) },
                     )
 
                     drawLiveTrace(

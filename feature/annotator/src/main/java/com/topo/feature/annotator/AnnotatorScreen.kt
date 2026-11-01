@@ -30,6 +30,10 @@ import com.topo.core.ui.component.TopoSnackbarHost
 import com.topo.core.ui.component.TopoSnackbarState
 import com.topo.core.ui.component.TopoText
 import com.topo.core.ui.component.UppercaseText
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import com.topo.core.ui.motion.LocalMotionLevel
+import com.topo.core.ui.motion.Motion
 import com.topo.core.ui.motion.rememberHaptics
 import com.topo.core.ui.theme.LocalContentColor
 import com.topo.core.ui.theme.LocalTopoColors
@@ -127,6 +131,18 @@ fun AnnotatorScreen(
     playback.movementCount = movementCount
 
     val scope = rememberCoroutineScope()
+    val motion = LocalMotionLevel.current
+
+    // Moment « le beta s'encre » : a l'ouverture, la sequence enregistree se
+    // trace une fois, puis l'encrage s'efface (valeur infinie) pour que les
+    // mouvements ajoutes ensuite apparaissent aussitot. Expressif seulement.
+    val inking = remember { Animatable(if (motion.decorative) 0f else Float.POSITIVE_INFINITY) }
+    LaunchedEffect(detail != null) {
+        if (detail == null || inking.value == Float.POSITIVE_INFINITY) return@LaunchedEffect
+        val count = detail.movements.size
+        if (count > 0) inking.animateTo(count.toFloat(), tween(Motion.DRAW_MS, easing = Motion.Transition))
+        inking.snapTo(Float.POSITIVE_INFINITY)
+    }
 
     // Porteur remember, et non une simple variable locale : une `var` declaree
     // dans le corps d'un composable est reinitialisee a chaque recomposition, et
@@ -250,6 +266,7 @@ fun AnnotatorScreen(
                         scan = detectionScan,
                         isDrawingZone = uiState.isDrawingZone,
                         onZoneDrawn = viewModel::setDetectionZone,
+                        inking = { inking.value },
                     )
                 } else {
                     TopoText(
@@ -337,7 +354,10 @@ fun AnnotatorScreen(
                             // Le scan se joue pendant que le message s'affiche : il revele,
                             // prise par prise, ce que le message annonce.
                             val added = (result as? DetectHoldsUseCase.Result.Added)?.addedIds.orEmpty()
-                            if (added.isNotEmpty()) launch { detectionScan.play(added, uiState.detectionZone) }
+                            // Sans animations, le scan n'a rien a reveler : les prises sont deja la.
+                            if (added.isNotEmpty() && motion.animates) {
+                                launch { detectionScan.play(added, uiState.detectionZone) }
+                            }
                             val message = if (failed) {
                                 resources.getString(R.string.annotator_detect_failed)
                             } else {

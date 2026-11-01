@@ -58,6 +58,10 @@
     <string name="session_import_error_not_image">Ce fichier n’est pas une image lisible.</string>
 
     <!-- Filtres de la grille -->
+    <!-- Recapitulatif en tete de seance -->
+    <string name="session_recap_blocs">Blocs</string>
+    <string name="session_recap_sent">Réussis</string>
+    <string name="session_recap_flashes">Flashs</string>
     <string name="session_filter_all">Tous</string>
     <string name="session_filter_projects">Projets</string>
     <string name="session_filter_working">En travail</string>

@@ -1,8 +1,8 @@
 package com.topo.feature.annotator
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
+import com.topo.core.ui.motion.Motion
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,7 +62,7 @@ class DetectionScanState {
         revealing = holdIds.toSet()
         this.zone = zone
         progress.snapTo(0f)
-        progress.animateTo(DONE, tween(DURATION_MS, easing = FastOutSlowInEasing))
+        progress.animateTo(DONE, tween(DURATION_MS, easing = Motion.Transition))
         revealing = emptySet()
     }
 

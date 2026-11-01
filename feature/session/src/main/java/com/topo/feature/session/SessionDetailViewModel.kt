@@ -71,6 +71,9 @@ data class SessionDetailUiState(
     val blocs: List<Bloc> = emptyList(),
     /** Nombre total de blocs de la seance, filtre ignore. */
     val totalBlocs: Int = 0,
+    /** Blocs reussis (flash compris) et flashs de la seance, filtre ignore : le recapitulatif. */
+    val sentCount: Int = 0,
+    val flashCount: Int = 0,
     val filter: BlocFilter = BlocFilter.ALL,
     val isLoading: Boolean = true,
     val importError: ImportFailure? = null,
@@ -145,6 +148,8 @@ class SessionDetailViewModel @Inject constructor(
             // filtre multiplierait les abonnements Room pour rien.
             blocs = blocs.filter(activeFilter::matches),
             totalBlocs = blocs.size,
+            sentCount = blocs.count { it.status.isSent },
+            flashCount = blocs.count { it.status == BlocStatus.FLASHED },
             filter = activeFilter,
             isLoading = false,
             importError = failures.import,

@@ -5,7 +5,20 @@ import androidx.annotation.StringRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import com.topo.core.ui.component.Eyebrow
+import com.topo.core.ui.component.Rule
+import com.topo.core.ui.motion.CountUp
+import com.topo.core.ui.motion.riseIn
+import kotlin.math.roundToInt
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,7 +43,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -122,6 +135,9 @@ fun SessionDetailScreen(
             backLabel = stringResource(R.string.session_detail_back),
             compact = true,
         )
+        if (uiState.totalBlocs > 0) {
+            SessionRecap(uiState.totalBlocs, uiState.sentCount, uiState.flashCount)
+        }
         // Les filtres n'apparaissent qu'a partir du deuxieme bloc : sur une
         // seance qui en contient un seul, ils n'ont rien a filtrer.
         if (uiState.totalBlocs > 1) {
@@ -156,7 +172,7 @@ fun SessionDetailScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    items(uiState.blocs, key = Bloc::id) { bloc ->
+                    itemsIndexed(uiState.blocs, key = { _, bloc -> bloc.id }) { index, bloc ->
                         // Resolution ici plutot que dans la vignette : le
                         // composant partage n'a pas a connaitre les reglages ni
                         // le circuit.
@@ -179,6 +195,8 @@ fun SessionDetailScreen(
                             onLongClick = { progressBlocId = bloc.id },
                             zone = bloc.detectionZone,
                             holds = uiState.holdsByBloc[bloc.id].orEmpty(),
+                            // Les fiches entrent en cascade, comme les lignes de la liste.
+                            modifier = Modifier.animateItem().riseIn(index),
                         )
                     }
                 }
@@ -250,6 +268,38 @@ fun SessionDetailScreen(
             },
             onDismiss = { blocToDelete = null },
         )
+    }
+}
+
+/**
+ * Recapitulatif de la seance : trois chiffres entre deux filets, qui comptent
+ * jusqu'a leur valeur a l'ouverture. Lu par TalkBack en une phrase par chiffre.
+ */
+@Composable
+private fun SessionRecap(blocs: Int, sent: Int, flashes: Int) {
+    val colors = TopoTheme.colors
+    Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 8.dp)) {
+        Rule()
+        Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+            listOf(
+                R.string.session_recap_blocs to blocs,
+                R.string.session_recap_sent to sent,
+                R.string.session_recap_flashes to flashes,
+            ).forEachIndexed { i, (label, value) ->
+                if (i > 0) Spacer(Modifier.width(1.dp).fillMaxHeight().background(colors.rule))
+                val text = stringResource(label)
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                        .clearAndSetSemantics { contentDescription = "$text, $value" },
+                ) {
+                    CountUp(value.toDouble(), { "${it.roundToInt()}" }, style = TopoTheme.type.figure.copy(fontSize = TopoTheme.type.figure.fontSize * 0.8f))
+                    Eyebrow(text, color = colors.ink2)
+                }
+            }
+        }
+        Rule()
     }
 }
 
