@@ -1,12 +1,9 @@
 package com.topo.core.ui.component
 
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import com.topo.core.ui.R
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
+import com.topo.core.ui.theme.TopoTheme
 
 /**
  * Confirmation avant une action irreversible.
@@ -24,17 +21,14 @@ fun ConfirmDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
+    TopoDialog(
+        title = title,
         onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = { Text(message) },
-        confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(confirmLabel, color = MaterialTheme.colorScheme.error)
-            }
+        actions = {
+            TopoButton(stringResource(R.string.action_cancel), onClick = onDismiss, style = ButtonStyle.Text)
+            TopoButton(confirmLabel, onClick = onConfirm, style = ButtonStyle.Line, contentColor = TopoTheme.colors.error)
         },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-    )
+    ) {
+        TopoText(message, style = TopoTheme.type.body, color = TopoTheme.colors.ink2)
+    }
 }

@@ -14,4 +14,7 @@ dependencies {
     // api : BlocThumbnail expose un File charge par Coil, et les modules de
     // fonctionnalite reutilisent le composant tel quel.
     api(libs.coil.compose)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.truth)
 }
