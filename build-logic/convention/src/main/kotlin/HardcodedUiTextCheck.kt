@@ -55,11 +55,19 @@ abstract class HardcodedUiTextCheck : DefaultTask() {
 }
 
 private val VISIBLE_TEXT = Regex(
-    """(?:\bText\(\s*|\bshowSnackbar\(\s*|\b(?:contentDescription|title|message|label|hint|""" +
+    """(?:\bText\(\s*|\bshowSnackbar\(\s*|\b(contentDescription|title|message|label|hint|""" +
         """actionLabel|confirmLabel|text|placeholder)\s*=\s*)"((?:[^"\\]|\\.)*)"""",
 )
 private val TEMPLATE = Regex("""\$\{[^}]*}|\$[A-Za-z_][A-Za-z0-9_]*""")
 private val OPT_OUT = Regex("""//\s*texte-technique\s*:\s*\S""")
+
+/**
+ * Appel d'animation Compose : son `label` nomme l'animation dans l'inspecteur
+ * d'Android Studio et n'est jamais affiche. Cherche sur la ligne et les trois
+ * precedentes, l'appel etant souvent reparti sur plusieurs lignes.
+ */
+private val ANIMATION_CALL = Regex("""\b(?:animate\w*|\w*Transition|AnimatedVisibility|AnimatedContent|Crossfade)\s*\(""")
+private const val ANIMATION_LOOKBACK = 3
 
 /** @return (numero de ligne, ligne) pour chaque texte visible code en dur. */
 internal fun findHardcodedUiText(lines: List<String>): List<Pair<Int, String>> =
@@ -68,7 +76,11 @@ internal fun findHardcodedUiText(lines: List<String>): List<Pair<Int, String>> =
         if (code.startsWith("//") || code.startsWith("*") || code.startsWith("/*")) return@mapNotNull null
         if (OPT_OUT.containsMatchIn(line)) return@mapNotNull null
         val hardcoded = VISIBLE_TEXT.findAll(line).any { match ->
-            TEMPLATE.replace(match.groupValues[1], "").any(Char::isLetter)
+            val (name, text) = match.destructured
+            TEMPLATE.replace(text, "").any(Char::isLetter) && !(name == "label" && inAnimationCall(lines, index))
         }
         if (hardcoded) index + 1 to code else null
     }
+
+private fun inAnimationCall(lines: List<String>, index: Int): Boolean =
+    (maxOf(0, index - ANIMATION_LOOKBACK)..index).any { ANIMATION_CALL.containsMatchIn(lines[it]) }
