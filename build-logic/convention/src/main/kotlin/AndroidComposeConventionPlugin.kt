@@ -44,11 +44,9 @@ class AndroidComposeConventionPlugin : Plugin<Project> {
             add("implementation", libs.findLibrary("androidx-compose-ui").get())
             add("implementation", libs.findLibrary("androidx-compose-ui-graphics").get())
             add("implementation", libs.findLibrary("androidx-compose-ui-tooling-preview").get())
-            add("implementation", libs.findLibrary("androidx-compose-material3").get())
-        // Les icones ne sont plus transitives depuis material3. Declarees ici et
-        // non module par module : c'est une regle de build, elle vit dans
-        // build-logic. R8 elimine les vecteurs inutilises au packaging.
-        add("implementation", libs.findLibrary("androidx-compose-material-icons-extended").get())
+            // Foundation et non material3 : l'interface de Topo est un systeme maison
+            // (core/ui), et aucune bibliotheque Material n'entre dans l'application.
+            add("implementation", libs.findLibrary("androidx-compose-foundation").get())
 
             add("debugImplementation", libs.findLibrary("androidx-compose-ui-tooling").get())
             add("debugImplementation", libs.findLibrary("androidx-compose-ui-test-manifest").get())
