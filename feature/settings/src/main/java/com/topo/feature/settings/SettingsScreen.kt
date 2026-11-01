@@ -1,7 +1,7 @@
 package com.topo.feature.settings
 
-import com.topo.core.ui.R as CoreR
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,31 +11,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowDownward
-import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -45,24 +28,41 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.topo.core.domain.model.CircuitColor
 import com.topo.core.domain.model.DifficultyDisplay
 import com.topo.core.domain.model.GradeScale
+import com.topo.core.domain.model.MotionPreference
+import com.topo.core.ui.component.ButtonStyle
+import com.topo.core.ui.component.ColorDot
 import com.topo.core.ui.component.ConfirmDialog
+import com.topo.core.ui.component.IconAction
 import com.topo.core.ui.component.LoadingState
+import com.topo.core.ui.component.PageHeader
+import com.topo.core.ui.component.Rule
+import com.topo.core.ui.component.SegmentedChoice
+import com.topo.core.ui.component.TopoButton
+import com.topo.core.ui.component.TopoDialog
+import com.topo.core.ui.component.TopoIcons
+import com.topo.core.ui.component.TopoText
+import com.topo.core.ui.component.TopoTextField
+import com.topo.core.ui.component.Eyebrow
+import com.topo.core.ui.motion.rememberHaptics
 import com.topo.core.ui.text.labelRes
+import com.topo.core.ui.theme.TopoTheme
+import com.topo.core.ui.R as CoreR
 
 const val CircuitListTestTag = "circuit-list"
 const val AddColorTestTag = "add-color"
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
@@ -72,47 +72,37 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var colorToDelete by remember { mutableStateOf<CircuitColor?>(null) }
+    val haptics = rememberHaptics()
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.settings_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back))
-                    }
-                },
-            )
-        },
-    ) { padding ->
+    Column(modifier.fillMaxSize()) {
+        PageHeader(
+            title = stringResource(R.string.settings_title),
+            onBack = onBack,
+            backLabel = stringResource(R.string.settings_back),
+        )
         if (uiState.isLoading) {
-            LoadingState(Modifier.padding(padding))
-            return@Scaffold
+            LoadingState()
+            return@Column
         }
 
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .testTag(CircuitListTestTag),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.fillMaxSize().testTag(CircuitListTestTag),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp),
         ) {
+            item { Rule() }
             item {
                 Section(
                     title = stringResource(R.string.settings_difficulty_display_title),
                     hint = stringResource(R.string.settings_difficulty_display_hint),
                 ) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        DifficultyDisplay.entries.forEach { display ->
-                            FilterChip(
-                                selected = display == uiState.settings.difficultyDisplay,
-                                onClick = { viewModel.selectDisplay(display) },
-                                label = { Text(stringResource(display.labelRes)) },
-                            )
-                        }
-                    }
+                    SegmentedChoice(
+                        options = DifficultyDisplay.entries.map { stringResource(it.labelRes) },
+                        selectedIndex = uiState.settings.difficultyDisplay.ordinal,
+                        onSelect = {
+                            haptics.tick()
+                            viewModel.selectDisplay(DifficultyDisplay.entries[it])
+                        },
+                    )
                 }
             }
 
@@ -121,15 +111,30 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_grade_scale_title),
                     hint = stringResource(R.string.settings_grade_scale_hint),
                 ) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        GradeScale.entries.forEach { scale ->
-                            FilterChip(
-                                selected = scale == uiState.settings.gradeScale,
-                                onClick = { viewModel.selectScale(scale) },
-                                label = { Text(stringResource(scale.labelRes)) },
-                            )
-                        }
-                    }
+                    SegmentedChoice(
+                        options = GradeScale.entries.map { stringResource(it.labelRes) },
+                        selectedIndex = uiState.settings.gradeScale.ordinal,
+                        onSelect = {
+                            haptics.tick()
+                            viewModel.selectScale(GradeScale.entries[it])
+                        },
+                    )
+                }
+            }
+
+            item {
+                Section(
+                    title = stringResource(R.string.settings_motion_title),
+                    hint = stringResource(R.string.settings_motion_hint),
+                ) {
+                    SegmentedChoice(
+                        options = MotionPreference.entries.map { stringResource(it.labelRes) },
+                        selectedIndex = uiState.settings.motion.ordinal,
+                        onSelect = {
+                            haptics.tick()
+                            viewModel.selectMotion(MotionPreference.entries[it])
+                        },
+                    )
                 }
             }
 
@@ -138,18 +143,11 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_circuit_title),
                     // L'ordre porte un sens metier : il ne doit pas se deviner.
                     hint = stringResource(R.string.settings_circuit_hint),
-                ) {
-                    TextButton(
-                        onClick = { showAddDialog = true },
-                        modifier = Modifier.testTag(AddColorTestTag),
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Text(stringResource(R.string.settings_add_color), Modifier.padding(start = 8.dp))
-                    }
-                }
+                    divider = false,
+                ) {}
             }
 
-            itemsIndexed(uiState.colors) { index, color ->
+            itemsIndexed(uiState.colors, key = { _, it -> it.id }) { index, color ->
                 ColorRow(
                     position = index + 1,
                     color = color,
@@ -161,6 +159,21 @@ fun SettingsScreen(
                     onMoveUp = { viewModel.moveColor(color.id, -1) },
                     onMoveDown = { viewModel.moveColor(color.id, 1) },
                     onDelete = { colorToDelete = color },
+                    modifier = Modifier.animateItem(),
+                )
+            }
+
+            item {
+                TopoButton(
+                    text = stringResource(R.string.settings_add_color),
+                    onClick = { showAddDialog = true },
+                    style = ButtonStyle.Line,
+                    icon = TopoIcons.Add,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                        .navigationBarsPadding()
+                        .testTag(AddColorTestTag),
                 )
             }
         }
@@ -191,23 +204,32 @@ fun SettingsScreen(
     }
 }
 
+private val MotionPreference.labelRes: Int
+    get() = when (this) {
+        MotionPreference.EXPRESSIVE -> R.string.settings_motion_expressive
+        MotionPreference.CALM -> R.string.settings_motion_calm
+    }
+
+/** Section de reglages : titre, aide, controle, puis un filet. Pas de carte. */
 @Composable
 private fun Section(
     title: String,
     hint: String,
+    divider: Boolean = true,
     content: @Composable () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = hint,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    Column(Modifier.padding(top = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        TopoText(title, style = TopoTheme.type.heading)
+        TopoText(hint, style = TopoTheme.type.bodySmall, color = TopoTheme.colors.ink2)
         content()
+        if (divider) Rule(Modifier.padding(top = 8.dp), color = TopoTheme.colors.rule)
     }
 }
 
+/**
+ * Une couleur du circuit, numerotee comme une ligne de topo : sans numero, rien
+ * ne dit que la position dans la liste EST le niveau de difficulte.
+ */
 @Composable
 private fun ColorRow(
     position: Int,
@@ -217,40 +239,28 @@ private fun ColorRow(
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Card(shape = RoundedCornerShape(12.dp)) {
+    val colors = TopoTheme.colors
+    Column(modifier) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            // Le rang est affiche : sans numero, rien ne dit que la position
-            // dans la liste EST le niveau de difficulte.
-            Text(
-                text = "$position",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            TopoText(
+                text = position.toString().padStart(2, '0'),
+                style = TopoTheme.type.cote,
+                color = colors.ink2,
+                modifier = Modifier.width(22.dp),
             )
-            Box(
-                Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(Color(color.argb)),
-            )
-            Text(color.name, Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge)
-
-            IconButton(onClick = onMoveUp, enabled = canMoveUp) {
-                Icon(Icons.Default.ArrowUpward, contentDescription = stringResource(R.string.settings_move_easier))
-            }
-            IconButton(onClick = onMoveDown, enabled = canMoveDown) {
-                Icon(Icons.Default.ArrowDownward, contentDescription = stringResource(R.string.settings_move_harder))
-            }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.settings_delete_color, color.name))
-            }
+            ColorDot(Color(color.argb), size = 18.dp)
+            TopoText(color.name, Modifier.weight(1f), style = TopoTheme.type.body)
+            IconAction(TopoIcons.Up, stringResource(R.string.settings_move_easier), onMoveUp, enabled = canMoveUp)
+            IconAction(TopoIcons.Down, stringResource(R.string.settings_move_harder), onMoveDown, enabled = canMoveDown)
+            IconAction(TopoIcons.Delete, stringResource(R.string.settings_delete_color, color.name), onDelete, tint = colors.ink2)
         }
+        Rule(color = colors.rule)
     }
 }
 
@@ -262,61 +272,52 @@ private fun AddColorDialog(
     var name by rememberSaveable { mutableStateOf("") }
     var argb by rememberSaveable { mutableIntStateOf(Palette.first().second) }
 
-    AlertDialog(
+    TopoDialog(
+        title = stringResource(R.string.settings_new_color_title),
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.settings_new_color_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.settings_new_color_name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Text(stringResource(R.string.settings_new_color_hue), style = MaterialTheme.typography.labelMedium)
-                // Palette fermee plutot qu'une roue chromatique : le nom porte
-                // l'information, la teinte ne sert qu'a la reconnaitre d'un coup
-                // d'oeil sur une vignette.
-                FlowRowPalette(selected = argb, onSelect = { argb = it })
-            }
+        actions = {
+            TopoButton(stringResource(CoreR.string.action_cancel), onClick = onDismiss, style = ButtonStyle.Text)
+            TopoButton(
+                text = stringResource(R.string.settings_new_color_confirm),
+                onClick = { onConfirm(name, argb) },
+                enabled = name.isNotBlank(),
+            )
         },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(name, argb) }, enabled = name.isNotBlank()) {
-                Text(stringResource(R.string.settings_new_color_confirm))
-            }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(CoreR.string.action_cancel)) } },
-    )
+    ) {
+        TopoTextField(
+            value = name,
+            onValueChange = { name = it },
+            label = stringResource(R.string.settings_new_color_name),
+        )
+        Eyebrow(stringResource(R.string.settings_new_color_hue), color = TopoTheme.colors.ink2)
+        // Palette fermee plutot qu'une roue chromatique : le nom porte
+        // l'information, la teinte ne sert qu'a la reconnaitre d'un coup
+        // d'oeil sur une vignette.
+        PaletteSwatches(selected = argb, onSelect = { argb = it })
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun FlowRowPalette(selected: Int, onSelect: (Int) -> Unit) {
+private fun PaletteSwatches(selected: Int, onSelect: (Int) -> Unit) {
+    val ink = TopoTheme.colors.ink
     FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
         Palette.forEach { (label, argb) ->
-            Surface(
-                shape = CircleShape,
-                color = Color(argb),
-                border = if (argb == selected) {
-                    androidx.compose.foundation.BorderStroke(3.dp, MaterialTheme.colorScheme.primary)
-                } else {
-                    null
-                },
-                onClick = { onSelect(argb) },
-                modifier = Modifier.size(40.dp),
-            ) {
-                Box(Modifier.size(40.dp), contentAlignment = Alignment.Center) {
-                    Text(
-                        text = label.take(1),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color.Transparent,
-                    )
-                }
-            }
+            val isSelected = argb == selected
+            Box(
+                Modifier
+                    .size(44.dp)
+                    // Le nom de la teinte, pour TalkBack : une pastille muette ne se choisit pas a l'oreille.
+                    .semantics { contentDescription = label }
+                    .selectable(selected = isSelected, onClick = { onSelect(argb) }, role = Role.RadioButton)
+                    .then(if (isSelected) Modifier.border(2.dp, ink, CircleShape) else Modifier)
+                    .padding(5.dp)
+                    .background(Color(argb), CircleShape)
+                    .border(1.dp, ink.copy(alpha = 0.4f), CircleShape),
+            )
         }
     }
 }

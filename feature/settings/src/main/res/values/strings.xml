@@ -9,6 +9,10 @@
     <string name="settings_grade_scale_title">Échelle de cotation</string>
     <string name="settings_grade_scale_hint">Utilisée partout où une cotation chiffrée est proposée.</string>
 
+    <string name="settings_motion_title">Ambiance</string>
+    <string name="settings_motion_hint">Sobre retire les animations décoratives : tracés qui s’encrent, tampons, pages qui tournent. Le réglage Android « Supprimer les animations » coupe tout, quelle que soit l’ambiance.</string>
+    <string name="settings_motion_expressive">Expressive</string>
+    <string name="settings_motion_calm">Sobre</string>
     <string name="settings_circuit_title">Circuit de la salle</string>
     <string name="settings_circuit_hint">Du plus facile en haut au plus dur en bas. Chaque salle a son propre ordre : utilise les flèches pour le reproduire.</string>
     <string name="settings_add_color">Ajouter une couleur</string>
