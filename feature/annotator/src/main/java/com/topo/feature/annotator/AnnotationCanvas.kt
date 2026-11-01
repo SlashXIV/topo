@@ -31,10 +31,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
+import androidx.compose.ui.text.font.FontWeight
+import com.topo.core.ui.theme.CoteFamily
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.Density
@@ -385,6 +387,14 @@ private fun BetaTraceLayer(
                 val liveStroke = Stroke(width = 5.dp.toPx(), cap = StrokeCap.Round)
                 val holdRadius = 14.dp.toPx()
                 val snapHaloRadius = 22.dp.toPx()
+                val markerRadius = 9.dp.toPx()
+                val markerRing = Stroke(width = 2.dp.toPx())
+                // Numeros des mouvements, mesures une fois chacun : TextMeasurer
+                // alloue a chaque mesure, et le rejeu redessine a chaque trame.
+                val numberLabels = HashMap<Int, TextLayoutResult>()
+                val numberOf: (Int) -> TextLayoutResult = { n ->
+                    numberLabels.getOrPut(n) { textMeasurer.measure(n.toString(), NumberStyle) }
+                }
 
                 onDrawBehind {
                     // Toutes les lectures d'etat mutable ont lieu ICI, dans la phase
@@ -439,6 +449,9 @@ private fun BetaTraceLayer(
                         holdsById = holdsById,
                         handStroke = movementStroke,
                         footStroke = footStroke,
+                        markerRadius = markerRadius,
+                        markerRing = markerRing,
+                        numberOf = numberOf,
                         frame = playback?.let {
                             playbackFrameAt(it.progress.value, currentMovements.size)
                         },
@@ -556,7 +569,7 @@ private fun DrawScope.drawScan(
 }
 
 private const val PULSE_GAIN = 0.6f
-private val ScoreStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp)
+private val ScoreStyle = TextStyle(fontFamily = CoteFamily, fontWeight = FontWeight.Medium, fontSize = 11.sp)
 
 /**
  * Dessine la sequence enregistree.
@@ -565,12 +578,19 @@ private val ScoreStyle = TextStyle(fontFamily = FontFamily.Monospace, fontSize =
  * les mouvements deja joues apparaissent, et celui en cours est interpole entre
  * sa prise de depart et sa prise d'arrivee — le trait pousse vers la prise, comme
  * une main qui va la chercher.
+ *
+ * Chaque prise atteinte porte le numero du mouvement, cercle de la couleur du
+ * membre : c'est la convention des topos imprimes, et l'ordre se lit sans
+ * rejouer la sequence — sur l'ecran comme sur l'image partagee.
  */
 private fun DrawScope.drawMovements(
     movements: List<Movement>,
     holdsById: Map<String, Hold>,
     handStroke: Stroke,
     footStroke: Stroke,
+    markerRadius: Float,
+    markerRing: Stroke,
+    numberOf: (Int) -> TextLayoutResult,
     frame: PlaybackFrame? = null,
 ) {
     val lastFullyDrawn = frame?.completedMovements ?: movements.size
@@ -589,11 +609,11 @@ private fun DrawScope.drawMovements(
         if (source == null) {
             // Mouvement de depart : pas de segment, seulement un marqueur qui
             // grandit jusqu'a sa taille finale.
-            drawCircle(
-                color = color,
-                radius = handStroke.width * 1.6f * advance,
-                center = targetCenter,
-            )
+            if (isActive) {
+                drawCircle(color = color, radius = markerRadius * advance, center = targetCenter)
+            } else {
+                drawNumberMarker(index + 1, targetCenter, color, markerRadius, markerRing, numberOf)
+            }
             continue
         }
 
@@ -611,10 +631,39 @@ private fun DrawScope.drawMovements(
         // Le marqueur d'arrivee n'apparait qu'une fois la prise atteinte : le
         // voir avant donnerait l'impression que le mouvement est deja fini.
         if (!isActive) {
-            drawCircle(color = color, radius = handStroke.width, center = targetCenter)
+            drawNumberMarker(index + 1, targetCenter, color, markerRadius, markerRing, numberOf)
         }
     }
 }
+
+/** Numero cercle d'un mouvement : pastille papier, anneau du membre, chiffre a l'encre. */
+private fun DrawScope.drawNumberMarker(
+    number: Int,
+    center: Offset,
+    ring: Color,
+    radius: Float,
+    ringStroke: Stroke,
+    numberOf: (Int) -> TextLayoutResult,
+) {
+    // Decale vers le haut a droite : la prise elle-meme reste visible sous le numero.
+    val at = Offset(center.x + radius * MARKER_OFFSET, center.y - radius * MARKER_OFFSET)
+    drawCircle(MarkerPaper, radius = radius, center = at)
+    drawCircle(ring, radius = radius, center = at, style = ringStroke)
+    val label = numberOf(number)
+    drawText(
+        textLayoutResult = label,
+        color = MarkerInk,
+        topLeft = Offset(at.x - label.size.width / 2f, at.y - label.size.height / 2f),
+    )
+}
+
+// Assez loin pour que le numero ne mange ni la prise ni le trait qui y arrive.
+private const val MARKER_OFFSET = 1.4f
+
+// Le papier et l'encre de TopoPalettes.Paper, fixes : la photo ne change pas de theme.
+private val MarkerPaper = Color(0xFFEEEAE0)
+private val MarkerInk = Color(0xFF1B1A17)
+private val NumberStyle = TextStyle(fontFamily = CoteFamily, fontWeight = FontWeight.SemiBold, fontSize = 10.sp)
 
 /** Interpolation lineaire entre deux points du canevas. */
 private fun lerp(start: Offset, end: Offset, fraction: Float): Offset = Offset(

@@ -1,21 +1,17 @@
 package com.topo.feature.annotator
 
+import com.topo.core.ui.component.ButtonStyle
+import com.topo.core.ui.component.IconAction
+import com.topo.core.ui.component.TopoButton
+import com.topo.core.ui.component.TopoIcons
+import com.topo.core.ui.component.TopoText
+import com.topo.core.ui.theme.TopoTheme
+
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -47,52 +43,41 @@ fun PlaybackControls(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        IconButton(onClick = onRestart, enabled = enabled) {
-            Icon(Icons.Default.Replay, contentDescription = stringResource(R.string.annotator_playback_restart))
-        }
-
-        IconButton(onClick = { onStep(-1) }, enabled = enabled) {
-            Icon(Icons.Default.SkipPrevious, contentDescription = stringResource(R.string.annotator_playback_previous))
-        }
-
-        IconButton(
+        IconAction(TopoIcons.Replay, stringResource(R.string.annotator_playback_restart), onRestart, enabled = enabled)
+        IconAction(TopoIcons.SkipPrevious, stringResource(R.string.annotator_playback_previous), { onStep(-1) }, enabled = enabled)
+        IconAction(
+            icon = if (playback.isPlaying) TopoIcons.Pause else TopoIcons.Play,
+            contentDescription = stringResource(
+                if (playback.isPlaying) R.string.annotator_playback_pause else R.string.annotator_playback_play,
+            ),
             onClick = onPlayPause,
             enabled = enabled,
             modifier = Modifier.testTag(PlayPauseTestTag),
-        ) {
-            Icon(
-                imageVector = if (playback.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                contentDescription = stringResource(
-                    if (playback.isPlaying) R.string.annotator_playback_pause else R.string.annotator_playback_play,
-                ),
-            )
-        }
-
-        IconButton(
-            onClick = { onStep(1) },
+        )
+        IconAction(
+            TopoIcons.SkipNext,
+            stringResource(R.string.annotator_playback_next),
+            { onStep(1) },
             enabled = enabled,
             modifier = Modifier.testTag(StepForwardTestTag),
-        ) {
-            Icon(Icons.Default.SkipNext, contentDescription = stringResource(R.string.annotator_playback_next))
-        }
-
-        TextButton(
+        )
+        TopoButton(
+            text = stringResource(playback.speed.label()),
             onClick = playback::cycleSpeed,
+            style = ButtonStyle.Text,
             enabled = enabled,
             modifier = Modifier.testTag(SpeedTestTag),
-        ) {
-            Text(stringResource(playback.speed.label()))
-        }
+        )
 
         if (!enabled) {
-            Text(
+            TopoText(
                 text = stringResource(R.string.annotator_playback_empty),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = TopoTheme.type.bodySmall,
+                color = TopoTheme.colors.ink2,
                 modifier = Modifier.padding(start = 8.dp),
             )
         }

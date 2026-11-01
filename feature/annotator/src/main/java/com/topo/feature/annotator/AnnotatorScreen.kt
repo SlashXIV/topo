@@ -1,7 +1,5 @@
 package com.topo.feature.annotator
 
-import androidx.compose.material3.Button
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.topo.core.domain.model.CircuitColor
 import com.topo.core.domain.model.GradeScale
@@ -9,6 +7,34 @@ import com.topo.core.ui.component.CircuitColorPicker
 import com.topo.core.ui.component.GradePicker
 import com.topo.core.ui.R as CoreR
 import android.content.res.Resources
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import com.topo.core.ui.component.ButtonStyle
+import com.topo.core.ui.component.ColorDot
+import com.topo.core.ui.component.IconAction
+import com.topo.core.ui.component.Rule
+import com.topo.core.ui.component.Tag
+import com.topo.core.ui.component.TopoButton
+import com.topo.core.ui.component.TopoIcons
+import com.topo.core.ui.component.TopoSheet
+import com.topo.core.ui.component.TopoSnackbarHost
+import com.topo.core.ui.component.TopoSnackbarState
+import com.topo.core.ui.component.TopoText
+import com.topo.core.ui.component.UppercaseText
+import com.topo.core.ui.motion.rememberHaptics
+import com.topo.core.ui.theme.LocalContentColor
+import com.topo.core.ui.theme.LocalTopoColors
+import com.topo.core.ui.theme.TopoPalettes
+import com.topo.core.ui.theme.TopoTheme
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -20,24 +46,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.ViewInAr
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -48,7 +56,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -69,11 +76,10 @@ import com.topo.core.ui.theme.BetaColors
 /**
  * Ecran d'annotation.
  *
- * Il n'est pas encore atteignable par la navigation : celle-ci est assemblee au
- * sprint dedie. Le `blocId` est donc passe en parametre, ce qui a l'avantage de
- * garder l'ecran affichable isolement dans une preview ou un test.
+ * La photo occupe tout l'ecran entre une barre sombre et le pupitre papier du
+ * bas. Le `blocId` est passe en parametre, ce qui garde l'ecran affichable
+ * isolement dans une preview ou un test.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnnotatorScreen(
     blocId: String,
@@ -145,140 +151,69 @@ fun AnnotatorScreen(
     val exportLayer = rememberGraphicsLayer()
     val context = LocalContext.current
     val resources = LocalResources.current
-    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarState = remember { TopoSnackbarState() }
     var isExporting by remember { mutableStateOf(false) }
     var isDetecting by remember { mutableStateOf(false) }
 
-    Scaffold(
-        modifier = modifier,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text(blocTitle(uiState.circuitColor?.name, detail?.bloc?.grade)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.annotator_back))
-                    }
-                },
-                actions = {
+    val share: () -> Unit = {
+        scope.launch {
+            // Le calque n'a pas encore ete dessine : rien a exporter.
+            if (exportLayer.size == IntSize.Zero) return@launch
+            isExporting = true
+            try {
+                val chooser = viewModel.prepareShare(exportLayer.toImageBitmap())
+                context.startActivity(chooser)
+            } catch (error: IOException) {
+                snackbarState.show(resources.getString(R.string.annotator_share_failed))
+            } finally {
+                isExporting = false
+            }
+        }
+    }
+
+    Box(modifier.fillMaxSize().background(PhotoBackground)) {
+        Column(Modifier.fillMaxSize()) {
+            // Barre de tete sombre, au-dessus de la photo : la photo garde toute la
+            // place, et l'ardoise ne se bat pas avec elle.
+            CompositionLocalProvider(
+                LocalTopoColors provides TopoPalettes.Night,
+                LocalContentColor provides TopoPalettes.Night.ink,
+            ) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .statusBarsPadding()
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconAction(TopoIcons.Back, stringResource(R.string.annotator_back), onBack)
+                    UppercaseText(
+                        blocTitle(uiState.circuitColor?.name, detail?.bloc?.grade),
+                        style = TopoTheme.type.action.copy(fontSize = TopoTheme.type.heading.fontSize * 1.15f),
+                        modifier = Modifier.weight(1f).semantics { heading() },
+                    )
                     // Masque sans modele de relief : un bouton qui mene a « indisponible »
                     // n'a rien a faire la.
                     if (uiState.isReliefAvailable) {
-                        IconButton(enabled = detail != null, onClick = { onOpenRelief(blocId) }) {
-                            Icon(Icons.Filled.ViewInAr, contentDescription = stringResource(R.string.annotator_open_relief))
-                        }
+                        IconAction(
+                            TopoIcons.Relief,
+                            stringResource(R.string.annotator_open_relief),
+                            onClick = { onOpenRelief(blocId) },
+                            enabled = detail != null,
+                        )
                     }
-                    IconButton(
+                    IconAction(
+                        TopoIcons.Share,
+                        stringResource(R.string.annotator_share_beta),
+                        onClick = share,
                         // Desactive pendant l'encodage : un second appui lancerait un
                         // export concurrent qui purgerait le fichier du premier.
                         enabled = detail != null && imageFile != null && !isExporting,
-                        onClick = {
-                            scope.launch {
-                                // Le calque n'a pas encore ete dessine : rien a exporter.
-                                if (exportLayer.size == IntSize.Zero) return@launch
-                                isExporting = true
-                                try {
-                                    val chooser = viewModel.prepareShare(exportLayer.toImageBitmap())
-                                    context.startActivity(chooser)
-                                } catch (error: IOException) {
-                                    snackbarHostState.showSnackbar(
-                                        resources.getString(R.string.annotator_share_failed),
-                                    )
-                                } finally {
-                                    isExporting = false
-                                }
-                            }
-                        },
-                    ) {
-                        Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.annotator_share_beta))
-                    }
-                },
-            )
-        },
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            AnnotationToolbar(
-                mode = uiState.mode,
-                isPickingColor = uiState.isPickingColor,
-                onPickColor = viewModel::startColorPick,
-                onCancelPick = viewModel::cancelColorPick,
-                isDrawingZone = uiState.isDrawingZone,
-                hasZone = uiState.detectionZone != null,
-                onDrawZone = viewModel::startZoneDrawing,
-                onCancelZone = viewModel::cancelZoneDrawing,
-                onClearZone = viewModel::clearDetectionZone,
-                selectedLimb = uiState.selectedLimb,
-                holdCount = detail?.holds?.size ?: 0,
-                movementCount = movementCount,
-                onModeChange = viewModel::selectMode,
-                onLimbChange = viewModel::selectLimb,
-                // Les actions destructrices portent sur ce que l'utilisateur est
-                // en train de faire. Auparavant elles visaient toujours les
-                // mouvements : en mode « poser les prises », appuyer sur
-                // « annuler » ne produisait donc rien du tout, sans le dire.
-                onUndo = when (uiState.mode) {
-                    AnnotationMode.ADD_HOLD -> viewModel::undoLastHold
-                    else -> viewModel::undoLastMovement
-                },
-                onClear = when (uiState.mode) {
-                    AnnotationMode.ADD_HOLD -> viewModel::clearHolds
-                    else -> viewModel::clearBeta
-                },
-                isDetecting = isDetecting,
-                onDetect = {
-                    scope.launch {
-                        isDetecting = true
-                        var failed = false
-                        val result = try {
-                            viewModel.detectHolds()
-                        } catch (error: IllegalArgumentException) {
-                            failed = true
-                            null
-                        } catch (error: IllegalStateException) {
-                            failed = true
-                            null
-                        } finally {
-                            isDetecting = false
-                        }
-                        // Le scan se joue pendant que le message s'affiche : il revele,
-                        // prise par prise, ce que le message annonce.
-                        val added = (result as? DetectHoldsUseCase.Result.Added)?.addedIds.orEmpty()
-                        if (added.isNotEmpty()) launch { detectionScan.play(added, uiState.detectionZone) }
-                        val message = if (failed) {
-                            resources.getString(R.string.annotator_detect_failed)
-                        } else {
-                            result?.message(resources)
-                        }
-                        message?.let { snackbarHostState.showSnackbar(it) }
-                    }
-                },
-            )
-
-            if (uiState.mode == AnnotationMode.REPLAY) {
-                PlaybackControls(
-                    playback = playback,
-                    enabled = movementCount > 0,
-                    onPlayPause = {
-                        if (playback.isPlaying) {
-                            playbackJob.current?.cancel()
-                            playback.pause()
-                        } else {
-                            playbackJob.current?.cancel()
-                            playbackJob.current = scope.launch { playback.play() }
-                        }
-                    },
-                    onStep = { delta ->
-                        playbackJob.current?.cancel()
-                        scope.launch { playback.step(delta) }
-                    },
-                    onRestart = {
-                        playbackJob.current?.cancel()
-                        scope.launch { playback.reset() }
-                    },
-                )
+                    )
+                }
             }
 
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 if (detail != null && imageFile != null) {
                     AnnotationCanvas(
                         blocDetail = detail,
@@ -298,7 +233,7 @@ fun AnnotatorScreen(
                             } else if (uiState.isPickingColor) {
                                 scope.launch {
                                     viewModel.keepColorOf(holdId)?.message(resources)?.let {
-                                        snackbarHostState.showSnackbar(it)
+                                        snackbarState.show(it)
                                     }
                                 }
                             } else {
@@ -317,12 +252,109 @@ fun AnnotatorScreen(
                         onZoneDrawn = viewModel::setDetectionZone,
                     )
                 } else {
-                    Text(stringResource(R.string.annotator_loading_bloc), style = MaterialTheme.typography.bodyMedium)
+                    TopoText(
+                        stringResource(R.string.annotator_loading_bloc),
+                        style = TopoTheme.type.bodySmall,
+                        color = TopoPalettes.Night.ink2,
+                    )
                 }
             }
+
+            // Le pupitre en bas, a portee de pouce : modes, membres, actions.
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .background(TopoTheme.colors.paper)
+                    .navigationBarsPadding(),
+            ) {
+                Rule()
+                if (uiState.mode == AnnotationMode.REPLAY) {
+                    PlaybackControls(
+                        playback = playback,
+                        enabled = movementCount > 0,
+                        onPlayPause = {
+                            if (playback.isPlaying) {
+                                playbackJob.current?.cancel()
+                                playback.pause()
+                            } else {
+                                playbackJob.current?.cancel()
+                                playbackJob.current = scope.launch { playback.play() }
+                            }
+                        },
+                        onStep = { delta ->
+                            playbackJob.current?.cancel()
+                            scope.launch { playback.step(delta) }
+                        },
+                        onRestart = {
+                            playbackJob.current?.cancel()
+                            scope.launch { playback.reset() }
+                        },
+                    )
+                }
+                AnnotationToolbar(
+                    mode = uiState.mode,
+                    isPickingColor = uiState.isPickingColor,
+                    onPickColor = viewModel::startColorPick,
+                    onCancelPick = viewModel::cancelColorPick,
+                    isDrawingZone = uiState.isDrawingZone,
+                    hasZone = uiState.detectionZone != null,
+                    onDrawZone = viewModel::startZoneDrawing,
+                    onCancelZone = viewModel::cancelZoneDrawing,
+                    onClearZone = viewModel::clearDetectionZone,
+                    selectedLimb = uiState.selectedLimb,
+                    holdCount = detail?.holds?.size ?: 0,
+                    movementCount = movementCount,
+                    onModeChange = viewModel::selectMode,
+                    onLimbChange = viewModel::selectLimb,
+                    // Les actions destructrices portent sur ce que l'utilisateur est
+                    // en train de faire. Auparavant elles visaient toujours les
+                    // mouvements : en mode « poser les prises », appuyer sur
+                    // « annuler » ne produisait donc rien du tout, sans le dire.
+                    onUndo = when (uiState.mode) {
+                        AnnotationMode.ADD_HOLD -> viewModel::undoLastHold
+                        else -> viewModel::undoLastMovement
+                    },
+                    onClear = when (uiState.mode) {
+                        AnnotationMode.ADD_HOLD -> viewModel::clearHolds
+                        else -> viewModel::clearBeta
+                    },
+                    isDetecting = isDetecting,
+                    onDetect = {
+                        scope.launch {
+                            isDetecting = true
+                            var failed = false
+                            val result = try {
+                                viewModel.detectHolds()
+                            } catch (error: IllegalArgumentException) {
+                                failed = true
+                                null
+                            } catch (error: IllegalStateException) {
+                                failed = true
+                                null
+                            } finally {
+                                isDetecting = false
+                            }
+                            // Le scan se joue pendant que le message s'affiche : il revele,
+                            // prise par prise, ce que le message annonce.
+                            val added = (result as? DetectHoldsUseCase.Result.Added)?.addedIds.orEmpty()
+                            if (added.isNotEmpty()) launch { detectionScan.play(added, uiState.detectionZone) }
+                            val message = if (failed) {
+                                resources.getString(R.string.annotator_detect_failed)
+                            } else {
+                                result?.message(resources)
+                            }
+                            message?.let { snackbarState.show(it) }
+                        }
+                    },
+                )
+            }
         }
+        TopoSnackbarHost(snackbarState, Modifier.align(Alignment.TopCenter).statusBarsPadding().padding(top = 48.dp))
     }
 }
+
+/** Fond sous la photo : l'ardoise de nuit, quel que soit le theme. */
+private val PhotoBackground = Color(0xFF15171A)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -347,24 +379,21 @@ private fun AnnotationToolbar(
     onDetect: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val haptics = rememberHaptics()
     Column(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp).padding(bottom = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        // FlowRow et non Row : les trois puces occupaient exactement la largeur
-        // d'un ecran de 411 dp. Sur un 394 dp — un Xiaomi 15T Pro, par exemple —
-        // la derniere sortait de l'ecran avec sa zone tactile, et le mode devenait
-        // litteralement inatteignable. Un passage a la ligne vaut mieux qu'un
-        // defilement horizontal : rien ne signale qu'une rangee se fait defiler.
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AnnotationMode.entries.forEach { candidate ->
-                FilterChip(
-                    selected = candidate == mode,
-                    onClick = { onModeChange(candidate) },
-                    label = { Text(stringResource(candidate.label())) },
-                )
-            }
-        }
+        // Onglets soulignes, de largeur egale : les trois tiennent sur un 394 dp
+        // (Xiaomi 15T Pro), ou les puces Material debordaient et rendaient le
+        // dernier mode inatteignable.
+        ModeTabs(
+            selected = mode,
+            onSelect = {
+                if (it != mode) haptics.tick()
+                onModeChange(it)
+            },
+        )
 
         // Mode d'emploi du mode courant.
         //
@@ -373,7 +402,7 @@ private fun AnnotationToolbar(
         // glisser le doigt. Rien ne le disait, et le geste attendu n'a aucune
         // affordance visuelle — c'est precisement ce qu'une ligne de texte resout
         // mieux qu'une icone.
-        Text(
+        TopoText(
             text = stringResource(
                 when {
                     isDrawingZone -> R.string.annotator_hint_draw_zone
@@ -381,28 +410,23 @@ private fun AnnotationToolbar(
                     else -> mode.hint()
                 },
             ),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(vertical = 2.dp),
+            style = TopoTheme.type.bodySmall,
+            color = TopoTheme.colors.ink2,
         )
 
         // La palette de membres ne sert qu'au trace : l'afficher ailleurs occupe
         // de la hauteur au detriment de la photo, sans rien piloter.
         if (mode == AnnotationMode.TRACE_BETA) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Limb.entries.forEach { limb ->
-                    FilterChip(
+                    Tag(
+                        text = stringResource(limb.label()),
                         selected = limb == selectedLimb,
-                        onClick = { onLimbChange(limb) },
-                        leadingIcon = {
-                            Box(
-                                Modifier
-                                    .size(12.dp)
-                                    .clip(CircleShape)
-                                    .background(limb.swatch()),
-                            )
+                        onClick = {
+                            if (limb != selectedLimb) haptics.tick()
+                            onLimbChange(limb)
                         },
-                        label = { Text(stringResource(limb.label())) },
+                        leading = { ColorDot(limb.swatch()) },
                     )
                 }
             }
@@ -416,47 +440,84 @@ private fun AnnotationToolbar(
                 AnnotationMode.ADD_HOLD -> holdCount > 0
                 else -> movementCount > 0
             }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 // La detection PROPOSE des prises : elle vit donc avec la pose
                 // manuelle, et se corrige avec le meme geste — un appui retire.
                 if (mode == AnnotationMode.ADD_HOLD && isPickingColor) {
-                    FilledTonalButton(onClick = onCancelPick) { Text(stringResource(CoreR.string.action_cancel)) }
+                    TopoButton(stringResource(CoreR.string.action_cancel), onCancelPick, style = ButtonStyle.Line)
                 } else if (mode == AnnotationMode.ADD_HOLD && isDrawingZone) {
-                    FilledTonalButton(onClick = onCancelZone) { Text(stringResource(CoreR.string.action_cancel)) }
+                    TopoButton(stringResource(CoreR.string.action_cancel), onCancelZone, style = ButtonStyle.Line)
                 } else if (mode == AnnotationMode.ADD_HOLD) {
                     // Le cadrage d'abord : il decide de ce que la detection regardera.
                     if (hasZone) {
-                        FilledTonalButton(onClick = onClearZone) {
-                            Text(stringResource(R.string.annotator_clear_zone))
-                        }
+                        TopoButton(stringResource(R.string.annotator_clear_zone), onClearZone, style = ButtonStyle.Line)
                     } else {
-                        FilledTonalButton(onClick = onDrawZone) {
-                            Text(stringResource(R.string.annotator_draw_zone))
-                        }
+                        TopoButton(stringResource(R.string.annotator_draw_zone), onDrawZone, style = ButtonStyle.Line)
                     }
-                    FilledTonalButton(onClick = onDetect, enabled = !isDetecting) {
-                        Text(
-                            stringResource(
-                                if (isDetecting) R.string.annotator_detecting else R.string.annotator_detect_holds,
-                            ),
-                        )
-                    }
-                    FilledTonalButton(onClick = onPickColor, enabled = holdCount > 0) {
-                        Text(stringResource(R.string.annotator_keep_color))
-                    }
+                    TopoButton(
+                        stringResource(if (isDetecting) R.string.annotator_detecting else R.string.annotator_detect_holds),
+                        onDetect,
+                        enabled = !isDetecting,
+                    )
+                    TopoButton(
+                        stringResource(R.string.annotator_keep_color),
+                        onPickColor,
+                        style = ButtonStyle.Line,
+                        enabled = holdCount > 0,
+                    )
                 }
-                TextButton(onClick = onUndo, enabled = hasSomethingToUndo) {
-                    Text(stringResource(mode.undoLabel()))
-                }
-                TextButton(onClick = onClear, enabled = hasSomethingToUndo) {
-                    Text(stringResource(mode.clearLabel()))
-                }
+                TopoButton(
+                    stringResource(mode.undoLabel()),
+                    onUndo,
+                    style = ButtonStyle.Text,
+                    icon = TopoIcons.Undo,
+                    enabled = hasSomethingToUndo,
+                )
+                TopoButton(
+                    stringResource(mode.clearLabel()),
+                    onClear,
+                    style = ButtonStyle.Text,
+                    icon = TopoIcons.Delete,
+                    enabled = hasSomethingToUndo,
+                )
             }
         }
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/** Onglets des modes : capitales d'affiche, soulignees d'orange quand choisies. */
+@Composable
+private fun ModeTabs(selected: AnnotationMode, onSelect: (AnnotationMode) -> Unit) {
+    val colors = TopoTheme.colors
+    Row(Modifier.fillMaxWidth().selectableGroup()) {
+        AnnotationMode.entries.forEach { candidate ->
+            val isSelected = candidate == selected
+            Box(
+                Modifier
+                    .weight(1f)
+                    .heightIn(min = 48.dp)
+                    .selectable(selected = isSelected, onClick = { onSelect(candidate) }, role = Role.Tab)
+                    .drawBehind {
+                        val w = (if (isSelected) 3.dp else 1.dp).toPx()
+                        drawLine(
+                            if (isSelected) colors.accentFill else colors.rule,
+                            Offset(0f, size.height - w / 2),
+                            Offset(size.width, size.height - w / 2),
+                            w,
+                        )
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                UppercaseText(
+                    stringResource(candidate.label()),
+                    style = TopoTheme.type.action.copy(fontSize = TopoTheme.type.label.fontSize * 1.1f),
+                    color = if (isSelected) colors.ink else colors.ink2,
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun DifficultyStepSheet(
     circuit: List<CircuitColor>,
@@ -467,34 +528,30 @@ private fun DifficultyStepSheet(
     onGradeChange: (String?) -> Unit,
     onDone: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDone) {
-        Column(
-            modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Text(stringResource(R.string.annotator_difficulty_title), style = MaterialTheme.typography.titleLarge)
-            Text(
-                stringResource(R.string.annotator_difficulty_hint),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            CircuitColorPicker(circuit, selectedColorId, onColorChange)
-            GradePicker(gradeScale, selectedGrade, onGradeChange)
-            // « Passer » tant que rien n'est choisi : l'etape est facultative, et un
-            // bouton « Continuer » sans choix laisserait croire qu'il manque quelque
-            // chose.
-            Button(onClick = onDone, modifier = Modifier.align(Alignment.End)) {
-                Text(
-                    stringResource(
-                        if (selectedColorId == null && selectedGrade == null) {
-                            R.string.annotator_difficulty_skip
-                        } else {
-                            R.string.annotator_difficulty_continue
-                        },
-                    ),
-                )
-            }
-        }
+    TopoSheet(onDismissRequest = onDone) {
+        UppercaseText(stringResource(R.string.annotator_difficulty_title), style = TopoTheme.type.posterSmall, maxLines = 2)
+        TopoText(
+            stringResource(R.string.annotator_difficulty_hint),
+            style = TopoTheme.type.body,
+            color = TopoTheme.colors.ink2,
+        )
+        CircuitColorPicker(circuit, selectedColorId, onColorChange)
+        GradePicker(gradeScale, selectedGrade, onGradeChange)
+        // « Passer » tant que rien n'est choisi : l'etape est facultative, et un
+        // bouton « Continuer » sans choix laisserait croire qu'il manque quelque
+        // chose.
+        TopoButton(
+            text = stringResource(
+                if (selectedColorId == null && selectedGrade == null) {
+                    R.string.annotator_difficulty_skip
+                } else {
+                    R.string.annotator_difficulty_continue
+                },
+            ),
+            onClick = onDone,
+            style = if (selectedColorId == null && selectedGrade == null) ButtonStyle.Line else ButtonStyle.Ink,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
