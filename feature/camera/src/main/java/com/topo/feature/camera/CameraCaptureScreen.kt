@@ -10,16 +10,37 @@ import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.topo.core.ui.component.TopoButton
+import com.topo.core.ui.component.TopoIcons
+import com.topo.core.ui.component.TopoProgress
+import com.topo.core.ui.component.TopoText
+import com.topo.core.ui.component.cropMarks
+import com.topo.core.ui.motion.pressScale
+import com.topo.core.ui.theme.LocalContentColor
+import com.topo.core.ui.theme.LocalTopoColors
+import com.topo.core.ui.theme.TopoPalettes
+import com.topo.core.ui.theme.TopoTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -43,9 +64,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 /**
  * Ecran de capture.
  *
- * Volontairement minimal : l'habillage Material 3 definitif appartient au sprint
- * d'assemblage. Ce qui compte ici, c'est le cablage — permission, liaison au cycle
- * de vie de CameraX, et remontee de l'identifiant du bloc cree.
+ * Une chambre noire : apercu de toute la photo entre des reperes de cadrage, un
+ * declencheur rond. Le cablage — permission, liaison au cycle de vie de CameraX,
+ * remontee de l'identifiant du bloc cree — est l'essentiel de ce fichier.
  */
 @Composable
 fun CameraCaptureScreen(
@@ -84,45 +105,86 @@ fun CameraCaptureScreen(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
-        if (hasPermission) {
-            CameraPreview(
-                viewModel = viewModel,
-                modifier = Modifier.fillMaxSize(),
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+    // L'appareil photo est une chambre noire : l'ardoise de nuit, quel que soit le theme.
+    CompositionLocalProvider(
+        LocalTopoColors provides TopoPalettes.Night,
+        LocalContentColor provides TopoPalettes.Night.ink,
+    ) {
+        val colors = TopoTheme.colors
+        Box(
+            modifier = modifier.fillMaxSize().background(Color.Black),
+            contentAlignment = Alignment.BottomCenter,
         ) {
-            when (val state = uiState) {
-                CaptureUiState.Capturing -> CircularProgressIndicator()
-                is CaptureUiState.Failed -> Text(
-                    text = state.detail
-                        ?.let { stringResource(R.string.camera_capture_error_detail, it) }
-                        ?: stringResource(R.string.camera_capture_error),
-                    color = MaterialTheme.colorScheme.error,
+            if (hasPermission) {
+                CameraPreview(
+                    viewModel = viewModel,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .systemBarsPadding()
+                        .padding(bottom = 128.dp),
                 )
-
-                else -> Unit
             }
 
-            Button(
-                onClick = { viewModel.captureBloc(sessionId) },
-                enabled = hasPermission && uiState !is CaptureUiState.Capturing,
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Text(
-                    stringResource(
-                        if (hasPermission) R.string.camera_capture_action else R.string.camera_permission_required,
-                    ),
-                )
+                when (val state = uiState) {
+                    CaptureUiState.Capturing -> TopoProgress()
+                    is CaptureUiState.Failed -> TopoText(
+                        text = state.detail
+                            ?.let { stringResource(R.string.camera_capture_error_detail, it) }
+                            ?: stringResource(R.string.camera_capture_error),
+                        color = colors.error,
+                        style = TopoTheme.type.label,
+                    )
+
+                    else -> Unit
+                }
+
+                if (hasPermission) {
+                    Shutter(
+                        label = stringResource(R.string.camera_capture_action),
+                        enabled = uiState !is CaptureUiState.Capturing,
+                        onClick = { viewModel.captureBloc(sessionId) },
+                    )
+                } else {
+                    // Refusee une fois, l'autorisation se redemande d'ici plutot que
+                    // de laisser un bouton mort.
+                    TopoButton(
+                        text = stringResource(R.string.camera_permission_required),
+                        onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                        icon = TopoIcons.Camera,
+                    )
+                }
             }
         }
     }
+}
+
+/**
+ * Declencheur : un disque papier dans un anneau, sans libelle visible ; son nom
+ * est donne a TalkBack. Il s'enfonce a la pression comme les autres boutons.
+ */
+@Composable
+private fun Shutter(label: String, enabled: Boolean, onClick: () -> Unit) {
+    val colors = TopoTheme.colors
+    val interaction = remember { MutableInteractionSource() }
+    Box(
+        Modifier
+            .size(76.dp)
+            .pressScale(interaction)
+            .border(3.dp, colors.ink, CircleShape)
+            .padding(7.dp)
+            .clip(CircleShape)
+            .background(if (enabled) colors.ink else colors.ink2)
+            .clickable(interaction, LocalIndication.current, enabled = enabled, role = Role.Button, onClickLabel = label, onClick = onClick)
+            .semantics { contentDescription = label },
+    )
 }
 
 /**
@@ -204,15 +266,19 @@ private fun CameraPreview(
 
     Box(modifier = modifier) {
         AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
+        // Reperes de cadrage aux coins, comme ceux d'une page de topo : ils disent
+        // ou s'arrete la photo sans masquer le mur.
+        Box(Modifier.fillMaxSize().padding(16.dp).cropMarks(TopoTheme.colors.ink, length = 22.dp, stroke = 2.dp))
         // Le zoom affiche : sans lui, rien ne dit qu'un pincement a eu lieu, ni
         // qu'on est revenu a 1x.
-        Text(
+        TopoText(
             text = stringResource(R.string.camera_zoom, zoomRatio),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            style = TopoTheme.type.cote,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(16.dp),
+                .padding(24.dp)
+                .background(Color.Black.copy(alpha = 0.6f))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
         )
     }
 }

@@ -1,5 +1,20 @@
 package com.topo.feature.relief
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.runtime.CompositionLocalProvider
+import com.topo.core.ui.component.ButtonStyle
+import com.topo.core.ui.component.Eyebrow
+import com.topo.core.ui.component.PageHeader
+import com.topo.core.ui.component.TopoButton
+import com.topo.core.ui.component.TopoIcons
+import com.topo.core.ui.component.TopoProgress
+import com.topo.core.ui.component.TopoText
+import com.topo.core.ui.theme.LocalContentColor
+import com.topo.core.ui.theme.LocalTopoColors
+import com.topo.core.ui.theme.TopoPalettes
+import com.topo.core.ui.theme.TopoTheme
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,18 +25,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -46,7 +49,6 @@ import com.topo.core.ui.component.EmptyState
 /** Fond de la scene : le noir bleute de la demo du portfolio, sur lequel les halos ressortent. */
 private val SceneBackground = Color(0xFF0D0F12)
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReliefScreen(
     blocId: String,
@@ -57,49 +59,44 @@ fun ReliefScreen(
     LaunchedEffect(blocId) { viewModel.bind(blocId) }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.relief_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.relief_back))
-                    }
-                },
+    // La scene est sombre : l'ecran entier passe en ardoise de nuit pour ne pas
+    // poser un en-tete papier au-dessus d'une chambre noire.
+    CompositionLocalProvider(
+        LocalTopoColors provides TopoPalettes.Night,
+        LocalContentColor provides TopoPalettes.Night.ink,
+    ) {
+        Column(modifier.fillMaxSize().background(SceneBackground)) {
+            PageHeader(
+                title = stringResource(R.string.relief_title),
+                onBack = onBack,
+                backLabel = stringResource(R.string.relief_back),
+                compact = true,
             )
-        },
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                // Pas de fond sous la scene : une SurfaceView est composee SOUS la
-                // fenetre, et tout fond dessine ici la masquerait. Le rendu efface
-                // lui-meme avec la meme couleur.
-                .then(if (uiState is ReliefUiState.Ready) Modifier else Modifier.background(SceneBackground)),
-            contentAlignment = Alignment.Center,
-        ) {
-            when (val state = uiState) {
-                ReliefUiState.Loading -> Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                ) {
-                    CircularProgressIndicator(modifier = Modifier.size(40.dp), color = Color.White)
-                    Text(stringResource(R.string.relief_loading), color = Color.White.copy(alpha = 0.8f))
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                when (val state = uiState) {
+                    ReliefUiState.Loading -> Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        TopoProgress()
+                        TopoText(stringResource(R.string.relief_loading), color = TopoTheme.colors.ink2)
+                    }
+
+                    ReliefUiState.Unavailable -> EmptyState(
+                        title = stringResource(R.string.relief_unavailable_title),
+                        message = stringResource(R.string.relief_unavailable_message),
+                    )
+
+                    ReliefUiState.Failed -> EmptyState(
+                        title = stringResource(R.string.relief_failed_title),
+                        message = stringResource(R.string.relief_failed_message),
+                    )
+
+                    is ReliefUiState.Ready -> ReliefContent(state)
                 }
-
-                ReliefUiState.Unavailable -> EmptyState(
-                    title = stringResource(R.string.relief_unavailable_title),
-                    message = stringResource(R.string.relief_unavailable_message),
-                )
-
-                ReliefUiState.Failed -> EmptyState(
-                    title = stringResource(R.string.relief_failed_title),
-                    message = stringResource(R.string.relief_failed_message),
-                )
-
-                is ReliefUiState.Ready -> ReliefContent(state)
             }
         }
     }
@@ -121,36 +118,34 @@ private fun ReliefContent(state: ReliefUiState.Ready) {
         )
         GlPauseWithLifecycle { surface[0] }
 
+        // Cartouche du topo : nombre de prises et geste a faire, sur une fiche sombre.
         Row(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(16.dp),
+                .navigationBarsPadding()
+                .padding(16.dp)
+                .background(TopoTheme.colors.paper.copy(alpha = 0.92f))
+                .border(1.dp, TopoTheme.colors.ink)
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .background(Color.Black.copy(alpha = 0.55f), RoundedCornerShape(12.dp))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-            ) {
-                Text(
-                    text = pluralStringResource(R.plurals.relief_hold_count, state.holdCount, state.holdCount),
-                    color = Color.White,
-                    style = MaterialTheme.typography.labelLarge,
-                )
-                Text(
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Eyebrow(pluralStringResource(R.plurals.relief_hold_count, state.holdCount, state.holdCount))
+                TopoText(
                     text = stringResource(if (state.hasBeta) R.string.relief_hint_beta else R.string.relief_hint),
-                    color = Color.White.copy(alpha = 0.75f),
-                    style = MaterialTheme.typography.bodySmall,
+                    color = TopoTheme.colors.ink2,
+                    style = TopoTheme.type.bodySmall,
                 )
             }
             if (state.hasBeta) {
-                FilledTonalButton(onClick = renderer::replay) {
-                    Icon(Icons.Filled.Replay, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(stringResource(R.string.relief_replay), modifier = Modifier.padding(start = 6.dp))
-                }
+                TopoButton(
+                    text = stringResource(R.string.relief_replay),
+                    onClick = renderer::replay,
+                    style = ButtonStyle.Line,
+                    icon = TopoIcons.Replay,
+                )
             }
         }
     }
