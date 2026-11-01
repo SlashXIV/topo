@@ -28,6 +28,10 @@ data class SettingsEntity(
     /** Ordinal de `GradeScale`. */
     @ColumnInfo(name = "grade_scale")
     val gradeScale: Int,
+
+    /** Ordinal de `MotionPreference`. */
+    @ColumnInfo(name = "motion_preference", defaultValue = "0")
+    val motionPreference: Int = 0,
 ) {
     companion object {
         const val SINGLE_ROW_ID = 0

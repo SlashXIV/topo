@@ -16,6 +16,22 @@ enum class DifficultyDisplay {
 }
 
 /**
+ * Ambiance du mouvement dans l'interface.
+ *
+ * Le reglage Android « Supprimer les animations » passe avant : il coupe tout
+ * mouvement quelle que soit l'ambiance choisie ici.
+ *
+ * Ordinaux persistes : ne jamais reordonner.
+ */
+enum class MotionPreference {
+    /** Traces qui s'encrent, tampons, transitions de page. */
+    EXPRESSIVE,
+
+    /** Fondus brefs seulement, aucun mouvement decoratif. */
+    CALM,
+}
+
+/**
  * Reglages de l'application.
  *
  * Stockes dans Room, pas dans DataStore. Le premier principe du projet est que
@@ -26,6 +42,7 @@ enum class DifficultyDisplay {
 data class AppSettings(
     val difficultyDisplay: DifficultyDisplay,
     val gradeScale: GradeScale,
+    val motion: MotionPreference = MotionPreference.EXPRESSIVE,
 ) {
     companion object {
         /**

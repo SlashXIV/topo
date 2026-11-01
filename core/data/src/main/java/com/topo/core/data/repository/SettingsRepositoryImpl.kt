@@ -6,6 +6,7 @@ import com.topo.core.data.mapper.toEntity
 import com.topo.core.domain.model.AppSettings
 import com.topo.core.domain.model.DifficultyDisplay
 import com.topo.core.domain.model.GradeScale
+import com.topo.core.domain.model.MotionPreference
 import com.topo.core.domain.repository.SettingsRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -31,6 +32,10 @@ internal class SettingsRepositoryImpl @Inject constructor(
 
     override suspend fun setGradeScale(scale: GradeScale) {
         update { it.copy(gradeScale = scale) }
+    }
+
+    override suspend fun setMotion(motion: MotionPreference) {
+        update { it.copy(motion = motion) }
     }
 
     /**

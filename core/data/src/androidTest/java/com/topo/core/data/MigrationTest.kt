@@ -9,6 +9,7 @@ import com.topo.core.data.database.MIGRATION_1_2
 import com.topo.core.data.database.MIGRATION_2_3
 import com.topo.core.data.database.MIGRATION_3_4
 import com.topo.core.data.database.MIGRATION_4_5
+import com.topo.core.data.database.MIGRATION_5_6
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -236,6 +237,29 @@ class MigrationTest {
             it.moveToFirst()
             assertThat(it.getInt(0)).isEqualTo(1)
             assertThat(it.getFloat(1)).isEqualTo(45f)
+        }
+    }
+
+    /**
+     * v5 -> v6 : une installation existante garde ses reglages et l'ambiance
+     * expressive, celle d'avant la colonne.
+     */
+    @Test
+    fun migrating_from_v5_keeps_settings_and_defaults_to_expressive_motion() {
+        helper.createDatabase(databaseName, 5).use { db ->
+            db.execSQL("INSERT INTO settings (id, difficulty_display, grade_scale) VALUES (0, 1, 1)")
+        }
+
+        val db = helper.runMigrationsAndValidate(
+            databaseName, 6, true, MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6,
+        )
+
+        db.query("SELECT difficulty_display, grade_scale, motion_preference FROM settings WHERE id = 0").use {
+            assertThat(it.count).isEqualTo(1)
+            it.moveToFirst()
+            assertThat(it.getInt(0)).isEqualTo(1)
+            assertThat(it.getInt(1)).isEqualTo(1)
+            assertThat(it.getInt(2)).isEqualTo(0)
         }
     }
 

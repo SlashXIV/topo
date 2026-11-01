@@ -3,6 +3,7 @@ package com.topo.core.domain.repository
 import com.topo.core.domain.model.AppSettings
 import com.topo.core.domain.model.DifficultyDisplay
 import com.topo.core.domain.model.GradeScale
+import com.topo.core.domain.model.MotionPreference
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -19,4 +20,6 @@ interface SettingsRepository {
     suspend fun setDifficultyDisplay(display: DifficultyDisplay)
 
     suspend fun setGradeScale(scale: GradeScale)
+
+    suspend fun setMotion(motion: MotionPreference)
 }

@@ -19,6 +19,7 @@ import com.topo.core.domain.model.BoundingBox
 import com.topo.core.domain.model.Hold
 import com.topo.core.domain.model.HoldColor
 import com.topo.core.domain.model.HoldKind
+import com.topo.core.domain.model.MotionPreference
 import com.topo.core.domain.model.HoldOrigin
 import com.topo.core.domain.model.Limb
 import com.topo.core.domain.model.Movement
@@ -185,9 +186,11 @@ internal fun SettingsEntity.toDomain(): AppSettings = AppSettings(
         AppSettings.Default.difficultyDisplay
     },
     gradeScale = GradeScale.entries.getOrElse(gradeScale) { AppSettings.Default.gradeScale },
+    motion = MotionPreference.entries.getOrElse(motionPreference) { AppSettings.Default.motion },
 )
 
 internal fun AppSettings.toEntity(): SettingsEntity = SettingsEntity(
     difficultyDisplay = difficultyDisplay.ordinal,
     gradeScale = gradeScale.ordinal,
+    motionPreference = motion.ordinal,
 )
