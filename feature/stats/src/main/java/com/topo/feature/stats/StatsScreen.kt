@@ -93,7 +93,7 @@ private fun StatsContent(stats: ClimbingStatistics) {
     ) {
         item {
             MetricRow {
-                Metric(stringResource(R.string.stats_metric_blocs), stats.blocCount.toDouble(), { "${it.roundToInt()}" })
+                Metric(stringResource(R.string.stats_metric_blocs), stats.blocCount.toDouble(), { "${it.roundToInt()}" }, first = true)
                 Metric(stringResource(R.string.stats_metric_sent), stats.sentCount.toDouble(), { "${it.roundToInt()}" })
                 Metric(stringResource(R.string.stats_metric_flashes), stats.flashCount.toDouble(), { "${it.roundToInt()}" })
             }
@@ -107,6 +107,7 @@ private fun StatsContent(stats: ClimbingStatistics) {
                     stringResource(R.string.stats_metric_success_rate),
                     stats.successRate * 100.0,
                     percent,
+                    first = true,
                 )
                 // Rapporte aux reussites et non a tous les blocs : sinon ouvrir
                 // un projet difficile ferait chuter le taux.
@@ -126,8 +127,10 @@ private fun StatsContent(stats: ClimbingStatistics) {
         if (stats.bestGrade != null || stats.bestColor != null) {
             item {
                 MetricRow {
-                    stats.bestGrade?.let { TextMetric(stringResource(R.string.stats_metric_best_grade), it) }
-                    stats.bestColor?.let { TextMetric(stringResource(R.string.stats_metric_best_color), it.name) }
+                    stats.bestGrade?.let { TextMetric(stringResource(R.string.stats_metric_best_grade), it, first = true) }
+                    stats.bestColor?.let {
+                        TextMetric(stringResource(R.string.stats_metric_best_color), it.name, first = stats.bestGrade == null)
+                    }
                 }
             }
         }
@@ -136,8 +139,11 @@ private fun StatsContent(stats: ClimbingStatistics) {
             item {
                 SectionTitle(stringResource(R.string.stats_by_color_title), stringResource(R.string.stats_by_color_hint))
             }
-            itemsIndexed(stats.colorBuckets) { i, bucket -> BucketRow(bucket, maxTotal, i) }
-            item { Legend() }
+            itemsIndexed(stats.colorBuckets) { i, bucket ->
+                BucketRow(bucket, maxTotal, i, label = bucket.label.ifEmpty { stringResource(R.string.stats_uncolored) })
+            }
+            // La pastille « Reussis » prend les couleurs des barres qu'elle legende.
+            item { Legend(stats.colorBuckets.map { it.argb }.distinct()) }
         }
 
         if (stats.gradeBuckets.isNotEmpty()) {
@@ -145,7 +151,7 @@ private fun StatsContent(stats: ClimbingStatistics) {
                 SectionTitle(stringResource(R.string.stats_by_grade_title), stringResource(R.string.stats_by_grade_hint))
             }
             itemsIndexed(stats.gradeBuckets) { i, bucket -> BucketRow(bucket, maxTotal, i) }
-            item { Legend() }
+            item { Legend(listOf(null)) }
         }
     }
 }
@@ -165,15 +171,16 @@ private fun androidx.compose.foundation.layout.RowScope.Metric(
     label: String,
     value: Double,
     format: (Double) -> String,
+    first: Boolean = false,
 ) {
-    MetricCell(label, format(value)) {
+    MetricCell(label, format(value), first) {
         CountUp(value = value, format = format, style = TopoTheme.type.figure)
     }
 }
 
 @Composable
-private fun androidx.compose.foundation.layout.RowScope.TextMetric(label: String, value: String) {
-    MetricCell(label, value) {
+private fun androidx.compose.foundation.layout.RowScope.TextMetric(label: String, value: String, first: Boolean = false) {
+    MetricCell(label, value, first) {
         FitText(value, style = TopoTheme.type.figure.copy(fontSize = TopoTheme.type.figure.fontSize * 0.7f))
     }
 }
@@ -181,14 +188,19 @@ private fun androidx.compose.foundation.layout.RowScope.TextMetric(label: String
 /**
  * Une case de chiffre. Lue par TalkBack en une phrase, « Réussite, 71 % » : le
  * chiffre qui compte ne doit pas etre annonce a chaque pas.
+ *
+ * Un filet a gauche de chaque case sauf la premiere : des filets entre les
+ * cases seulement, jamais un filet orphelin au bord droit.
  */
 @Composable
 private fun androidx.compose.foundation.layout.RowScope.MetricCell(
     label: String,
     finalValue: String,
+    first: Boolean,
     figure: @Composable () -> Unit,
 ) {
     Row(Modifier.weight(1f).fillMaxHeight()) {
+        if (!first) Spacer(Modifier.width(1.dp).fillMaxHeight().background(TopoTheme.colors.rule))
         Column(
             Modifier
                 .weight(1f)
@@ -199,7 +211,6 @@ private fun androidx.compose.foundation.layout.RowScope.MetricCell(
             figure()
             Eyebrow(label, color = TopoTheme.colors.ink2)
         }
-        Spacer(Modifier.width(1.dp).fillMaxHeight().background(TopoTheme.colors.rule))
     }
 }
 
@@ -220,13 +231,13 @@ private fun SectionTitle(title: String, hint: String) {
  * rectangles proportionnels n'en justifient pas une.
  */
 @Composable
-private fun BucketRow(bucket: DifficultyBucket, maxTotal: Int, index: Int) {
+private fun BucketRow(bucket: DifficultyBucket, maxTotal: Int, index: Int, label: String = bucket.label) {
     val colors = TopoTheme.colors
     val fill = bucket.argb?.let(::Color) ?: colors.ink
     val tried = if (maxTotal == 0) 0f else bucket.total.toFloat() / maxTotal
     val sent = if (maxTotal == 0) 0f else bucket.sent.toFloat() / maxTotal
     val growth = rememberGrowth(index)
-    val description = pluralStringResource(R.plurals.stats_bucket_description, bucket.sent, bucket.label, bucket.sent, bucket.total)
+    val description = pluralStringResource(R.plurals.stats_bucket_description, bucket.sent, label, bucket.sent, bucket.total)
 
     Row(
         modifier = Modifier
@@ -237,7 +248,7 @@ private fun BucketRow(bucket: DifficultyBucket, maxTotal: Int, index: Int) {
     ) {
         Row(Modifier.width(84.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (bucket.argb != null) ColorDot(fill)
-            TopoText(bucket.label, style = TopoTheme.type.label, maxLines = 1)
+            TopoText(label, style = TopoTheme.type.label, maxLines = 1)
         }
         Box(Modifier.weight(1f).height(16.dp)) {
             if (bucket.total > 0) {
@@ -282,8 +293,9 @@ private fun rememberGrowth(index: Int): Float {
     return growth.value.coerceAtMost(1f)
 }
 
+/** [sentFills] : une bande par couleur de barre, null pour l'encre. */
 @Composable
-private fun Legend() {
+private fun Legend(sentFills: List<Int?>) {
     val colors = TopoTheme.colors
     Row(
         Modifier.padding(top = 4.dp).clearAndSetSemantics { },
@@ -291,11 +303,15 @@ private fun Legend() {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(14.dp, 10.dp).background(colors.ink))
+            Row(Modifier.size(14.dp, 10.dp).border(1.dp, colors.ink)) {
+                sentFills.forEach { argb ->
+                    Box(Modifier.weight(1f).fillMaxHeight().background(argb?.let(::Color) ?: colors.ink))
+                }
+            }
             Eyebrow(stringResource(R.string.stats_legend_sent), color = colors.ink2)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(14.dp, 10.dp).border(1.dp, colors.ink).hatched(colors.ink2, spacing = 3.dp))
+            Box(Modifier.size(14.dp, 10.dp).border(1.dp, colors.ink).hatched(colors.ink2, spacing = 4.dp))
             Eyebrow(stringResource(R.string.stats_legend_tried), color = colors.ink2)
         }
     }

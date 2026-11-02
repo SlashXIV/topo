@@ -85,15 +85,51 @@ class ComputeStatisticsUseCaseTest {
     }
 
     @Test
-    fun `the whole circuit is represented, including untouched colours`() {
-        val stats = compute(listOf(bloc(colorId = "vert", status = BlocStatus.SENT)), circuit)
+    fun `untried colours are left out, in circuit order`() {
+        val stats = compute(
+            listOf(bloc(colorId = "bleu", status = BlocStatus.WORKING), bloc(colorId = "jaune", status = BlocStatus.SENT)),
+            circuit,
+        )
 
-        // Un trou dans la progression est une information : la couleur a zero
-        // reste visible.
-        assertThat(stats.colorBuckets.map { it.label })
-            .containsExactly("Jaune", "Vert", "Bleu").inOrder()
-        assertThat(stats.colorBuckets.first { it.label == "Vert" }.sent).isEqualTo(1)
-        assertThat(stats.colorBuckets.first { it.label == "Jaune" }.total).isEqualTo(0)
+        assertThat(stats.colorBuckets.map { it.label }).containsExactly("Jaune", "Bleu").inOrder()
+    }
+
+    /**
+     * Le jeu des captures du 2026-11-02, Villenave et Merignac : six violets dont
+     * deux reussis, et un bloc sans couleur flashe. Les metriques disaient 3
+     * reussis quand la seule barre disait 2/6 ; le seau « sans couleur » remet
+     * les barres d'accord avec les chiffres.
+     */
+    @Test
+    fun `colour bars add up to the headline figures, uncoloured blocs included`() {
+        val violet = CircuitColor(id = "violet", name = "Violet", argb = 0xFF8E6C99.toInt(), rank = 3)
+        val blocs = listOf(
+            bloc(colorId = "violet", status = BlocStatus.FLASHED, attempts = 1),
+            bloc(colorId = "violet", status = BlocStatus.FLASHED, attempts = 1),
+            bloc(colorId = "violet", status = BlocStatus.WORKING, attempts = 4),
+            bloc(colorId = "violet", status = BlocStatus.WORKING, attempts = 2),
+            bloc(colorId = "violet", status = BlocStatus.PROJECT),
+            bloc(colorId = "violet", status = BlocStatus.PROJECT),
+            bloc(colorId = null, status = BlocStatus.FLASHED, attempts = 1),
+        )
+
+        val stats = compute(blocs, circuit + violet)
+
+        assertThat(stats.blocCount).isEqualTo(7)
+        assertThat(stats.sentCount).isEqualTo(3)
+        assertThat(stats.flashCount).isEqualTo(3)
+        assertThat(stats.colorBuckets.map { Triple(it.argb, it.sent, it.total) })
+            .containsExactly(Triple(violet.argb, 2, 6), Triple(null, 1, 1)).inOrder()
+        assertThat(stats.colorBuckets.sumOf { it.total }).isEqualTo(stats.blocCount)
+        assertThat(stats.colorBuckets.sumOf { it.sent }).isEqualTo(stats.sentCount)
+    }
+
+    @Test
+    fun `a colour removed from the circuit counts as uncoloured`() {
+        val stats = compute(listOf(bloc(colorId = "retiree", status = BlocStatus.SENT)), circuit)
+
+        assertThat(stats.colorBuckets.single().argb).isNull()
+        assertThat(stats.colorBuckets.single().sent).isEqualTo(1)
     }
 
     @Test

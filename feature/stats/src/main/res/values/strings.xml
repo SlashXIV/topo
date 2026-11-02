@@ -17,6 +17,7 @@
 
     <string name="stats_by_color_title">Par couleur de circuit</string>
     <string name="stats_by_color_hint">Du plus facile au plus dur</string>
+    <string name="stats_uncolored">Sans couleur</string>
     <string name="stats_by_grade_title">Par cotation</string>
     <string name="stats_by_grade_hint">Seules les cotations utilisées apparaissent</string>
 

@@ -60,14 +60,21 @@ class ComputeStatisticsUseCase @Inject constructor() {
         .sortedBy(DifficultyBucket::rank)
 
     /**
-     * Le circuit entier est represente, y compris les couleurs a zero : sa liste
-     * est courte et connue, et un trou dans la progression est une information.
+     * Seules les couleurs tentees sont representees : sur l'appareil, six lignes
+     * a 0/0 sur sept noyaient la seule qui disait quelque chose.
+     *
+     * Les blocs sans couleur, ou dont la couleur a quitte le circuit, ferment la
+     * liste dans un seau a part ([DifficultyBucket.argb] nul) : sans lui, les
+     * barres ne totalisaient pas les chiffres du haut de page, et un bloc reussi
+     * semblait perdu.
      */
     private fun colorBuckets(blocs: List<Bloc>, circuit: List<CircuitColor>): List<DifficultyBucket> {
         if (circuit.isEmpty()) return emptyList()
-        val byColor = blocs.filter { it.colorId != null }.groupBy { it.colorId }
-        return circuit.sortedBy(CircuitColor::rank).map { color ->
-            val group = byColor[color.id].orEmpty()
+        val circuitIds = circuit.mapTo(HashSet(), CircuitColor::id)
+        val (colored, uncolored) = blocs.partition { it.colorId in circuitIds }
+        val byColor = colored.groupBy { it.colorId }
+        val buckets = circuit.sortedBy(CircuitColor::rank).mapNotNull { color ->
+            val group = byColor[color.id] ?: return@mapNotNull null
             DifficultyBucket(
                 label = color.name,
                 rank = color.rank,
@@ -76,5 +83,14 @@ class ComputeStatisticsUseCase @Inject constructor() {
                 sent = group.count { it.status.isSent },
             )
         }
+        if (uncolored.isEmpty()) return buckets
+        return buckets + DifficultyBucket(
+            // Libelle porte par l'ecran : le domaine ne fabrique aucun texte affiche.
+            label = "",
+            rank = Int.MAX_VALUE,
+            argb = null,
+            total = uncolored.size,
+            sent = uncolored.count { it.status.isSent },
+        )
     }
 }
