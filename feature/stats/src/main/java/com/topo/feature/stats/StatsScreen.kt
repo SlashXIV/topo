@@ -140,7 +140,13 @@ private fun StatsContent(stats: ClimbingStatistics) {
                 SectionTitle(stringResource(R.string.stats_by_color_title), stringResource(R.string.stats_by_color_hint))
             }
             itemsIndexed(stats.colorBuckets) { i, bucket ->
-                BucketRow(bucket, maxTotal, i, label = bucket.label.ifEmpty { stringResource(R.string.stats_uncolored) })
+                BucketRow(
+                    bucket,
+                    maxTotal,
+                    i,
+                    label = bucket.label.ifEmpty { stringResource(R.string.stats_uncolored) },
+                    reserveDot = true,
+                )
             }
             // La pastille « Reussis » prend les couleurs des barres qu'elle legende.
             item { Legend(stats.colorBuckets.map { it.argb }.distinct()) }
@@ -231,7 +237,15 @@ private fun SectionTitle(title: String, hint: String) {
  * rectangles proportionnels n'en justifient pas une.
  */
 @Composable
-private fun BucketRow(bucket: DifficultyBucket, maxTotal: Int, index: Int, label: String = bucket.label) {
+private fun BucketRow(
+    bucket: DifficultyBucket,
+    maxTotal: Int,
+    index: Int,
+    label: String = bucket.label,
+    // Section couleur : la place de la pastille est gardee meme sans couleur,
+    // pour que « Sans couleur » s'aligne sur les autres noms.
+    reserveDot: Boolean = false,
+) {
     val colors = TopoTheme.colors
     val fill = bucket.argb?.let(::Color) ?: colors.ink
     val tried = if (maxTotal == 0) 0f else bucket.total.toFloat() / maxTotal
@@ -246,9 +260,10 @@ private fun BucketRow(bucket: DifficultyBucket, maxTotal: Int, index: Int, label
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Row(Modifier.width(84.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (bucket.argb != null) ColorDot(fill)
-            TopoText(label, style = TopoTheme.type.label, maxLines = 1)
+        // 112 dp : « Sans couleur » tient en entier, 84 le coupait.
+        Row(Modifier.width(112.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            if (bucket.argb != null) ColorDot(fill) else if (reserveDot) Spacer(Modifier.size(12.dp))
+            TopoText(label, style = TopoTheme.type.label, maxLines = 2)
         }
         Box(Modifier.weight(1f).height(16.dp)) {
             if (bucket.total > 0) {
