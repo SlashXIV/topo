@@ -60,6 +60,8 @@ import com.topo.core.ui.motion.rememberHaptics
 import com.topo.core.ui.text.labelRes
 import com.topo.core.ui.theme.TopoTheme
 import com.topo.core.ui.R as CoreR
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.topo.core.ui.component.bleed
 
 const val CircuitListTestTag = "circuit-list"
 const val AddColorTestTag = "add-color"
@@ -75,13 +77,19 @@ fun SettingsScreen(
     var colorToDelete by remember { mutableStateOf<CircuitColor?>(null) }
     val haptics = rememberHaptics()
 
-    Column(modifier.fillMaxSize()) {
+    val header: @Composable () -> Unit = {
         PageHeader(
             title = stringResource(R.string.settings_title),
             onBack = onBack,
             backLabel = stringResource(R.string.settings_back),
         )
+    }
+
+    // statusBarsPadding ici consomme l'encart : l'en-tete, qui defile avec les
+    // reglages, ne passe jamais sous la barre d'etat.
+    Column(modifier.fillMaxSize().statusBarsPadding()) {
         if (uiState.isLoading) {
+            header()
             LoadingState()
             return@Column
         }
@@ -90,6 +98,9 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxSize().testTag(CircuitListTestTag),
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp),
         ) {
+            // L'en-tete defile avec les reglages : fixe, il prenait le tiers d'un
+            // petit ecran.
+            item { Box(Modifier.bleed(20.dp)) { header() } }
             item { Rule() }
             item {
                 Section(
@@ -280,9 +291,13 @@ private fun ColorRow(
             )
             ColorDot(Color(color.argb), size = 18.dp)
             TopoText(color.name, Modifier.weight(1f), style = TopoTheme.type.body)
-            IconAction(TopoIcons.Up, stringResource(R.string.settings_move_easier), onMoveUp, enabled = canMoveUp)
-            IconAction(TopoIcons.Down, stringResource(R.string.settings_move_harder), onMoveDown, enabled = canMoveDown)
-            IconAction(TopoIcons.Delete, stringResource(R.string.settings_delete_color, color.name), onDelete, tint = colors.ink2)
+            // Serrees entre elles : leurs cibles de 48 dp les separent deja, et a
+            // 320 dp les ecarts ne laissaient que 46 dp au nom (« Roug/e »).
+            Row {
+                IconAction(TopoIcons.Up, stringResource(R.string.settings_move_easier), onMoveUp, enabled = canMoveUp)
+                IconAction(TopoIcons.Down, stringResource(R.string.settings_move_harder), onMoveDown, enabled = canMoveDown)
+                IconAction(TopoIcons.Delete, stringResource(R.string.settings_delete_color, color.name), onDelete, tint = colors.ink2)
+            }
         }
         Rule(color = colors.rule)
     }
