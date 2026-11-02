@@ -7,15 +7,26 @@
 <p align="center"><b>Le carnet de bloc qui trace ton beta sur la photo du mur.</b><br>
 hors ligne · sans compte ni cloud · tes photos restent dans ton téléphone</p>
 
-<!--
-  Captures à produire (design/screenshots/, .webp, largeur 200) :
-  <p align="center">
-    <img src="design/screenshots/seances.webp" width="200" alt="Écran Mes séances : les séances numérotées comme des voies de topo, chacune avec sa réglette de blocs réussis">
-    <img src="design/screenshots/seance.webp" width="200" alt="Écran d'une séance : le récapitulatif, puis les blocs en fiches avec leur tampon de statut">
-    <img src="design/screenshots/beta.webp" width="200" alt="Annotateur : la photo d'un bloc, ses prises entourées et le beta tracé, chaque mouvement numéroté">
-    <img src="design/screenshots/progression.webp" width="200" alt="Écran Progression : les chiffres de la saison et les barres par couleur de circuit">
-  </p>
--->
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="design/screenshots/seances-sombre.webp">
+    <img src="design/screenshots/seances.webp" width="200" alt="Écran Mes séances : les séances numérotées comme des voies de topo, chacune avec sa réglette de blocs réussis dans la couleur du circuit">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="design/screenshots/seance-sombre.webp">
+    <img src="design/screenshots/seance.webp" width="200" alt="Écran d'une séance : le récapitulatif, les filtres avec leur compte, puis les blocs en fiches avec leur tampon de statut">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="design/screenshots/beta-sombre.webp">
+    <img src="design/screenshots/beta.webp" width="200" alt="Annotateur : la photo d'un bloc, ses prises entourées et le beta tracé, chaque mouvement numéroté dans la couleur du membre">
+  </picture>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="design/screenshots/progression-sombre.webp">
+    <img src="design/screenshots/progression.webp" width="200" alt="Écran Progression : les chiffres de la saison, puis les blocs réussis et tentés par couleur de circuit">
+  </picture>
+</p>
+
+<p align="center"><sub>Séance et beta : une vraie séance à Villenave. Mes séances et Progression : un jeu de démonstration de deux mois, pour montrer l'appli remplie.</sub></p>
 
 ---
 
@@ -62,6 +73,9 @@ Prérequis : JDK 17 ou plus (le `jbr` d'Android Studio convient), NDK 28.2 et CM
 ```sh
 ./gradlew :app:assembleDebug
 ```
+
+Les captures du README se refont sur émulateur : [`design/screenshots/seed_demo.py`](design/screenshots/seed_demo.py)
+ajoute le jeu de démonstration à une copie de ta base, sans toucher aux vraies séances.
 
 Architecture, preuves techniques (alignement 16 Ko, JNI sans copie, mesures) et matrice de tests :
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Le détail des sprints et le journal des décisions :
