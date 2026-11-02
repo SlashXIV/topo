@@ -672,7 +672,24 @@ six moments).
 - Icone : meme grammaire que la famille, mais sur papier, avec deux rochers hachures et un depart
   pointille ; splash anime sur Android 12 et plus.
 
-**Reste.** Validation sur le Xiaomi (gestes, feuille et clavier, TalkBack), captures du README.
+**Retouches apres captures (2 nov. 2026).** Les captures de la release sur le Xiaomi ont montre
+des ecarts avec la planche ; corriges :
+- Theme reglable dans l'application (Systeme, Papier clair, Ardoise de nuit), en base (v6 -> v7),
+  les barres systeme suivant le theme choisi.
+- Beta : numeros places en eventail autour de leur prise, sans chevauchement ni sortie du cadre,
+  dessines apres tous les traits ; TalkBack lit le beta dans l'ordre ; prises non utilisees
+  allegees en Tracer et Rejouer.
+- Pupitre de l'annotateur a hauteur constante : les onglets ne bougent plus d'un mode a l'autre.
+- Seance : etiquettes de filtre avec leur compte, filtres vides masques ; reglette dans la couleur
+  du circuit ; suppression deplacee de la liste vers la seance ; resume « reussis / blocs » constant.
+- Progression : seau « Sans couleur », couleurs jamais tentees masquees, legende aux couleurs des
+  barres, filets entre les cases seulement.
+
+Verifie sur le Xiaomi (installation par-dessus la release, donnees conservees) puis sur un
+emulateur au format du Xiaomi 15T Pro (1280 x 2772, 520 dpi), en clair, en sombre et a 200 %.
+
+**Reste.** Les libelles des cases de chiffres se coupent au milieu du mot a 200 % (« REUSSI/S ») ;
+feuille et clavier a revalider sur l'appareil.
 
 ---
 
@@ -727,6 +744,10 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | Tampon « Flash » bleu, « Reussi » vert | Le test de daltonisme a refuse deux verts : en protanopie, l'ecart tombait a 4,1 pour un minimum de 8. |
 | Icone claire, seule de la famille | Une page de topo est claire ; a cote de quatre icones sombres, elle reste reconnaissable sans quitter la grammaire commune (lettre, trait 31x2, zone d'exclusion). |
 | Camera, annotateur et relief toujours en ardoise de nuit | Ils montrent une photo ou une scene : un en-tete papier au-dessus d'une chambre noire eblouirait. |
+| Couleurs jamais tentees masquees dans la Progression | Choix initial inverse : le circuit entier devait rester visible, « un trou est une information ». Sur l'appareil, six lignes a 0/0 sur sept noyaient la seule qui comptait. |
+| Seau « Sans couleur » dans les barres de circuit | Sans lui, un bloc reussi sans couleur comptait dans les chiffres mais dans aucune barre : 3 reussis en tete de page, 2/6 sur la seule barre. |
+| Theme choisi dans l'application, en base | Seul le mode du telephone decidait : impossible de lire le papier la nuit. Le reglage suit le chemin de l'Ambiance, sans second magasin. |
+| Pupitre a la hauteur du plus grand panneau | Les trois panneaux sont mesures, seul l'actif est place : les onglets restent sous le doigt. Le prix est une photo un peu plus petite en Tracer et Rejouer. |
 | Kotlin integre d'AGP 9 | AGP 9 refuse le plugin autonome `org.jetbrains.kotlin.android` avec son nouveau DSL. Effet de bord favorable : `jvmTarget` suit `compileOptions`, une valeur de moins a maintenir. |
 
 ---
