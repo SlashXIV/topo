@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.topo.core.ui.motion.pressScale
 import com.topo.core.ui.theme.TopoTheme
@@ -76,7 +77,14 @@ fun TopoButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) TopoIcon(icon, contentDescription = null, tint = fg, size = 20.dp)
-        UppercaseText(text, style = TopoTheme.type.action, color = fg)
+        // Deux lignes plutot qu'un libelle coupe : dans un demi-bouton, « Detecter
+        // les prises » perdait son dernier mot, et la police a 200 % en perd plus.
+        UppercaseText(
+            text,
+            style = TopoTheme.type.action.copy(textAlign = TextAlign.Center),
+            color = fg,
+            maxLines = 2,
+        )
     }
 }
 
