@@ -39,6 +39,19 @@ class BlocFilterTest {
     }
 
     @Test
+    fun `each tag counts what its filter keeps, sends including flashes`() {
+        val blocs = listOf(BlocStatus.PROJECT, BlocStatus.WORKING, BlocStatus.WORKING, BlocStatus.FLASHED, BlocStatus.SENT)
+            .map(::bloc)
+
+        assertThat(countByFilter(blocs)).containsExactly(
+            BlocFilter.ALL, 5,
+            BlocFilter.PROJECTS, 1,
+            BlocFilter.WORKING, 2,
+            BlocFilter.SENT, 2,
+        )
+    }
+
+    @Test
     fun `every status is reachable through some filter`() {
         val narrowFilters = BlocFilter.entries - BlocFilter.ALL
         BlocStatus.entries.forEach { status ->

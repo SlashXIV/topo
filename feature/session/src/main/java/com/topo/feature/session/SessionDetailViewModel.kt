@@ -50,6 +50,10 @@ enum class BlocFilter {
     }
 }
 
+/** Nombre de blocs que chaque filtre garderait : le compte affiche sur son etiquette. */
+fun countByFilter(blocs: List<Bloc>): Map<BlocFilter, Int> =
+    BlocFilter.entries.associateWith { filter -> blocs.count(filter::matches) }
+
 /**
  * Echec d'import depuis la galerie, par cause. Le ViewModel ne porte aucun texte :
  * l'ecran met chaque cause en phrase, et aucun message technique n'y transite.
@@ -75,6 +79,8 @@ data class SessionDetailUiState(
     val sentCount: Int = 0,
     val flashCount: Int = 0,
     val filter: BlocFilter = BlocFilter.ALL,
+    /** Compte de chaque filtre, filtre actif ignore. */
+    val filterCounts: Map<BlocFilter, Int> = emptyMap(),
     val isLoading: Boolean = true,
     val importError: ImportFailure? = null,
     val statusError: StatusFailure? = null,
@@ -151,6 +157,7 @@ class SessionDetailViewModel @Inject constructor(
             sentCount = blocs.count { it.status.isSent },
             flashCount = blocs.count { it.status == BlocStatus.FLASHED },
             filter = activeFilter,
+            filterCounts = countByFilter(blocs),
             isLoading = false,
             importError = failures.import,
             statusError = failures.status,

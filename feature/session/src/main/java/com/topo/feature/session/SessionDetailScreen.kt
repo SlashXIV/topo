@@ -143,6 +143,7 @@ fun SessionDetailScreen(
         if (uiState.totalBlocs > 1) {
             BlocFilterRow(
                 selected = uiState.filter,
+                counts = uiState.filterCounts,
                 onSelect = viewModel::selectFilter,
             )
         }
@@ -168,7 +169,8 @@ fun SessionDetailScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .testTag(BlocGridTestTag),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    // Marge de fin : la derniere fiche ne doit pas buter contre la barre d'action.
+                    contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -306,6 +308,7 @@ private fun SessionRecap(blocs: Int, sent: Int, flashes: Int) {
 @Composable
 private fun BlocFilterRow(
     selected: BlocFilter,
+    counts: Map<BlocFilter, Int>,
     onSelect: (BlocFilter) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -319,7 +322,11 @@ private fun BlocFilterRow(
     ) {
         BlocFilter.entries.forEach { filter ->
             Tag(
-                text = stringResource(filter.labelRes),
+                text = stringResource(
+                    R.string.session_filter_with_count,
+                    stringResource(filter.labelRes),
+                    counts[filter] ?: 0,
+                ),
                 selected = filter == selected,
                 onClick = {
                     if (filter != selected) haptics.tick()
