@@ -31,6 +31,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.font.FontWeight
@@ -138,10 +142,21 @@ fun AnnotationCanvas(
             .build()
     }
 
+    val betaDescription = describeBeta(blocDetail.movements)
+
     Box(
         modifier = modifier
             .aspectRatio(blocDetail.bloc.aspectRatio)
             .testTag(CanvasTestTag)
+            // Les numeros sont dessines, donc muets pour TalkBack : la photo
+            // annonce le beta dans l'ordre, comme on le lirait sur le topo.
+            .then(
+                if (betaDescription == null) {
+                    Modifier
+                } else {
+                    Modifier.semantics { contentDescription = betaDescription }
+                },
+            )
             .then(
                 if (exportLayer == null) {
                     Modifier
@@ -184,6 +199,28 @@ fun AnnotationCanvas(
             modifier = Modifier.fillMaxSize(),
         )
     }
+}
+
+/** « Beta en 3 mouvements : 1 main gauche, 2 pied droit, 3 main droite. » */
+@Composable
+private fun describeBeta(movements: List<Movement>): String? {
+    if (movements.isEmpty()) return null
+    val steps = movements.mapIndexed { index, movement ->
+        stringResource(R.string.annotator_beta_step, index + 1, stringResource(movement.limb.spokenLabel()))
+    }
+    return pluralStringResource(
+        R.plurals.annotator_beta_description,
+        movements.size,
+        movements.size,
+        steps.joinToString(", "), // texte-technique : separateur d'enumeration
+    )
+}
+
+private fun Limb.spokenLabel(): Int = when (this) {
+    Limb.LEFT_HAND -> R.string.annotator_limb_left_hand_spoken
+    Limb.RIGHT_HAND -> R.string.annotator_limb_right_hand_spoken
+    Limb.LEFT_FOOT -> R.string.annotator_limb_left_foot_spoken
+    Limb.RIGHT_FOOT -> R.string.annotator_limb_right_foot_spoken
 }
 
 @Composable
@@ -404,6 +441,14 @@ private fun BetaTraceLayer(
                 val numberOf: (Int) -> TextLayoutResult = { n ->
                     numberLabels.getOrPut(n) { textMeasurer.measure(n.toString(), NumberStyle) }
                 }
+                // Lu ici, hors du dessin : le cache se recalcule quand le beta ou la
+                // taille change, pas a chaque trame du rejeu. Les numeros gardent
+                // ainsi leur place pendant que la sequence se rejoue.
+                val badges = layoutBadges(
+                    targets = currentMovements.map { holdsById[it.targetHoldId]?.box?.toOffset(size) },
+                    radius = markerRadius,
+                    bounds = size,
+                )
 
                 onDrawBehind {
                     // Toutes les lectures d'etat mutable ont lieu ICI, dans la phase
@@ -461,6 +506,7 @@ private fun BetaTraceLayer(
                         markerRadius = markerRadius,
                         markerRing = markerRing,
                         numberOf = numberOf,
+                        badges = badges,
                         frame = playback?.let {
                             playbackFrameAt(it.progress.value, currentMovements.size)
                         } ?: currentInking?.invoke()
@@ -593,6 +639,9 @@ private val ScoreStyle = TextStyle(fontFamily = CoteFamily, fontWeight = FontWei
  * Chaque prise atteinte porte le numero du mouvement, cercle de la couleur du
  * membre : c'est la convention des topos imprimes, et l'ordre se lit sans
  * rejouer la sequence — sur l'ecran comme sur l'image partagee.
+ *
+ * Tous les traits d'abord, tous les numeros ensuite : dessines a la suite de
+ * chaque mouvement, les numeros etaient barres par les traits suivants.
  */
 private fun DrawScope.drawMovements(
     movements: List<Movement>,
@@ -602,6 +651,7 @@ private fun DrawScope.drawMovements(
     markerRadius: Float,
     markerRing: Stroke,
     numberOf: (Int) -> TextLayoutResult,
+    badges: List<Offset?>,
     frame: PlaybackFrame? = null,
 ) {
     val lastFullyDrawn = frame?.completedMovements ?: movements.size
@@ -620,44 +670,41 @@ private fun DrawScope.drawMovements(
         if (source == null) {
             // Mouvement de depart : pas de segment, seulement un marqueur qui
             // grandit jusqu'a sa taille finale.
-            if (isActive) {
-                drawCircle(color = color, radius = markerRadius * advance, center = targetCenter)
-            } else {
-                drawNumberMarker(index + 1, targetCenter, color, markerRadius, markerRing, numberOf)
-            }
+            if (isActive) drawCircle(color = color, radius = markerRadius * advance, center = targetCenter)
             continue
         }
 
         val start = source.box.toOffset(size)
-        val end = lerp(start, targetCenter, advance)
-
         drawLine(
             color = color,
             start = start,
-            end = end,
+            end = lerp(start, targetCenter, advance),
             strokeWidth = handStroke.width,
             cap = handStroke.cap,
             pathEffect = if (movement.limb.isHand) null else footStroke.pathEffect,
         )
-        // Le marqueur d'arrivee n'apparait qu'une fois la prise atteinte : le
-        // voir avant donnerait l'impression que le mouvement est deja fini.
-        if (!isActive) {
-            drawNumberMarker(index + 1, targetCenter, color, markerRadius, markerRing, numberOf)
-        }
+    }
+
+    // Le numero n'apparait qu'une fois la prise atteinte : le voir avant
+    // donnerait l'impression que le mouvement est deja fini.
+    for (index in 0 until minOf(lastFullyDrawn, movements.size)) {
+        val at = badges.getOrNull(index) ?: continue
+        drawNumberMarker(index + 1, at, movements[index].limb.color(), markerRadius, markerRing, numberOf)
     }
 }
 
-/** Numero cercle d'un mouvement : pastille papier, anneau du membre, chiffre a l'encre. */
+/**
+ * Numero cercle d'un mouvement : pastille papier, anneau du membre, chiffre a
+ * l'encre. [at] vient de [layoutBadges], a cote de la prise pour la laisser visible.
+ */
 private fun DrawScope.drawNumberMarker(
     number: Int,
-    center: Offset,
+    at: Offset,
     ring: Color,
     radius: Float,
     ringStroke: Stroke,
     numberOf: (Int) -> TextLayoutResult,
 ) {
-    // Decale vers le haut a droite : la prise elle-meme reste visible sous le numero.
-    val at = Offset(center.x + radius * MARKER_OFFSET, center.y - radius * MARKER_OFFSET)
     drawCircle(MarkerPaper, radius = radius, center = at)
     drawCircle(ring, radius = radius, center = at, style = ringStroke)
     val label = numberOf(number)
@@ -667,9 +714,6 @@ private fun DrawScope.drawNumberMarker(
         topLeft = Offset(at.x - label.size.width / 2f, at.y - label.size.height / 2f),
     )
 }
-
-// Assez loin pour que le numero ne mange ni la prise ni le trait qui y arrive.
-private const val MARKER_OFFSET = 1.4f
 
 // Le papier et l'encre de TopoPalettes.Paper, fixes : la photo ne change pas de theme.
 private val MarkerPaper = Color(0xFFEEEAE0)

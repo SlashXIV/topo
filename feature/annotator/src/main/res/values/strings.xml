@@ -24,6 +24,18 @@
     <string name="annotator_limb_right_hand">Main D</string>
     <string name="annotator_limb_left_foot">Pied G</string>
     <string name="annotator_limb_right_foot">Pied D</string>
+    <string name="annotator_limb_left_hand_spoken">main gauche</string>
+    <string name="annotator_limb_right_hand_spoken">main droite</string>
+    <string name="annotator_limb_left_foot_spoken">pied gauche</string>
+    <string name="annotator_limb_right_foot_spoken">pied droit</string>
+
+    <!-- Lecture du beta par TalkBack. %1$d : numero du mouvement, %2$s : membre. -->
+    <string name="annotator_beta_step">%1$d %2$s</string>
+    <!-- %1$d : nombre de mouvements, %2$s : les mouvements dans l'ordre. -->
+    <plurals name="annotator_beta_description">
+        <item quantity="one">Beta en %1$d mouvement : %2$s.</item>
+        <item quantity="other">Beta en %1$d mouvements : %2$s.</item>
+    </plurals>
 
     <!-- Actions -->
     <string name="annotator_detecting">Détection…</string>
