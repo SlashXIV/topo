@@ -7,6 +7,7 @@ import com.topo.core.domain.model.CircuitColor
 import com.topo.core.domain.model.DifficultyDisplay
 import com.topo.core.domain.model.GradeScale
 import com.topo.core.domain.model.MotionPreference
+import com.topo.core.domain.model.ThemePreference
 import com.topo.core.domain.repository.CircuitColorRepository
 import com.topo.core.domain.repository.SettingsRepository
 import com.topo.core.domain.usecase.ReorderCircuitColorUseCase
@@ -52,6 +53,10 @@ class SettingsViewModel @Inject constructor(
 
     fun selectMotion(motion: MotionPreference) {
         viewModelScope.launch { settingsRepository.setMotion(motion) }
+    }
+
+    fun selectTheme(theme: ThemePreference) {
+        viewModelScope.launch { settingsRepository.setTheme(theme) }
     }
 
     fun addColor(name: String, argb: Int) {

@@ -41,6 +41,7 @@ import com.topo.core.domain.model.CircuitColor
 import com.topo.core.domain.model.DifficultyDisplay
 import com.topo.core.domain.model.GradeScale
 import com.topo.core.domain.model.MotionPreference
+import com.topo.core.domain.model.ThemePreference
 import com.topo.core.ui.component.ButtonStyle
 import com.topo.core.ui.component.ColorDot
 import com.topo.core.ui.component.ConfirmDialog
@@ -117,6 +118,22 @@ fun SettingsScreen(
                         onSelect = {
                             haptics.tick()
                             viewModel.selectScale(GradeScale.entries[it])
+                        },
+                    )
+                }
+            }
+
+            item {
+                Section(
+                    title = stringResource(R.string.settings_theme_title),
+                    hint = stringResource(R.string.settings_theme_hint),
+                ) {
+                    SegmentedChoice(
+                        options = ThemePreference.entries.map { stringResource(it.labelRes) },
+                        selectedIndex = uiState.settings.theme.ordinal,
+                        onSelect = {
+                            haptics.tick()
+                            viewModel.selectTheme(ThemePreference.entries[it])
                         },
                     )
                 }
@@ -208,6 +225,13 @@ private val MotionPreference.labelRes: Int
     get() = when (this) {
         MotionPreference.EXPRESSIVE -> R.string.settings_motion_expressive
         MotionPreference.CALM -> R.string.settings_motion_calm
+    }
+
+private val ThemePreference.labelRes: Int
+    get() = when (this) {
+        ThemePreference.SYSTEM -> R.string.settings_theme_system
+        ThemePreference.LIGHT -> R.string.settings_theme_light
+        ThemePreference.DARK -> R.string.settings_theme_dark
     }
 
 /** Section de reglages : titre, aide, controle, puis un filet. Pas de carte. */

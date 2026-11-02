@@ -1,18 +1,23 @@
 package com.topo.app
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.topo.app.navigation.TopoNavHost
+import com.topo.core.domain.model.ThemePreference
 import com.topo.core.domain.repository.SettingsRepository
 import com.topo.core.ui.theme.TopoTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -47,7 +52,21 @@ class MainActivity : ComponentActivity() {
             val settings by remember { settingsRepository.observeSettings() }.collectAsState(initial = null)
             val loaded = settings ?: return@setContent
             settingsLoaded = true
-            TopoTheme(motion = loaded.motion) {
+            val dark = when (loaded.theme) {
+                ThemePreference.SYSTEM -> isSystemInDarkTheme()
+                ThemePreference.LIGHT -> false
+                ThemePreference.DARK -> true
+            }
+            // Sans cet appel, les icones des barres systeme suivraient le telephone
+            // et non le theme choisi : icones claires sur papier, par exemple.
+            DisposableEffect(dark) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark },
+                    navigationBarStyle = SystemBarStyle.auto(LightNavScrim, DarkNavScrim) { dark },
+                )
+                onDispose {}
+            }
+            TopoTheme(darkTheme = dark, motion = loaded.motion) {
                 Box(Modifier.fillMaxSize().background(TopoTheme.colors.paper)) {
                     TopoNavHost()
                 }
@@ -55,3 +74,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+// Voiles de la barre de navigation a trois boutons, repris des valeurs par
+// defaut d'`enableEdgeToEdge`, qui ne les expose pas.
+private val LightNavScrim = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
+private val DarkNavScrim = Color.argb(0x80, 0x1b, 0x1b, 0x1b)

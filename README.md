@@ -39,7 +39,7 @@ séance après séance. Tout reste dans ton téléphone, sans réseau.
 - Partage ton beta en image, ou regarde le bloc en relief 3D.
 
 **Pour tout le monde**
-- Clair ou sombre selon ton téléphone : papier clair par défaut, ardoise de nuit le soir.
+- Papier clair, ardoise de nuit, ou selon ton téléphone : le thème se choisit dans les Réglages.
 - Ambiance expressive ou sobre, et respect du réglage Android « Supprimer les animations ».
 - Lisible avec TalkBack et en grande police. Les mains se distinguent aussi pour les daltoniens : les pieds sont en pointillés.
 

@@ -9,6 +9,12 @@
     <string name="settings_grade_scale_title">Échelle de cotation</string>
     <string name="settings_grade_scale_hint">Utilisée partout où une cotation chiffrée est proposée.</string>
 
+    <string name="settings_theme_title">Thème</string>
+    <string name="settings_theme_hint">Système suit le mode sombre de ton téléphone. La caméra et l’annotateur restent toujours sombres, pour voir la photo.</string>
+    <string name="settings_theme_system">Système</string>
+    <string name="settings_theme_light">Papier clair</string>
+    <string name="settings_theme_dark">Ardoise de nuit</string>
+
     <string name="settings_motion_title">Ambiance</string>
     <string name="settings_motion_hint">Sobre retire les animations décoratives : tracés qui s’encrent, tampons, pages qui tournent. Le réglage Android « Supprimer les animations » coupe tout, quelle que soit l’ambiance.</string>
     <string name="settings_motion_expressive">Expressive</string>
