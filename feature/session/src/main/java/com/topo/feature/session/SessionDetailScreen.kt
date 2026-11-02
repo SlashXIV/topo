@@ -68,6 +68,9 @@ import com.topo.core.ui.component.BlocThumbnail
 import com.topo.core.ui.component.ConfirmDialog
 import com.topo.core.ui.component.EmptyState
 import com.topo.core.ui.component.LoadingState
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import com.topo.core.ui.component.bleed
 
 const val BlocGridTestTag = "bloc-grid"
 const val ImportBlocTestTag = "import-bloc"
@@ -131,63 +134,84 @@ fun SessionDetailScreen(
     }
 
     Box(modifier.fillMaxSize()) {
-      Column(Modifier.fillMaxSize()) {
-        PageHeader(
-            title = uiState.session?.locationName ?: stringResource(R.string.session_detail_title_fallback),
-            eyebrow = uiState.session?.date?.formatAsDate(),
-            onBack = onBack,
-            backLabel = stringResource(R.string.session_detail_back),
-            compact = true,
-            actions = {
-                // Ici plutot que sur chaque ligne de la liste : une action
-                // destructrice n'a pas a etre a portee de pouce en feuilletant.
-                IconAction(
-                    TopoIcons.Delete,
-                    stringResource(R.string.session_card_delete),
-                    onClick = { confirmSessionDelete = true },
-                    tint = TopoTheme.colors.ink2,
-                )
-            },
-        )
-        if (uiState.totalBlocs > 0) {
-            SessionRecap(uiState.totalBlocs, uiState.sentCount, uiState.flashCount)
-        }
-        // Les filtres n'apparaissent qu'a partir du deuxieme bloc : sur une
-        // seance qui en contient un seul, ils n'ont rien a filtrer.
-        if (uiState.totalBlocs > 1) {
-            BlocFilterRow(
-                selected = uiState.filter,
-                counts = uiState.filterCounts,
-                onSelect = viewModel::selectFilter,
+      // statusBarsPadding ici consomme l'encart : le haut de page, qui defile
+      // avec la grille, ne passe jamais sous la barre d'etat.
+      Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        val pageTop: @Composable () -> Unit = {
+          Column {
+            PageHeader(
+                title = uiState.session?.locationName ?: stringResource(R.string.session_detail_title_fallback),
+                eyebrow = uiState.session?.date?.formatAsDate(),
+                onBack = onBack,
+                backLabel = stringResource(R.string.session_detail_back),
+                compact = true,
+                actions = {
+                    // Ici plutot que sur chaque ligne de la liste : une action
+                    // destructrice n'a pas a etre a portee de pouce en feuilletant.
+                    IconAction(
+                        TopoIcons.Delete,
+                        stringResource(R.string.session_card_delete),
+                        onClick = { confirmSessionDelete = true },
+                        tint = TopoTheme.colors.ink2,
+                    )
+                },
             )
+            if (uiState.totalBlocs > 0) {
+                SessionRecap(uiState.totalBlocs, uiState.sentCount, uiState.flashCount)
+            }
+            // Les filtres n'apparaissent qu'a partir du deuxieme bloc : sur une
+            // seance qui en contient un seul, ils n'ont rien a filtrer.
+            if (uiState.totalBlocs > 1) {
+                BlocFilterRow(
+                    selected = uiState.filter,
+                    counts = uiState.filterCounts,
+                    onSelect = viewModel::selectFilter,
+                )
+            }
+          }
         }
 
         Box(Modifier.weight(1f)) {
             when {
-                uiState.isLoading -> LoadingState()
+                uiState.isLoading -> Column {
+                    pageTop()
+                    LoadingState()
+                }
 
-                uiState.totalBlocs == 0 -> EmptyState(
-                    title = stringResource(R.string.session_detail_empty_title),
-                    message = stringResource(R.string.session_detail_empty_message),
-                )
+                uiState.totalBlocs == 0 -> Column {
+                    pageTop()
+                    EmptyState(
+                        title = stringResource(R.string.session_detail_empty_title),
+                        message = stringResource(R.string.session_detail_empty_message),
+                    )
+                }
 
-                uiState.blocs.isEmpty() -> EmptyState(
-                    title = stringResource(R.string.session_detail_filter_empty_title),
-                    message = stringResource(R.string.session_detail_filter_empty_message),
-                    actionLabel = stringResource(R.string.session_detail_filter_empty_action),
-                    onAction = { viewModel.selectFilter(BlocFilter.ALL) },
-                )
+                uiState.blocs.isEmpty() -> Column {
+                    pageTop()
+                    EmptyState(
+                        title = stringResource(R.string.session_detail_filter_empty_title),
+                        message = stringResource(R.string.session_detail_filter_empty_message),
+                        actionLabel = stringResource(R.string.session_detail_filter_empty_action),
+                        onAction = { viewModel.selectFilter(BlocFilter.ALL) },
+                    )
+                }
 
+                // Le haut de page defile avec les fiches : fixe, il prenait plus
+                // de la moitie d'un ecran de 568 dp. 132 dp de large au minimum :
+                // deux colonnes des 320 dp, ou 150 n'en laissait qu'une.
                 else -> LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 150.dp),
+                    columns = GridCells.Adaptive(minSize = 132.dp),
                     modifier = Modifier
                         .fillMaxSize()
                         .testTag(BlocGridTestTag),
                     // Marge de fin : la derniere fiche ne doit pas buter contre la barre d'action.
-                    contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 24.dp),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
+                    item(key = "page-top", span = { GridItemSpan(maxLineSpan) }) {
+                        Box(Modifier.bleed(16.dp)) { pageTop() }
+                    }
                     itemsIndexed(uiState.blocs, key = { _, bloc -> bloc.id }) { index, bloc ->
                         // Resolution ici plutot que dans la vignette : le
                         // composant partage n'a pas a connaitre les reglages ni
@@ -332,7 +356,7 @@ private fun SessionRecap(blocs: Int, sent: Int, flashes: Int) {
                         .clearAndSetSemantics { contentDescription = "$text, $value" },
                 ) {
                     CountUp(value.toDouble(), { "${it.roundToInt()}" }, style = TopoTheme.type.figure.copy(fontSize = TopoTheme.type.figure.fontSize * 0.8f))
-                    Eyebrow(text, color = colors.ink2)
+                    Eyebrow(text, color = colors.ink2, maxLines = Int.MAX_VALUE)
                 }
             }
         }

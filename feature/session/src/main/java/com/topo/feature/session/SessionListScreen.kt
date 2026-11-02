@@ -53,6 +53,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.topo.core.ui.component.bleed
 
 const val SessionListTestTag = "session-list"
 const val AddSessionTestTag = "add-session"
@@ -69,30 +71,46 @@ fun SessionListScreen(
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
     val sessionCount = (uiState as? SessionListUiState.Content)?.sessions?.size ?: 0
 
-    Column(modifier.fillMaxSize()) {
-        PageHeader(
-            title = stringResource(R.string.session_list_title),
-            eyebrow = pluralStringResource(R.plurals.session_list_eyebrow, sessionCount, sessionCount),
-            actions = {
-                IconAction(TopoIcons.Chart, stringResource(R.string.session_list_stats), onStatsClick)
-                IconAction(TopoIcons.Settings, stringResource(R.string.session_list_settings), onSettingsClick)
-            },
-        )
-        Rule(Modifier.padding(horizontal = 20.dp))
+    val header: @Composable () -> Unit = {
+        Column {
+            PageHeader(
+                title = stringResource(R.string.session_list_title),
+                eyebrow = pluralStringResource(R.plurals.session_list_eyebrow, sessionCount, sessionCount),
+                actions = {
+                    IconAction(TopoIcons.Chart, stringResource(R.string.session_list_stats), onStatsClick)
+                    IconAction(TopoIcons.Settings, stringResource(R.string.session_list_settings), onSettingsClick)
+                },
+            )
+            Rule(Modifier.padding(horizontal = 20.dp))
+        }
+    }
+
+    // statusBarsPadding ici consomme l'encart : l'en-tete, qui defile avec la
+    // liste, ne passe jamais sous les icones de la barre d'etat.
+    Column(modifier.fillMaxSize().statusBarsPadding()) {
         Box(Modifier.weight(1f)) {
             when (val state = uiState) {
-                SessionListUiState.Loading -> LoadingState()
+                SessionListUiState.Loading -> Column {
+                    header()
+                    LoadingState()
+                }
 
                 // Pas de bouton dans l'etat vide : celui du bas de page est toujours la.
-                SessionListUiState.Empty -> EmptyState(
-                    title = stringResource(R.string.session_list_empty_title),
-                    message = stringResource(R.string.session_list_empty_message),
-                )
+                SessionListUiState.Empty -> Column {
+                    header()
+                    EmptyState(
+                        title = stringResource(R.string.session_list_empty_title),
+                        message = stringResource(R.string.session_list_empty_message),
+                    )
+                }
 
+                // L'en-tete defile avec les seances : fixe, il prenait le tiers
+                // d'un ecran de 568 dp et ne laissait voir que deux seances.
                 is SessionListUiState.Content -> LazyColumn(
                     modifier = Modifier.fillMaxSize().testTag(SessionListTestTag),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp, vertical = 4.dp),
+                    contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, bottom = 4.dp),
                 ) {
+                    item(key = "header") { Box(Modifier.bleed(20.dp)) { header() } }
                     // key : sans elle, une suppression ferait reutiliser l'etat de
                     // composition d'une autre ligne a la reemission de la liste.
                     itemsIndexed(state.sessions, key = { _, it -> it.session.id }) { index, summary ->
