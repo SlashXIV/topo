@@ -59,9 +59,10 @@ explicitement dans le journal des decisions.
 | **S13** | Industrialisation : R8, baseline profile, restauration d'etat, AAB | Demarrage a froid Xiaomi 257 -> **237 ms** ; memoire native stable sur 30 detections ; etat restaure apres `am kill` |
 | **S14** | Halos a la couleur de difficulte, zone du bloc, vignettes cadrees | Valide sur les blocs de Villenave ; test de couleur des halos, migration v4 -> v5 |
 | **S15** | Vitrine : demo 3D du portfolio, scan de detection, vue 3D dans l'app | Scan : **0,8 %** de trames saccadees a 120 Hz ; relief INT8 **~400 ms**, correlation >= 0,997 avec FP32 ; 1re trame 3D **17-39 ms** apres la scene |
+| **S17** | Direction artistique « le topo papier » : systeme maison sans Material, icone, moments | `material3` absent du classpath de release ; `PaletteContrastTest` (WCAG et daltonisme) ; 0 avertissement lint nouveau ; police 200 % et theme sombre verifies sur emulateur |
 | **Poids** | APK release allege | **115,6 -> 57,2 Mo** : x86_64 retire de la publication, ONNX Runtime reduit a nos operateurs (33,0 -> 15,5 Mo) a latence egale |
 
-184 tests : 72 instrumentes, 112 unitaires JVM.
+190 tests : 73 instrumentes, 117 unitaires JVM.
 
 **L'application est complete et hors ligne.** Seance -> photo -> cadre du bloc -> detection des
 prises -> tri par couleur -> beta -> rejeu, partage en image et vue en relief : tout fonctionne
@@ -642,6 +643,37 @@ Abandonne : la vue garde le relief du modele tel quel. Le relief monoculaire n'a
 resolution des prises ; l'amplifier grossit surtout son imprecision. Les prises restent
 designees par leurs halos. L'essai est conserve en correctif hors depot, pour memoire.
 
+### S17 — Direction artistique : le topo papier *(livre, validation appareil a faire)*
+
+**Constat.** L'interface etait du Material 3 par defaut : typographie et formes standard, et
+sur Android 12 et plus les couleurs du fond d'ecran remplacaient la palette de Topo. Rien ne la
+distinguait des autres applis de l'auteur, toutes refaites sur la methode de Dromos.
+
+**Metaphore.** Chaque ecran est une page du guide de bloc qu'on feuillette au pied du mur :
+encre sur papier, traces pointilles numerotes, cotes en marge, hachures du rocher, et un tampon
+quand le bloc passe. Planche HTML validee avant le code (icone C, polices, theme du telephone,
+six moments).
+
+**Livre.**
+- `core/ui` sur `compose.foundation` seul : jetons papier / encre (papier clair, ardoise de
+  nuit), trois polices OFL embarquees (Big Shoulders Display, Instrument Sans, IBM Plex Mono)
+  et des styles nommes par usage, icones au trait, boutons, etiquettes, choix segmente,
+  dialogue, feuille, champ de saisie, tampon de statut. `material3` et
+  `material-icons-extended` quittent le projet.
+- Mouvement : les trois courbes de la famille, niveaux expressif / sobre / aucun ; reglage
+  « Ambiance » en base (migration v5 -> v6), le reglage Android « Supprimer les animations »
+  prime.
+- Moments : la page qui se tourne entre les ecrans, le tampon a chaque changement de statut
+  (vibration de confirmation sur une reussite), le beta qui s'encre a l'ouverture, les fiches
+  et les lignes en cascade, le scan de detection sur la courbe Transition, le recapitulatif de
+  seance qui compte.
+- Beta numerote : chaque prise atteinte porte le numero du mouvement, cercle de la couleur du
+  membre, a l'ecran comme sur l'image partagee.
+- Icone : meme grammaire que la famille, mais sur papier, avec deux rochers hachures et un depart
+  pointille ; splash anime sur Android 12 et plus.
+
+**Reste.** Validation sur le Xiaomi (gestes, feuille et clavier, TalkBack), captures du README.
+
 ---
 
 ## Journal des decisions
@@ -690,6 +722,11 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | Statut a quatre etats plutot qu'un booleen `is_completed` | Un booleen ne distingue pas « jamais essaye » de « travaille sans succes ». Garder les deux cote a cote aurait cree deux sources de verite pour la meme question. |
 | Table reconstruite a la migration plutot qu'un `ALTER` | `DROP COLUMN` date de SQLite 3.35 ; l'API 26 visee embarque la 3.19. Les cles etrangeres sont desactivees pendant l'echange, sinon le `DROP TABLE` emporterait prises et mouvements en cascade. |
 | Deux emulateurs dans la matrice de test | Espresso 3.7.0, derniere version publiee, est incompatible avec l'API 37 (`NoSuchMethodException: InputManager.getInstance`). Les tests Compose tournent donc en API 36, le natif reste sur l'AVD 16 Ko. |
+| Systeme maison sur `foundation`, sans Material | Retoucher Material laisse son allure partout (ondulations, puces, barres). Une feuille et un champ de saisie maison coutent quelques centaines de lignes ; l'accessibilite est conservee par les semantiques de foundation et verifiee par les tests existants. |
+| Pas de couleurs dynamiques | Elles effacaient la palette de Topo sur Android 12+, et leurs contrastes ne se verifient pas. Les deux palettes fixes sont testees par `PaletteContrastTest`. |
+| Tampon « Flash » bleu, « Reussi » vert | Le test de daltonisme a refuse deux verts : en protanopie, l'ecart tombait a 4,1 pour un minimum de 8. |
+| Icone claire, seule de la famille | Une page de topo est claire ; a cote de quatre icones sombres, elle reste reconnaissable sans quitter la grammaire commune (lettre, trait 31x2, zone d'exclusion). |
+| Camera, annotateur et relief toujours en ardoise de nuit | Ils montrent une photo ou une scene : un en-tete papier au-dessus d'une chambre noire eblouirait. |
 | Kotlin integre d'AGP 9 | AGP 9 refuse le plugin autonome `org.jetbrains.kotlin.android` avec son nouveau DSL. Effet de bord favorable : `jvmTarget` suit `compileOptions`, une valeur de moins a maintenir. |
 
 ---
