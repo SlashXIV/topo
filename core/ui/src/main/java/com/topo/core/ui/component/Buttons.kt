@@ -79,9 +79,12 @@ fun TopoButton(
         if (icon != null) TopoIcon(icon, contentDescription = null, tint = fg, size = 20.dp)
         // Deux lignes plutot qu'un libelle coupe : dans un demi-bouton, « Detecter
         // les prises » perdait son dernier mot, et la police a 200 % en perd plus.
+        // Un bouton texte reste aligne sur son icone, les autres se centrent.
         UppercaseText(
             text,
-            style = TopoTheme.type.action.copy(textAlign = TextAlign.Center),
+            style = TopoTheme.type.action.copy(
+                textAlign = if (style == ButtonStyle.Text) TextAlign.Start else TextAlign.Center,
+            ),
             color = fg,
             maxLines = 2,
         )
