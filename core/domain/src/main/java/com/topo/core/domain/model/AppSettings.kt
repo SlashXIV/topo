@@ -32,6 +32,25 @@ enum class MotionPreference {
 }
 
 /**
+ * Theme de l'interface.
+ *
+ * Camera, annotateur et relief restent en ardoise de nuit quel que soit ce
+ * choix : ils montrent une photo ou une scene.
+ *
+ * Ordinaux persistes : ne jamais reordonner.
+ */
+enum class ThemePreference {
+    /** Suit le mode sombre du telephone. */
+    SYSTEM,
+
+    /** Papier clair. */
+    LIGHT,
+
+    /** Ardoise de nuit. */
+    DARK,
+}
+
+/**
  * Reglages de l'application.
  *
  * Stockes dans Room, pas dans DataStore. Le premier principe du projet est que
@@ -43,6 +62,7 @@ data class AppSettings(
     val difficultyDisplay: DifficultyDisplay,
     val gradeScale: GradeScale,
     val motion: MotionPreference = MotionPreference.EXPRESSIVE,
+    val theme: ThemePreference = ThemePreference.SYSTEM,
 ) {
     companion object {
         /**

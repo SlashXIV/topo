@@ -10,6 +10,7 @@ import com.topo.core.data.database.MIGRATION_2_3
 import com.topo.core.data.database.MIGRATION_3_4
 import com.topo.core.data.database.MIGRATION_4_5
 import com.topo.core.data.database.MIGRATION_5_6
+import com.topo.core.data.database.MIGRATION_6_7
 import com.google.common.truth.Truth.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -260,6 +261,32 @@ class MigrationTest {
             assertThat(it.getInt(0)).isEqualTo(1)
             assertThat(it.getInt(1)).isEqualTo(1)
             assertThat(it.getInt(2)).isEqualTo(0)
+        }
+    }
+
+    /**
+     * v6 -> v7 : une installation existante garde ses reglages et suit toujours
+     * le theme du telephone, comme avant la colonne.
+     */
+    @Test
+    fun migrating_from_v6_keeps_settings_and_defaults_to_the_system_theme() {
+        helper.createDatabase(databaseName, 6).use { db ->
+            db.execSQL(
+                "INSERT INTO settings (id, difficulty_display, grade_scale, motion_preference) VALUES (0, 1, 1, 1)",
+            )
+        }
+
+        val db = helper.runMigrationsAndValidate(databaseName, 7, true, MIGRATION_6_7)
+
+        db.query(
+            "SELECT difficulty_display, grade_scale, motion_preference, theme_preference FROM settings WHERE id = 0",
+        ).use {
+            assertThat(it.count).isEqualTo(1)
+            it.moveToFirst()
+            assertThat(it.getInt(0)).isEqualTo(1)
+            assertThat(it.getInt(1)).isEqualTo(1)
+            assertThat(it.getInt(2)).isEqualTo(1)
+            assertThat(it.getInt(3)).isEqualTo(0)
         }
     }
 

@@ -4,6 +4,7 @@ import com.topo.core.domain.model.AppSettings
 import com.topo.core.domain.model.DifficultyDisplay
 import com.topo.core.domain.model.GradeScale
 import com.topo.core.domain.model.MotionPreference
+import com.topo.core.domain.model.ThemePreference
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -22,4 +23,6 @@ interface SettingsRepository {
     suspend fun setGradeScale(scale: GradeScale)
 
     suspend fun setMotion(motion: MotionPreference)
+
+    suspend fun setTheme(theme: ThemePreference)
 }

@@ -227,5 +227,19 @@ val MIGRATION_5_6 = object : Migration(5, 6) {
     }
 }
 
+/**
+ * v6 -> v7 : theme choisi dans l'application.
+ *
+ * Valeur par defaut 0, « suivre le telephone » : une installation existante
+ * garde exactement le comportement d'avant.
+ */
+val MIGRATION_6_7 = object : Migration(6, 7) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `settings` ADD COLUMN `theme_preference` INTEGER NOT NULL DEFAULT 0")
+    }
+}
+
 /** Toutes les migrations, dans l'ordre. */
-val TOPO_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+val TOPO_MIGRATIONS = arrayOf(
+    MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7,
+)

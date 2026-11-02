@@ -20,6 +20,7 @@ import com.topo.core.domain.model.Hold
 import com.topo.core.domain.model.HoldColor
 import com.topo.core.domain.model.HoldKind
 import com.topo.core.domain.model.MotionPreference
+import com.topo.core.domain.model.ThemePreference
 import com.topo.core.domain.model.HoldOrigin
 import com.topo.core.domain.model.Limb
 import com.topo.core.domain.model.Movement
@@ -187,10 +188,12 @@ internal fun SettingsEntity.toDomain(): AppSettings = AppSettings(
     },
     gradeScale = GradeScale.entries.getOrElse(gradeScale) { AppSettings.Default.gradeScale },
     motion = MotionPreference.entries.getOrElse(motionPreference) { AppSettings.Default.motion },
+    theme = ThemePreference.entries.getOrElse(themePreference) { AppSettings.Default.theme },
 )
 
 internal fun AppSettings.toEntity(): SettingsEntity = SettingsEntity(
     difficultyDisplay = difficultyDisplay.ordinal,
     gradeScale = gradeScale.ordinal,
     motionPreference = motion.ordinal,
+    themePreference = theme.ordinal,
 )

@@ -32,6 +32,10 @@ data class SettingsEntity(
     /** Ordinal de `MotionPreference`. */
     @ColumnInfo(name = "motion_preference", defaultValue = "0")
     val motionPreference: Int = 0,
+
+    /** Ordinal de `ThemePreference`. */
+    @ColumnInfo(name = "theme_preference", defaultValue = "0")
+    val themePreference: Int = 0,
 ) {
     companion object {
         const val SINGLE_ROW_ID = 0
