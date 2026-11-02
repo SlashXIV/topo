@@ -748,6 +748,9 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | Seau « Sans couleur » dans les barres de circuit | Sans lui, un bloc reussi sans couleur comptait dans les chiffres mais dans aucune barre : 3 reussis en tete de page, 2/6 sur la seule barre. |
 | Theme choisi dans l'application, en base | Seul le mode du telephone decidait : impossible de lire le papier la nuit. Le reglage suit le chemin de l'Ambiance, sans second magasin. |
 | Pupitre a la hauteur du plus grand panneau | Les trois panneaux sont mesures, seul l'actif est place : les onglets restent sous le doigt. Le prix est une photo un peu plus petite en Tracer et Rejouer. |
+| En-tete de page dans la liste, pas au-dessus | Audit sur emulateur 320 x 568 dp : fixes, l'en-tete, le recapitulatif et les filtres prenaient plus de la moitie de l'ecran. Ils defilent avec le contenu ; `statusBarsPadding` sur le conteneur garde la barre d'etat degagee. |
+| Pupitre compact sous 700 dp de haut ou a 150 % de police | La photo est le contenu de l'annotateur : a 568 dp, le pupitre complet ne lui laissait que 140 dp. Les panneaux sont plafonnes a 30 % et defilent, les actions secondaires deviennent des icones nommees pour TalkBack. |
+| Cesure plutot que reduction du corps pour les libelles serres | Mesurer le texte dans `BoxWithConstraints` faisait planter les cases sous `IntrinsicSize.Min` (sous-composition sans mesure intrinseque). La cesure francaise coupe a la syllabe sans rien mesurer. |
 | Kotlin integre d'AGP 9 | AGP 9 refuse le plugin autonome `org.jetbrains.kotlin.android` avec son nouveau DSL. Effet de bord favorable : `jvmTarget` suit `compileOptions`, une valeur de moins a maintenir. |
 
 ---
