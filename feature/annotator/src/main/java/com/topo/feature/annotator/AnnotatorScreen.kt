@@ -47,6 +47,9 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.Layout
 import androidx.compose.foundation.layout.fillMaxSize
@@ -443,8 +446,10 @@ private fun AnnotationToolbar(
                                 // decide de ce que la detection regardera. La detection
                                 // PROPOSE des prises, qui se corrigent avec le geste de la
                                 // pose manuelle : un appui retire.
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    val half = Modifier.weight(1f)
+                                // Meme hauteur aussi : un libelle passe sur deux lignes
+                                // ne doit pas laisser son voisin plus court.
+                                Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    val half = Modifier.weight(1f).fillMaxHeight()
                                     when {
                                         isPickingColor -> TopoButton(
                                             stringResource(CoreR.string.action_cancel), onCancelPick,
