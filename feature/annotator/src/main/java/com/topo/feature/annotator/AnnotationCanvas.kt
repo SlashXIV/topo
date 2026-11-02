@@ -444,6 +444,11 @@ private fun BetaTraceLayer(
                 // Lu ici, hors du dessin : le cache se recalcule quand le beta ou la
                 // taille change, pas a chaque trame du rejeu. Les numeros gardent
                 // ainsi leur place pendant que la sequence se rejoue.
+                // Prises du beta, pour alleger les autres hors du mode Prises.
+                val engaged = currentMovements.flatMapTo(HashSet()) {
+                    listOfNotNull(it.sourceHoldId, it.targetHoldId)
+                }
+                val fadedStroke = Stroke(width = 1.dp.toPx())
                 val badges = layoutBadges(
                     targets = currentMovements.map { holdsById[it.targetHoldId]?.box?.toOffset(size) },
                     radius = markerRadius,
@@ -476,6 +481,9 @@ private fun BetaTraceLayer(
                         highlight = currentHighlight,
                         highlightStroke = highlightStroke,
                         outlineStroke = outlineStroke,
+                        // Sans beta, rien a alleger : on cherche ou poser le premier mouvement.
+                        engaged = engaged.takeIf { currentMode != AnnotationMode.ADD_HOLD && it.isNotEmpty() },
+                        fadedStroke = fadedStroke,
                         pending = if (lineY != null) scanState.revealing else emptySet(),
                         lineY = lineY ?: 0f,
                         pulseSpan = (zoneBottom - zoneTop) * DetectionScanState.PULSE_SPAN,
@@ -548,6 +556,10 @@ private fun BetaTraceLayer(
  * Le halo lui-meme est dessine par [drawHoldHalo], partage avec la vignette de
  * la seance. Les VOLUMES restent en blanc neutre : ils appartiennent au mur, pas
  * au bloc.
+ *
+ * Avec [engaged], les prises que le beta ne touche pas sont allegees : un
+ * filet fin et transparent, dans leur couleur habituelle, pour que le trace
+ * domine sans faire disparaitre les prises encore disponibles.
  */
 private fun DrawScope.drawHolds(
     holds: List<Hold>,
@@ -556,6 +568,8 @@ private fun DrawScope.drawHolds(
     highlight: Color?,
     highlightStroke: Stroke,
     outlineStroke: Stroke,
+    engaged: Set<String>?,
+    fadedStroke: Stroke,
     pending: Set<String>,
     lineY: Float,
     pulseSpan: Float,
@@ -573,7 +587,13 @@ private fun DrawScope.drawHolds(
             }
         }
         val center = hold.box.toOffset(size)
-        if (highlight == null || hold.kind == HoldKind.VOLUME) {
+        val plain = highlight == null || hold.kind == HoldKind.VOLUME
+        if (engaged != null && hold.id !in engaged) {
+            val color = if (plain) BetaColors.Hold else highlight
+            drawCircle(color.copy(alpha = FADED_ALPHA), radius = holdRadius, center = center, style = fadedStroke)
+            continue
+        }
+        if (plain) {
             drawCircle(color = BetaColors.Hold, radius = holdRadius, center = center, style = neutralStroke)
             continue
         }
@@ -626,6 +646,7 @@ private fun DrawScope.drawScan(
 }
 
 private const val PULSE_GAIN = 0.6f
+private const val FADED_ALPHA = 0.5f
 private val ScoreStyle = TextStyle(fontFamily = CoteFamily, fontWeight = FontWeight.Medium, fontSize = 11.sp)
 
 /**
