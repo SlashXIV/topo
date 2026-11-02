@@ -15,8 +15,8 @@ class AndroidApplicationConventionPlugin : Plugin<Project> {
             extension.apply {
                 defaultConfig.apply {
                     targetSdk = libs.versionInt("targetSdk")
-                    versionCode = 2
-                    versionName = "1.1.0"
+                    versionCode = 3
+                    versionName = "1.1.1"
                     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
                     // Aucune ABI que :vision ne sait pas servir (cf. SUPPORTED_ABIS).
                     ndk.abiFilters += SUPPORTED_ABIS
