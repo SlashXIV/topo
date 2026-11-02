@@ -44,6 +44,8 @@ object TopoIcons {
     val Replay = line("replay", "M4 12a8 8 0 1 0 2.3-5.7", "M4 4v4.5h4.5")
     val SkipNext = line("skip_next", "M6 6l9 6-9 6z", "M18 6v12")
     val SkipPrevious = line("skip_previous", "M18 6l-9 6 9 6z", "M6 6v12")
+    // Pipette : on touche une prise pour en garder la couleur.
+    val Pipette = line("pipette", "M14.5 5.5l4 4", "M16.5 7.5L7 17l-3 1 1-3 9.5-9.5", "M15 4l1.5-1.5a2.1 2.1 0 0 1 3 3L18 7")
     val Undo = line("undo", "M9 7L4 12l5 5", "M4 12h11a5 5 0 0 1 0 10h-2")
 }
 

@@ -47,6 +47,8 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -285,8 +287,9 @@ fun AnnotatorScreen(
                     .navigationBarsPadding(),
             ) {
                 Rule()
-                if (uiState.mode == AnnotationMode.REPLAY) {
-                    PlaybackControls(
+                AnnotationToolbar(
+                    replayControls = {
+                        PlaybackControls(
                         playback = playback,
                         enabled = movementCount > 0,
                         onPlayPause = {
@@ -307,8 +310,7 @@ fun AnnotatorScreen(
                             scope.launch { playback.reset() }
                         },
                     )
-                }
-                AnnotationToolbar(
+                    },
                     mode = uiState.mode,
                     isPickingColor = uiState.isPickingColor,
                     onPickColor = viewModel::startColorPick,
@@ -376,9 +378,17 @@ fun AnnotatorScreen(
 /** Fond sous la photo : l'ardoise de nuit, quel que soit le theme. */
 private val PhotoBackground = Color(0xFF15171A)
 
+/**
+ * Pupitre sous la photo : les onglets, puis le panneau du mode choisi.
+ *
+ * Les onglets restent a la meme hauteur dans les trois modes : chaque panneau
+ * changeait la hauteur du pupitre, donc celle de la photo, et les onglets
+ * sautaient sous le doigt a chaque changement de mode.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AnnotationToolbar(
+    replayControls: @Composable () -> Unit,
     mode: AnnotationMode,
     isPickingColor: Boolean,
     onPickColor: () -> Unit,
@@ -415,92 +425,137 @@ private fun AnnotationToolbar(
             },
         )
 
-        // Mode d'emploi du mode courant.
-        //
-        // Ajoute apres un premier essai sur appareil : l'utilisateur a choisi un
-        // membre puis APPUYE sur une prise, alors que le trace se fait en faisant
-        // glisser le doigt. Rien ne le disait, et le geste attendu n'a aucune
-        // affordance visuelle — c'est precisement ce qu'une ligne de texte resout
-        // mieux qu'une icone.
-        TopoText(
-            text = stringResource(
-                when {
-                    isDrawingZone -> R.string.annotator_hint_draw_zone
-                    isPickingColor -> R.string.annotator_hint_pick_color
-                    else -> mode.hint()
-                },
-            ),
-            style = TopoTheme.type.bodySmall,
-            color = TopoTheme.colors.ink2,
-        )
+        SameHeightPanels(
+            selected = AnnotationMode.entries.indexOf(mode),
+            panels = AnnotationMode.entries.map { panelMode ->
+                {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        when (panelMode) {
+                            AnnotationMode.ADD_HOLD -> {
+                                ModeHint(
+                                    when {
+                                        isDrawingZone -> R.string.annotator_hint_draw_zone
+                                        isPickingColor -> R.string.annotator_hint_pick_color
+                                        else -> panelMode.hint()
+                                    },
+                                )
+                                // Deux boutons de meme largeur. Le cadrage d'abord : il
+                                // decide de ce que la detection regardera. La detection
+                                // PROPOSE des prises, qui se corrigent avec le geste de la
+                                // pose manuelle : un appui retire.
+                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    val half = Modifier.weight(1f)
+                                    when {
+                                        isPickingColor -> TopoButton(
+                                            stringResource(CoreR.string.action_cancel), onCancelPick,
+                                            style = ButtonStyle.Line, modifier = half,
+                                        )
+                                        isDrawingZone -> TopoButton(
+                                            stringResource(CoreR.string.action_cancel), onCancelZone,
+                                            style = ButtonStyle.Line, modifier = half,
+                                        )
+                                        hasZone -> TopoButton(
+                                            stringResource(R.string.annotator_clear_zone), onClearZone,
+                                            style = ButtonStyle.Line, modifier = half,
+                                        )
+                                        else -> TopoButton(
+                                            stringResource(R.string.annotator_draw_zone), onDrawZone,
+                                            style = ButtonStyle.Line, modifier = half,
+                                        )
+                                    }
+                                    TopoButton(
+                                        stringResource(
+                                            if (isDetecting) R.string.annotator_detecting else R.string.annotator_detect_holds,
+                                        ),
+                                        onDetect,
+                                        enabled = !isDetecting,
+                                        modifier = half,
+                                    )
+                                }
+                                TextAction(
+                                    R.string.annotator_keep_color,
+                                    TopoIcons.Pipette,
+                                    onPickColor,
+                                    enabled = holdCount > 0 && !isPickingColor,
+                                )
+                                UndoAndClear(panelMode, onUndo, onClear, enabled = holdCount > 0)
+                            }
 
-        // La palette de membres ne sert qu'au trace : l'afficher ailleurs occupe
-        // de la hauteur au detriment de la photo, sans rien piloter.
-        if (mode == AnnotationMode.TRACE_BETA) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Limb.entries.forEach { limb ->
-                    Tag(
-                        text = stringResource(limb.label()),
-                        selected = limb == selectedLimb,
-                        onClick = {
-                            if (limb != selectedLimb) haptics.tick()
-                            onLimbChange(limb)
-                        },
-                        leading = { ColorDot(limb.swatch()) },
-                    )
-                }
-            }
-        }
+                            AnnotationMode.TRACE_BETA -> {
+                                ModeHint(panelMode.hint())
+                                // La palette de membres ne sert qu'au trace.
+                                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Limb.entries.forEach { limb ->
+                                        Tag(
+                                            text = stringResource(limb.label()),
+                                            selected = limb == selectedLimb,
+                                            onClick = {
+                                                if (limb != selectedLimb) haptics.tick()
+                                                onLimbChange(limb)
+                                            },
+                                            leading = { ColorDot(limb.swatch()) },
+                                        )
+                                    }
+                                }
+                                UndoAndClear(panelMode, onUndo, onClear, enabled = movementCount > 0)
+                            }
 
-        if (mode != AnnotationMode.REPLAY) {
-            // Desactives quand il n'y a rien a annuler. Un bouton actif qui ne
-            // produit rien laisse croire a une panne : c'est exactement ce qui
-            // s'est passe en mode trace, sans aucun mouvement enregistre.
-            val hasSomethingToUndo = when (mode) {
-                AnnotationMode.ADD_HOLD -> holdCount > 0
-                else -> movementCount > 0
-            }
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                // La detection PROPOSE des prises : elle vit donc avec la pose
-                // manuelle, et se corrige avec le meme geste — un appui retire.
-                if (mode == AnnotationMode.ADD_HOLD && isPickingColor) {
-                    TopoButton(stringResource(CoreR.string.action_cancel), onCancelPick, style = ButtonStyle.Line)
-                } else if (mode == AnnotationMode.ADD_HOLD && isDrawingZone) {
-                    TopoButton(stringResource(CoreR.string.action_cancel), onCancelZone, style = ButtonStyle.Line)
-                } else if (mode == AnnotationMode.ADD_HOLD) {
-                    // Le cadrage d'abord : il decide de ce que la detection regardera.
-                    if (hasZone) {
-                        TopoButton(stringResource(R.string.annotator_clear_zone), onClearZone, style = ButtonStyle.Line)
-                    } else {
-                        TopoButton(stringResource(R.string.annotator_draw_zone), onDrawZone, style = ButtonStyle.Line)
+                            AnnotationMode.REPLAY -> {
+                                ModeHint(panelMode.hint())
+                                replayControls()
+                            }
+                        }
                     }
-                    TopoButton(
-                        stringResource(if (isDetecting) R.string.annotator_detecting else R.string.annotator_detect_holds),
-                        onDetect,
-                        enabled = !isDetecting,
-                    )
-                    TopoButton(
-                        stringResource(R.string.annotator_keep_color),
-                        onPickColor,
-                        style = ButtonStyle.Line,
-                        enabled = holdCount > 0,
-                    )
                 }
-                TopoButton(
-                    stringResource(mode.undoLabel()),
-                    onUndo,
-                    style = ButtonStyle.Text,
-                    icon = TopoIcons.Undo,
-                    enabled = hasSomethingToUndo,
-                )
-                TopoButton(
-                    stringResource(mode.clearLabel()),
-                    onClear,
-                    style = ButtonStyle.Text,
-                    icon = TopoIcons.Delete,
-                    enabled = hasSomethingToUndo,
-                )
-            }
+            },
+        )
+    }
+}
+
+/**
+ * Mode d'emploi du mode courant.
+ *
+ * Ajoute apres un premier essai sur appareil : l'utilisateur a choisi un membre
+ * puis APPUYE sur une prise, alors que le trace se fait en faisant glisser le
+ * doigt. Rien ne le disait, et le geste attendu n'a aucune affordance visuelle —
+ * c'est precisement ce qu'une ligne de texte resout mieux qu'une icone.
+ */
+@Composable
+private fun ModeHint(text: Int) {
+    TopoText(text = stringResource(text), style = TopoTheme.type.bodySmall, color = TopoTheme.colors.ink2)
+}
+
+/**
+ * Annuler et effacer portent sur ce que l'utilisateur est en train de faire.
+ * Desactives quand il n'y a rien a annuler : un bouton actif qui ne produit rien
+ * laisse croire a une panne.
+ */
+@Composable
+private fun UndoAndClear(mode: AnnotationMode, onUndo: () -> Unit, onClear: () -> Unit, enabled: Boolean) {
+    TextAction(mode.undoLabel(), TopoIcons.Undo, onUndo, enabled)
+    TextAction(mode.clearLabel(), TopoIcons.Delete, onClear, enabled)
+}
+
+/** Action secondaire : icone et libelle, toutes alignees sur la meme marge. */
+@Composable
+private fun TextAction(label: Int, icon: ImageVector, onClick: () -> Unit, enabled: Boolean) {
+    TopoButton(stringResource(label), onClick, style = ButtonStyle.Text, icon = icon, enabled = enabled)
+}
+
+/**
+ * Mesure tous les panneaux et prend la hauteur du plus grand, mais ne place que
+ * [selected]. Un noeud non place ne dessine rien, ne recoit aucun appui et sort
+ * de l'arbre d'accessibilite : les autres panneaux ne servent qu'a la mesure. La
+ * hauteur suit ainsi la police reelle, a 200 % comme a 100 %.
+ */
+@Composable
+private fun SameHeightPanels(selected: Int, panels: List<@Composable () -> Unit>) {
+    Layout(contents = panels) { measurables, constraints ->
+        val loose = constraints.copy(minHeight = 0)
+        val placeables = measurables.map { panel -> panel.map { it.measure(loose) } }
+        val height = placeables.maxOf { panel -> panel.maxOfOrNull { it.height } ?: 0 }
+        layout(constraints.maxWidth, height) {
+            placeables[selected].forEach { it.place(0, 0) }
         }
     }
 }
