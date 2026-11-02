@@ -179,7 +179,8 @@ private fun Tally(sentColors: List<Int?>, completed: Int, total: Int) {
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         repeat(shown) { i ->
-            val mark = Modifier.width(4.dp).height(14.dp)
+            // 6 dp : sous le filet d'encre, il reste 4 dp de couleur, de quoi la reconnaitre.
+            val mark = Modifier.width(6.dp).height(14.dp)
             Spacer(
                 if (i < completed) {
                     val fill = sentColors.getOrNull(i)?.let(::Color) ?: colors.ink

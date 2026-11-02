@@ -355,7 +355,10 @@ private fun BlocFilterRow(
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        BlocFilter.entries.forEach { filter ->
+        // Un filtre vide n'a rien a montrer : il est masque, sauf « Tous » et le
+        // filtre actif, qui doit rester visible pour qu'on puisse en sortir. Avec
+        // leurs comptes, les quatre etiquettes ne tenaient plus sur 394 dp.
+        BlocFilter.entries.filter { it == BlocFilter.ALL || it == selected || (counts[it] ?: 0) > 0 }.forEach { filter ->
             Tag(
                 text = stringResource(
                     R.string.session_filter_with_count,
