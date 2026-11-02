@@ -18,6 +18,7 @@ import com.topo.core.data.database.applyTopoConfiguration
 import com.topo.core.data.database.entity.BlocEntity
 import com.topo.core.data.database.entity.HoldEntity
 import com.topo.core.data.database.entity.MovementEntity
+import com.topo.core.data.database.entity.CircuitColorEntity
 import com.topo.core.data.database.entity.SessionEntity
 import com.google.common.truth.Truth.assertThat
 import java.util.UUID
@@ -296,6 +297,24 @@ class TopoDatabaseTest {
             val row = awaitItem().single()
             assertThat(row.blocCount).isEqualTo(3)
             assertThat(row.completedCount).isEqualTo(2)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    /** La reglette : une couleur par bloc reussi, vide sans couleur, rien pour un echec. */
+    @Test
+    fun session_list_carries_the_colour_of_each_sent_bloc() = runTest {
+        val session = session()
+        database.sessionDao().upsert(session)
+        val violet = CircuitColorEntity(id = "violet-test", name = "Violet", argb = 0xFF8E6C99.toInt(), rank = 99)
+        database.circuitColorDao().insert(violet)
+        database.blocDao().insert(bloc(sessionId = session.id, completed = true).copy(colorId = violet.id))
+        database.blocDao().insert(bloc(sessionId = session.id, completed = true))
+        database.blocDao().insert(bloc(sessionId = session.id, completed = false).copy(colorId = violet.id))
+
+        database.sessionDao().observeSessionsWithCounts().test {
+            val row = awaitItem().single()
+            assertThat(row.toDomain().sentColors).containsExactly(violet.argb, null)
             cancelAndIgnoreRemainingEvents()
         }
     }

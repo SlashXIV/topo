@@ -59,6 +59,7 @@ internal fun SessionWithCounts.toDomain(): SessionSummary = SessionSummary(
     session = session.toDomain(),
     blocCount = blocCount,
     completedCount = completedCount,
+    sentColors = sentColors?.split(',')?.map(String::toIntOrNull).orEmpty(),
 )
 
 // --- Bloc ------------------------------------------------------------------

@@ -41,4 +41,8 @@ data class SessionWithCounts(
 
     @androidx.room.ColumnInfo(name = "completed_count")
     val completedCount: Int,
+
+    /** ARGB des blocs reussis, separes par des virgules ; vide pour un bloc sans couleur. */
+    @androidx.room.ColumnInfo(name = "sent_colors")
+    val sentColors: String?,
 )

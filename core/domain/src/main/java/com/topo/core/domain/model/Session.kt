@@ -23,6 +23,8 @@ data class SessionSummary(
     val session: Session,
     val blocCount: Int,
     val completedCount: Int,
+    /** Couleur ARGB du circuit de chaque bloc reussi, null s'il n'en a pas. */
+    val sentColors: List<Int?> = emptyList(),
 ) {
     init {
         require(completedCount <= blocCount) {

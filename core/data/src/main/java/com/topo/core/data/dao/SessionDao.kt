@@ -23,15 +23,21 @@ interface SessionDao {
      * Les valeurs 2 et 3 sont les ordinaux de BlocStatus.FLASHED et SENT, repris
      * de BlocStatus.SQL_SENT_ORDINALS. Room exige une requete litterale, donc la
      * constante ne peut pas etre interpolee ici : un test verrouille ces ordinaux.
+     *
+     * `sent_colors` liste la couleur de circuit de chaque bloc reussi, pour la
+     * reglette : une chaine vide pour un bloc sans couleur, aucune entree pour un
+     * bloc non reussi.
      */
     @Transaction
     @Query(
         """
         SELECT s.*,
                COUNT(b.id) AS bloc_count,
-               COALESCE(SUM(CASE WHEN b.status IN (2, 3) THEN 1 ELSE 0 END), 0) AS completed_count
+               COALESCE(SUM(CASE WHEN b.status IN (2, 3) THEN 1 ELSE 0 END), 0) AS completed_count,
+               GROUP_CONCAT(CASE WHEN b.status IN (2, 3) THEN COALESCE(c.argb, '') END) AS sent_colors
         FROM sessions AS s
         LEFT JOIN blocs AS b ON b.session_id = s.id
+        LEFT JOIN circuit_colors AS c ON c.id = b.color_id
         GROUP BY s.id
         ORDER BY s.date DESC
         """,
