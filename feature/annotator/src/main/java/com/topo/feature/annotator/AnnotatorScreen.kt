@@ -81,6 +81,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import com.topo.core.domain.model.Limb
 import com.topo.core.ui.theme.BetaColors
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 
 /**
  * Ecran d'annotation.
@@ -192,7 +197,11 @@ fun AnnotatorScreen(
         }
     }
 
-    Box(modifier.fillMaxSize().background(PhotoBackground)) {
+    // Pupitre compact sur un ecran court (iPhone 5 : 568 dp) ou en tres grande
+    // police : la photo est le contenu, elle doit garder la majeure partie de l'ecran.
+    BoxWithConstraints(modifier.fillMaxSize().background(PhotoBackground)) {
+        val compactConsole = maxHeight < COMPACT_HEIGHT || LocalDensity.current.fontScale >= COMPACT_FONT_SCALE
+        val maxPanelHeight = maxHeight * PANEL_SHARE
         Column(Modifier.fillMaxSize()) {
             // Barre de tete sombre, au-dessus de la photo : la photo garde toute la
             // place, et l'ardoise ne se bat pas avec elle.
@@ -341,6 +350,8 @@ fun AnnotatorScreen(
                         else -> viewModel::clearBeta
                     },
                     isDetecting = isDetecting,
+                    compact = compactConsole,
+                    maxPanelHeight = maxPanelHeight,
                     onDetect = {
                         scope.launch {
                             isDetecting = true
@@ -378,6 +389,12 @@ fun AnnotatorScreen(
     }
 }
 
+private val COMPACT_HEIGHT = 700.dp
+private const val COMPACT_FONT_SCALE = 1.5f
+
+/** Part de la hauteur laissee aux panneaux en pupitre compact, onglets non compris. */
+private const val PANEL_SHARE = 0.3f
+
 /** Fond sous la photo : l'ardoise de nuit, quel que soit le theme. */
 private val PhotoBackground = Color(0xFF15171A)
 
@@ -410,6 +427,8 @@ private fun AnnotationToolbar(
     onClear: () -> Unit,
     isDetecting: Boolean,
     onDetect: () -> Unit,
+    compact: Boolean,
+    maxPanelHeight: Dp,
     modifier: Modifier = Modifier,
 ) {
     val haptics = rememberHaptics()
@@ -428,20 +447,27 @@ private fun AnnotationToolbar(
             },
         )
 
+        // Ecran court ou police tres grande : les panneaux sont plafonnes et
+        // defilent, sinon le pupitre mange la photo (140 dp de haut sur 568).
         SameHeightPanels(
+            modifier = if (compact) {
+                Modifier.heightIn(max = maxPanelHeight).verticalScroll(rememberScrollState())
+            } else {
+                Modifier
+            },
             selected = AnnotationMode.entries.indexOf(mode),
             panels = AnnotationMode.entries.map { panelMode ->
                 {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         when (panelMode) {
-                            AnnotationMode.ADD_HOLD -> {
-                                ModeHint(
-                                    when {
-                                        isDrawingZone -> R.string.annotator_hint_draw_zone
-                                        isPickingColor -> R.string.annotator_hint_pick_color
-                                        else -> panelMode.hint()
-                                    },
-                                )
+                            AnnotationMode.ADD_HOLD -> Panel(
+                                compact,
+                                when {
+                                    isDrawingZone -> R.string.annotator_hint_draw_zone
+                                    isPickingColor -> R.string.annotator_hint_pick_color
+                                    else -> panelMode.hint()
+                                },
+                            ) {
                                 // Deux boutons de meme largeur. Le cadrage d'abord : il
                                 // decide de ce que la detection regardera. La detection
                                 // PROPOSE des prises, qui se corrigent avec le geste de la
@@ -477,17 +503,19 @@ private fun AnnotationToolbar(
                                         modifier = half,
                                     )
                                 }
-                                TextAction(
-                                    R.string.annotator_keep_color,
-                                    TopoIcons.Pipette,
-                                    onPickColor,
-                                    enabled = holdCount > 0 && !isPickingColor,
-                                )
-                                UndoAndClear(panelMode, onUndo, onClear, enabled = holdCount > 0)
+                                Actions(compact) {
+                                    TextAction(
+                                        R.string.annotator_keep_color,
+                                        TopoIcons.Pipette,
+                                        onPickColor,
+                                        enabled = holdCount > 0 && !isPickingColor,
+                                        compact = compact,
+                                    )
+                                    UndoAndClear(panelMode, onUndo, onClear, enabled = holdCount > 0, compact = compact)
+                                }
                             }
 
-                            AnnotationMode.TRACE_BETA -> {
-                                ModeHint(panelMode.hint())
+                            AnnotationMode.TRACE_BETA -> Panel(compact, panelMode.hint()) {
                                 // La palette de membres ne sert qu'au trace.
                                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     Limb.entries.forEach { limb ->
@@ -502,11 +530,12 @@ private fun AnnotationToolbar(
                                         )
                                     }
                                 }
-                                UndoAndClear(panelMode, onUndo, onClear, enabled = movementCount > 0)
+                                Actions(compact) {
+                                    UndoAndClear(panelMode, onUndo, onClear, enabled = movementCount > 0, compact = compact)
+                                }
                             }
 
-                            AnnotationMode.REPLAY -> {
-                                ModeHint(panelMode.hint())
+                            AnnotationMode.REPLAY -> Panel(compact, panelMode.hint()) {
                                 replayControls()
                             }
                         }
@@ -536,15 +565,46 @@ private fun ModeHint(text: Int) {
  * laisse croire a une panne.
  */
 @Composable
-private fun UndoAndClear(mode: AnnotationMode, onUndo: () -> Unit, onClear: () -> Unit, enabled: Boolean) {
-    TextAction(mode.undoLabel(), TopoIcons.Undo, onUndo, enabled)
-    TextAction(mode.clearLabel(), TopoIcons.Delete, onClear, enabled)
+private fun UndoAndClear(
+    mode: AnnotationMode,
+    onUndo: () -> Unit,
+    onClear: () -> Unit,
+    enabled: Boolean,
+    compact: Boolean,
+) {
+    TextAction(mode.undoLabel(), TopoIcons.Undo, onUndo, enabled, compact)
+    TextAction(mode.clearLabel(), TopoIcons.Delete, onClear, enabled, compact)
 }
 
-/** Action secondaire : icone et libelle, toutes alignees sur la meme marge. */
+/**
+ * Action secondaire : icone et libelle, toutes alignees sur la meme marge. En
+ * pupitre compact, l'icone seule, le libelle restant lu par TalkBack : trois
+ * lignes d'actions coutaient 150 dp de photo sur un petit ecran.
+ */
 @Composable
-private fun TextAction(label: Int, icon: ImageVector, onClick: () -> Unit, enabled: Boolean) {
-    TopoButton(stringResource(label), onClick, style = ButtonStyle.Text, icon = icon, enabled = enabled)
+private fun TextAction(label: Int, icon: ImageVector, onClick: () -> Unit, enabled: Boolean, compact: Boolean) {
+    if (compact) {
+        IconAction(icon, stringResource(label), onClick, enabled = enabled)
+    } else {
+        TopoButton(stringResource(label), onClick, style = ButtonStyle.Text, icon = icon, enabled = enabled)
+    }
+}
+
+/** Les actions secondaires : en colonne, ou en rangee d'icones si le pupitre est compact. */
+@Composable
+private fun Actions(compact: Boolean, content: @Composable () -> Unit) {
+    if (compact) Row { content() } else Column(verticalArrangement = Arrangement.spacedBy(6.dp)) { content() }
+}
+
+/**
+ * Un panneau de mode : l'aide puis les commandes. En pupitre compact, l'aide passe
+ * apres : c'est elle qui defile hors de vue, jamais les commandes.
+ */
+@Composable
+private fun Panel(compact: Boolean, hint: Int, controls: @Composable () -> Unit) {
+    if (!compact) ModeHint(hint)
+    controls()
+    if (compact) ModeHint(hint)
 }
 
 /**
@@ -554,8 +614,8 @@ private fun TextAction(label: Int, icon: ImageVector, onClick: () -> Unit, enabl
  * hauteur suit ainsi la police reelle, a 200 % comme a 100 %.
  */
 @Composable
-private fun SameHeightPanels(selected: Int, panels: List<@Composable () -> Unit>) {
-    Layout(contents = panels) { measurables, constraints ->
+private fun SameHeightPanels(selected: Int, panels: List<@Composable () -> Unit>, modifier: Modifier = Modifier) {
+    Layout(contents = panels, modifier = modifier) { measurables, constraints ->
         val loose = constraints.copy(minHeight = 0)
         val placeables = measurables.map { panel -> panel.map { it.measure(loose) } }
         val height = placeables.maxOf { panel -> panel.maxOfOrNull { it.height } ?: 0 }
@@ -608,7 +668,10 @@ private fun DifficultyStepSheet(
     onGradeChange: (String?) -> Unit,
     onDone: () -> Unit,
 ) {
-    TopoSheet(onDismissRequest = onDone) {
+    TopoSheet(
+        onDismissRequest = onDone,
+        actions = { DifficultyStepAction(selectedColorId, selectedGrade, onDone) },
+    ) {
         UppercaseText(stringResource(R.string.annotator_difficulty_title), style = TopoTheme.type.posterSmall, maxLines = 2)
         TopoText(
             stringResource(R.string.annotator_difficulty_hint),
@@ -617,22 +680,27 @@ private fun DifficultyStepSheet(
         )
         CircuitColorPicker(circuit, selectedColorId, onColorChange)
         GradePicker(gradeScale, selectedGrade, onGradeChange)
-        // « Passer » tant que rien n'est choisi : l'etape est facultative, et un
-        // bouton « Continuer » sans choix laisserait croire qu'il manque quelque
-        // chose.
-        TopoButton(
-            text = stringResource(
-                if (selectedColorId == null && selectedGrade == null) {
-                    R.string.annotator_difficulty_skip
-                } else {
-                    R.string.annotator_difficulty_continue
-                },
-            ),
-            onClick = onDone,
-            style = if (selectedColorId == null && selectedGrade == null) ButtonStyle.Line else ButtonStyle.Ink,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
+}
+
+/** Fin de l'etape de difficulte, toujours visible sous les choix. */
+@Composable
+private fun DifficultyStepAction(selectedColorId: String?, selectedGrade: String?, onDone: () -> Unit) {
+    // « Passer » tant que rien n'est choisi : l'etape est facultative, et un
+    // bouton « Continuer » sans choix laisserait croire qu'il manque quelque
+    // chose.
+    TopoButton(
+        text = stringResource(
+            if (selectedColorId == null && selectedGrade == null) {
+                R.string.annotator_difficulty_skip
+            } else {
+                R.string.annotator_difficulty_continue
+            },
+        ),
+        onClick = onDone,
+        style = if (selectedColorId == null && selectedGrade == null) ButtonStyle.Line else ButtonStyle.Ink,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 /**
