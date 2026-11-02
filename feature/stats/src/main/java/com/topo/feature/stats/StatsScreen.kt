@@ -53,6 +53,9 @@ import com.topo.core.ui.motion.Motion
 import com.topo.core.ui.theme.TopoTheme
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
+import androidx.compose.foundation.layout.statusBarsPadding
+import com.topo.core.ui.component.bleed
+import androidx.compose.foundation.layout.widthIn
 
 @Composable
 fun StatsScreen(
@@ -63,34 +66,49 @@ fun StatsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val blocCount = uiState.statistics.blocCount
 
-    Column(modifier.fillMaxSize()) {
+    val header: @Composable () -> Unit = {
         PageHeader(
             title = stringResource(R.string.stats_title),
             eyebrow = pluralStringResource(R.plurals.stats_eyebrow, blocCount, blocCount).takeIf { blocCount > 0 },
             onBack = onBack,
             backLabel = stringResource(R.string.stats_back),
         )
+    }
+
+    // statusBarsPadding ici consomme l'encart : l'en-tete, qui defile avec les
+    // chiffres, ne passe jamais sous la barre d'etat.
+    Column(modifier.fillMaxSize().statusBarsPadding()) {
         when {
-            uiState.isLoading -> LoadingState()
+            uiState.isLoading -> {
+                header()
+                LoadingState()
+            }
 
-            uiState.statistics.isEmpty -> EmptyState(
-                title = stringResource(R.string.stats_empty_title),
-                message = stringResource(R.string.stats_empty_message),
-            )
+            uiState.statistics.isEmpty -> {
+                header()
+                EmptyState(
+                    title = stringResource(R.string.stats_empty_title),
+                    message = stringResource(R.string.stats_empty_message),
+                )
+            }
 
-            else -> StatsContent(uiState.statistics)
+            else -> StatsContent(uiState.statistics, header)
         }
     }
 }
 
 @Composable
-private fun StatsContent(stats: ClimbingStatistics) {
+private fun StatsContent(stats: ClimbingStatistics, header: @Composable () -> Unit) {
     val maxTotal = stats.maxBucketTotal()
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        // L'en-tete defile avec les chiffres : fixe, il prenait le tiers d'un
+        // petit ecran.
+        item { Box(Modifier.bleed(20.dp)) { header() } }
+
         item {
             MetricRow {
                 Metric(stringResource(R.string.stats_metric_blocs), stats.blocCount.toDouble(), { "${it.roundToInt()}" }, first = true)
@@ -215,7 +233,9 @@ private fun androidx.compose.foundation.layout.RowScope.MetricCell(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             figure()
-            Eyebrow(label, color = TopoTheme.colors.ink2)
+            // Sans plafond : coupe en syllabes, « Essais / reussite » prend trois lignes
+            // dans une case etroite, et la deuxieme moitie ne doit pas disparaitre.
+            Eyebrow(label, color = TopoTheme.colors.ink2, maxLines = Int.MAX_VALUE)
         }
     }
 }
@@ -260,12 +280,13 @@ private fun BucketRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        // 112 dp : « Sans couleur » tient en entier, 84 le coupait.
-        Row(Modifier.width(112.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        // 40 % de la place laissee par la fraction : une largeur fixe
+        // ecrasait la barre sur un ecran de 320 dp, ou coupait « Sans couleur ».
+        Row(Modifier.weight(0.4f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             if (bucket.argb != null) ColorDot(fill) else if (reserveDot) Spacer(Modifier.size(12.dp))
             TopoText(label, style = TopoTheme.type.label, maxLines = 2)
         }
-        Box(Modifier.weight(1f).height(16.dp)) {
+        Box(Modifier.weight(0.6f).height(16.dp)) {
             if (bucket.total > 0) {
                 Box(
                     Modifier
@@ -285,12 +306,16 @@ private fun BucketRow(
                 }
             }
         }
+        // Jamais repliee : « 12/14 » se coupait en deux lignes dans 48 dp fixes
+        // des que la police grandissait.
         TopoText(
             text = "${bucket.sent}/${bucket.total}",
             style = TopoTheme.type.cote,
             color = colors.ink2,
-            modifier = Modifier.width(48.dp),
+            modifier = Modifier.widthIn(min = 48.dp),
             textAlign = TextAlign.End,
+            maxLines = 1,
+            softWrap = false,
         )
     }
 }
