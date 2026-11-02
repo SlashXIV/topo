@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Demarrage anime (Android 12 et plus) : le T monte de 6 unites en apparaissant,
+    puis le trait d'accent se deroule. Les courbes sont celles de Motion (core/ui),
+    pour que le premier mouvement de l'appli soit deja le sien. 800 ms au total,
+    la duree declaree dans values-v31/themes.xml.
+-->
+<animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:drawable="@drawable/splash_icon">
+
+    <target android:name="letter">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="420"
+                android:interpolator="@interpolator/topo_enter"
+                android:propertyName="translateY"
+                android:valueFrom="6"
+                android:valueTo="0" />
+        </aapt:attr>
+    </target>
+
+    <target android:name="letter_path">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="420"
+                android:interpolator="@interpolator/topo_enter"
+                android:propertyName="fillAlpha"
+                android:valueFrom="0"
+                android:valueTo="1" />
+        </aapt:attr>
+    </target>
+
+    <target android:name="bar">
+        <aapt:attr name="android:animation">
+            <objectAnimator
+                android:duration="340"
+                android:interpolator="@interpolator/topo_release"
+                android:propertyName="scaleX"
+                android:startOffset="420"
+                android:valueFrom="0"
+                android:valueTo="1" />
+        </aapt:attr>
+    </target>
+</animated-vector>

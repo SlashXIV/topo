@@ -2,52 +2,42 @@
 <!--
     Topo — icone d'application, source de reference.
 
-    Dessinee a la main dans le systeme de coordonnees des icones adaptatives
-    Android : canevas 108x108, dont seuls les 72x72 centraux sont garantis
-    visibles, et seul un cercle de 66 de diametre survit au masque le plus
-    agressif. Tout le contenu signifiant (lettre et barre) tient dans ce cercle ;
-    les prises debordent volontairement, puisqu'elles sont faites pour etre
-    rognees.
+    Meme grammaire que les autres applications de l'auteur (Kalos, Dromos, Popote,
+    Brut) : une lettre tracee a la main, un trait d'accent fin dessous, les couleurs
+    de la DA, et un detail qui raconte l'application.
+
+    Dessinee dans le systeme de coordonnees des icones adaptatives Android :
+    canevas 108x108, dont seuls les 72x72 centraux sont garantis visibles, et seul
+    un cercle de 66 de diametre survit au masque le plus agressif. La lettre et le
+    trait tiennent dans ce cercle ; le decor deborde volontairement.
 
     Ce fichier est la SOURCE. Les VectorDrawable de `app/src/main/res/drawable/`
-    en derivent, decoupes en couches `background` / `foreground` / `monochrome`
-    comme l'exige le format adaptatif. Toute modification se fait ici d'abord,
-    puis se reporte dans les XML.
+    en derivent : `ic_launcher_background` (papier, rochers, depart),
+    `ic_launcher_foreground` et `splash_icon` (lettre et trait),
+    `ic_launcher_monochrome` (lettre et trait, pour les icones a theme).
+    Toute modification se fait ici d'abord, puis se reporte dans les XML.
 
-    Trois reglages viennent d'une verification sur appareil, pas du dessin :
-      - les prises sont des TRIANGLES ARRONDIS. Un contour ferme et lisse se lit
-        comme un simple cercle a la taille d'une icone de lanceur ; la premiere
-        version ressemblait a des pastilles percees ;
-      - une VIS au centre de chaque prise, plutot qu'un simple trou noir : c'est
-        ce detail qui fait basculer la lecture du « triangle colore » vers la
-        « prise vissee au mur » ;
-      - leurs centres sont a moins de 33 du centre du canevas. Plus loin, le
-        masque circulaire des lanceurs les avalait entierement.
+    DA « le topo papier » (refonte de novembre 2026) : l'icone est une page de topo.
+    C'est la seule icone claire de la famille, ce qui la rend distincte a cote des
+    quatre autres, toutes sur fond sombre.
+      - deux ROCHERS hachures, comme les croquis d'un guide de bloc. Les
+        VectorDrawable n'ont pas de motif : dans les XML, les hachures sont des
+        traits a 45 degres decoupes par le contour du rocher ;
+      - un DEPART POINTILLE qui monte vers le point d'arrivee orange : le trace
+        numerote que l'application dessine sur les photos.
 
-    ZONE D'EXCLUSION : une seule boite, x 36.5..71.5 y 33..74 — l'englobant de la
-    lettre ET du trait, marge de 2 unites comprise. Aucune prise n'y entre. Epouser
-    le contour reel du T, qui est creux, permettrait de serrer les prises plus
-    pres ; mais le monogramme est l'identite de l'application, il doit respirer.
-
-    En contrepartie les prises debordent du cercle du masque. Un peu de debord est
-    souhaitable ; trop, et le triangle se reduit a un coin de couleur. Les positions
-    sont mesurees et non estimees : contour rasterise, intersecte avec le cercle de
-    rayon 36, au moins 80 % de surface conservee et la vis a moins de 34 du centre.
-
-    Les quatre echelles (0.82 / 0.74 / 0.71 / 0.68) ne sont pas decoratives :
-    quatre prises identiques posees en couronne se lisent comme un motif, et c'est
-    l'ecart de taille autant que l'orientation qui les fait lire comme un mur.
+    ZONE D'EXCLUSION : x 36.5..71.5 y 33..74, l'englobant de la lettre ET du trait,
+    marge comprise. Aucun rocher n'y entre. Positions mesurees, pas estimees
+    (contour rasterise, intersecte avec les masques) : rocher bas-gauche 81 % visible
+    dans un cercle de rayon 36, rocher haut-droit 98 % ; les points du depart a moins
+    de 34 du centre.
 
     Palette :
-      ardoise fond    #3A4048
-      prises          #F2C14E jaune, #5FAD56 vert, #2E86AB bleu, #D1495B rouge
-                      (les teintes du circuit par defaut de l'application)
-      lamage de vis   #55000000 (noir translucide : une seule valeur assombrit
-                      n'importe quelle teinte)
-      tete de vis     #D9DDE2   fente #66000000
-      lettre          #FFFFFF
-      barre           #F2A65A   (l'orange « main droite » du trace d'annotation,
-                                 pour que l'icone et l'ecran parlent la meme langue)
+      papier          #EEEAE0   (TopoPalettes.Paper.paper)
+      encre           #1B1A17   lettre, contours et hachures (a 55 %)
+      orange          #C46A1C   trait et depart. Plus sombre que l'orange
+                                « main droite » #F2A65A, qui se perdait sur le
+                                papier a la taille d'une icone.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
 
@@ -61,58 +51,38 @@
                C22,108 0,86 0,54
                C0,22 22,0 54,0 Z"/>
     </clipPath>
-
-    <!-- Silhouette d'une prise de bloc : triangle largement adouci, visse au mur
-         par son centre. Une seule geometrie, reprise a differentes echelles et
-         rotations — c'est ce qui donne l'impression d'un mur equipe sans dessiner
-         quatre formes. -->
-    <g id="hold">
-      <path d="M12.5,2.2
-               C14.2,2.2 15.7,3.2 16.4,4.7
-               L21.2,13.8
-               C22.3,15.8 21.7,18.2 20.0,19.5
-               C18.7,20.5 17.1,20.7 15.6,20.7
-               L6.4,20.7
-               C4.1,20.7 2.3,18.8 2.3,16.5
-               C2.3,15.5 2.6,14.5 3.2,13.7
-               L9.1,4.0
-               C9.8,2.9 11.1,2.2 12.5,2.2 Z"
-            fill="currentColor"/>
-      <!-- Vis : lamage, tete, fente. La fente disparait sous 48 dp, la tete tient. -->
-      <path d="M14.7,11.2 A2.7,2.7 0 1,1 9.3,11.2 A2.7,2.7 0 1,1 14.7,11.2 Z"
-            fill="#55000000"/>
-      <path d="M13.9,11.2 A1.9,1.9 0 1,1 10.1,11.2 A1.9,1.9 0 1,1 13.9,11.2 Z"
-            fill="#D9DDE2"/>
-      <path d="M10.5,10.85 L13.5,10.85 A0.35,0.35 0 0,1 13.5,11.55
-               L10.5,11.55 A0.35,0.35 0 0,1 10.5,10.85 Z"
-            fill="#66000000"/>
-    </g>
+    <pattern id="hatch" width="3.2" height="3.2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <rect width="0.9" height="3.2" fill="#1B1A17" fill-opacity="0.55"/>
+    </pattern>
   </defs>
 
   <g clip-path="url(#squircle)">
 
-    <!-- Fond -->
-    <rect width="108" height="108" fill="#3A4048"/>
+    <rect width="108" height="108" fill="#EEEAE0"/>
 
-    <!-- Une prise par quadrant. La pointe du jaune est orientee vers le centre :
-         c'est la plus grosse, elle doit ramener le regard sur la lettre plutot
-         que le tirer vers le bord. -->
-    <use href="#hold" transform="translate(16,25) rotate(135,12,12) scale(0.82)" color="#F2C14E"/>
-    <use href="#hold" transform="translate(60,14) rotate(8,12,12)   scale(0.68)" color="#2E86AB"/>
-    <use href="#hold" transform="translate(55,71) rotate(96,12,12)  scale(0.74)" color="#5FAD56"/>
-    <use href="#hold" transform="translate(15,59) rotate(200,12,12) scale(0.71)" color="#D1495B"/>
+    <!-- Rochers : hachures puis contour a l'encre. -->
+    <g stroke="#1B1A17" stroke-width="1.4" stroke-linejoin="round" fill="url(#hatch)">
+      <path d="M22,78L25,63L30,66L34,57L35.5,59L35.5,77L44,79L48,87L28,86Z"/>
+      <path d="M56,31L60,24L66,27L72,21L81,30L84,41L80,50L73.5,48L73,33Z"/>
+    </g>
 
-    <!-- Lettre T, calee par mesure sur les deux autres applications de l'auteur :
-         Popote 56x66 px, Kalos 44x54 px, Topo AVANT 84x71 px. Reduite a 28x29
-         unites. Tracee a la main plutot que convertie depuis une police : aucune
-         dependance a une fonte installee. -->
+    <!-- Depart pointille, puis le point d'arrivee. -->
+    <g fill="#C46A1C">
+      <circle cx="57.5" cy="87.5" r="1.05"/>
+      <circle cx="62.5" cy="85.5" r="1.05"/>
+      <circle cx="67.5" cy="83" r="1.05"/>
+      <circle cx="72" cy="79.5" r="1.05"/>
+      <circle cx="76" cy="75.5" r="1.05"/>
+      <circle cx="79.5" cy="71.5" r="2.6"/>
+    </g>
+
+    <!-- Lettre T : hauteur 29, la reference des quatre autres icones de la famille.
+         Tracee a la main plutot que convertie depuis une police. -->
     <path d="M40,35 L68,35 L68,44 L58.5,44 L58.5,64 L49.5,64 L49.5,44 L40,44 Z"
-          fill="#FFFFFF"/>
+          fill="#1B1A17"/>
 
-    <!-- Barre d'accent : un TRAIT, pas un bandeau. Mesure sur les icones de
-         Kalos et Popote : leur barre fait 3 a 4 px la ou celle-ci en faisait 11.
-         Epaisseur ramenee de 5 a 2, longueur inchangee — elle etait deja juste. -->
-    <rect x="38.5" y="70" width="31" height="2" rx="1" fill="#F2A65A"/>
+    <!-- Trait d'accent : un TRAIT, pas un bandeau, 31x2 comme dans toute la famille. -->
+    <rect x="38.5" y="70" width="31" height="2" rx="1" fill="#C46A1C"/>
 
   </g>
 </svg>

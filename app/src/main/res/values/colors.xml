@@ -4,33 +4,15 @@
         Palette de l'icone. Declaree en ressources plutot qu'en dur dans les
         VectorDrawable : une teinte se change ici, pas dans quatre chemins.
     -->
-    <color name="icon_background">#3A4048</color>
-    <color name="icon_letter">#FFFFFFFF</color>
-    <!-- Orange « main droite » du trace d'annotation (BetaColors.RightHand). -->
-    <color name="icon_accent">#F2A65A</color>
-
+    <color name="icon_background">#EEEAE0</color>
+    <color name="icon_letter">#1B1A17</color>
+    <!-- Encre des croquis : contours et hachures des rochers. -->
+    <color name="icon_ink">#1B1A17</color>
     <!--
-        Prises colorees, reprises du circuit par defaut de l'application : un mur
-        equipe porte des prises de couleur, pas des galets gris. Les memes teintes
-        que celles proposees au premier lancement, pour que l'icone annonce ce
-        qu'on trouve dans l'app.
+        Orange du trait et du depart. Plus sombre que l'orange « main droite »
+        (#F2A65A) : sur papier, l'original se perdait a la taille d'une icone.
     -->
-    <color name="icon_hold_yellow">#F2C14E</color>
-    <color name="icon_hold_green">#5FAD56</color>
-    <color name="icon_hold_blue">#2E86AB</color>
-    <color name="icon_hold_red">#D1495B</color>
-
-    <!--
-        Vis de fixation. Trois valeurs qui marchent sur les quatre teintes sans
-        avoir a en declarer quatre jeux :
-          - le lamage est un noir translucide, il assombrit n'importe quel fond ;
-          - la tete est un gris metal opaque, plus clair que toutes les prises ;
-          - la fente est un noir translucide plus leger que le lamage, sinon
-            elle coupe la tete en deux a la taille d'une icone de lanceur.
-    -->
-    <color name="icon_hold_bolt">#55000000</color>
-    <color name="icon_hold_screw">#D9DDE2</color>
-    <color name="icon_hold_slot">#66000000</color>
+    <color name="icon_accent">#C46A1C</color>
 
     <!-- Papier de la fenetre, celui de TopoPalettes.Paper ; values-night porte l'ardoise. -->
     <color name="paper">#EEEAE0</color>

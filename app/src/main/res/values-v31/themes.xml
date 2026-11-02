@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        Android 12 et plus : le demarrage joue l'icone animee. Avant, la bibliotheque
+        de compatibilite n'en montre que la premiere image — le trait encore replie :
+        values/themes.xml garde donc l'icone fixe pour ces versions.
+    -->
+    <style name="Theme.Topo.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/icon_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_splash</item>
+        <item name="windowSplashScreenAnimationDuration">800</item>
+        <item name="postSplashScreenTheme">@style/Theme.Topo</item>
+    </style>
+</resources>
