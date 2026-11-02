@@ -751,6 +751,7 @@ Choix tranches, avec leur raison. Les quatre premiers **corrigent** les specific
 | En-tete de page dans la liste, pas au-dessus | Audit sur emulateur 320 x 568 dp : fixes, l'en-tete, le recapitulatif et les filtres prenaient plus de la moitie de l'ecran. Ils defilent avec le contenu ; `statusBarsPadding` sur le conteneur garde la barre d'etat degagee. |
 | Pupitre compact sous 700 dp de haut ou a 150 % de police | La photo est le contenu de l'annotateur : a 568 dp, le pupitre complet ne lui laissait que 140 dp. Les panneaux sont plafonnes a 30 % et defilent, les actions secondaires deviennent des icones nommees pour TalkBack. |
 | Cesure plutot que reduction du corps pour les libelles serres | Mesurer le texte dans `BoxWithConstraints` faisait planter les cases sous `IntrinsicSize.Min` (sous-composition sans mesure intrinseque). La cesure francaise coupe a la syllabe sans rien mesurer. |
+| Application verrouillee en portrait | En paysage, la photo de l'annotateur tombait a 70 dp sous son pupitre. Un pupitre lateral couterait une seconde mise en page de l'ecran le plus riche pour un usage que personne ne demande au pied du mur. Android 16 ignore le verrou au-dela de 600 dp de large : tablettes et pliants restent a traiter le jour ou ils seront vises. |
 | Kotlin integre d'AGP 9 | AGP 9 refuse le plugin autonome `org.jetbrains.kotlin.android` avec son nouveau DSL. Effet de bord favorable : `jvmTarget` suit `compileOptions`, une valeur de moins a maintenir. |
 
 ---
