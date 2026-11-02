@@ -262,6 +262,18 @@ class SessionDetailViewModel @Inject constructor(
         statusError.value = null
     }
 
+    /**
+     * Supprime la seance, ses blocs, leur annotation et leurs fichiers image.
+     *
+     * La portee est volontairement large et irreversible : elle est annoncee a
+     * l'utilisateur par la boite de confirmation, pas dissimulee. Suspendue, pour
+     * que l'ecran ne quitte la page qu'une fois la seance effacee : sinon la
+     * suppression mourrait avec ce ViewModel.
+     */
+    suspend fun deleteSession() {
+        sessionId.value?.let { sessionRepository.deleteSession(it) }
+    }
+
     fun deleteBloc(blocId: String) {
         viewModelScope.launch { blocRepository.deleteBloc(blocId) }
     }

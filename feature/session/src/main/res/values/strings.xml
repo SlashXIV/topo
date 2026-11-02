@@ -19,10 +19,6 @@
         <item quantity="one">Topo · %d séance</item>
         <item quantity="other">Topo · %d séances</item>
     </plurals>
-    <plurals name="session_card_bloc_count">
-        <item quantity="one">%d bloc</item>
-        <item quantity="other">%d blocs</item>
-    </plurals>
     <!-- L'accord suit le nombre de blocs reussis, pas le total : « 1 / 5 réussi ». -->
     <plurals name="session_card_sent_count">
         <item quantity="one">%1$d / %2$d réussi</item>

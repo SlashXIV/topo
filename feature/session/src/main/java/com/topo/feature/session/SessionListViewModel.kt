@@ -60,13 +60,4 @@ class SessionListViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Supprime la seance, ses blocs, leur annotation et leurs fichiers image.
-     *
-     * La portee est volontairement large et irreversible : elle est annoncee a
-     * l'utilisateur par la boite de confirmation, pas dissimulee.
-     */
-    fun deleteSession(sessionId: String) {
-        viewModelScope.launch { sessionRepository.deleteSession(sessionId) }
-    }
 }

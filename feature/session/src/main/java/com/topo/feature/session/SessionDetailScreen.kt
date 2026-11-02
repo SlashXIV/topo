@@ -49,6 +49,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -88,6 +90,8 @@ fun SessionDetailScreen(
     val snackbarState = remember { TopoSnackbarState() }
     var progressBlocId by rememberSaveable { mutableStateOf<String?>(null) }
     var blocToDelete by remember { mutableStateOf<Bloc?>(null) }
+    var confirmSessionDelete by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val imageOnlyRequest = remember {
         PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
@@ -134,6 +138,16 @@ fun SessionDetailScreen(
             onBack = onBack,
             backLabel = stringResource(R.string.session_detail_back),
             compact = true,
+            actions = {
+                // Ici plutot que sur chaque ligne de la liste : une action
+                // destructrice n'a pas a etre a portee de pouce en feuilletant.
+                IconAction(
+                    TopoIcons.Delete,
+                    stringResource(R.string.session_card_delete),
+                    onClick = { confirmSessionDelete = true },
+                    tint = TopoTheme.colors.ink2,
+                )
+            },
         )
         if (uiState.totalBlocs > 0) {
             SessionRecap(uiState.totalBlocs, uiState.sentCount, uiState.flashCount)
@@ -257,6 +271,27 @@ fun SessionDetailScreen(
                 },
             )
         }
+    }
+
+    if (confirmSessionDelete) {
+        ConfirmDialog(
+            title = stringResource(R.string.session_delete_title),
+            // Une seance vide a son propre texte : « contient 0 bloc » n'annoncerait rien.
+            message = if (uiState.totalBlocs == 0) {
+                stringResource(R.string.session_delete_message_empty)
+            } else {
+                pluralStringResource(R.plurals.session_delete_message, uiState.totalBlocs, uiState.totalBlocs)
+            },
+            confirmLabel = stringResource(R.string.session_delete_confirm),
+            onConfirm = {
+                confirmSessionDelete = false
+                scope.launch {
+                    viewModel.deleteSession()
+                    onBack()
+                }
+            },
+            onDismiss = { confirmSessionDelete = false },
+        )
     }
 
     blocToDelete?.let { bloc ->

@@ -1,6 +1,8 @@
 package com.topo.feature.session
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +20,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -32,7 +33,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.topo.core.domain.model.SessionSummary
 import com.topo.core.ui.component.ButtonStyle
-import com.topo.core.ui.component.ConfirmDialog
 import com.topo.core.ui.component.EmptyState
 import com.topo.core.ui.component.IconAction
 import com.topo.core.ui.component.LoadingState
@@ -67,7 +67,6 @@ fun SessionListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showCreateDialog by rememberSaveable { mutableStateOf(false) }
-    var sessionToDelete by remember { mutableStateOf<SessionSummary?>(null) }
     val sessionCount = (uiState as? SessionListUiState.Content)?.sessions?.size ?: 0
 
     Column(modifier.fillMaxSize()) {
@@ -102,7 +101,6 @@ fun SessionListScreen(
                             number = state.sessions.size - index,
                             summary = summary,
                             onClick = { onSessionClick(summary.session.id) },
-                            onDelete = { sessionToDelete = summary },
                             modifier = Modifier.riseIn(index),
                         )
                     }
@@ -131,23 +129,6 @@ fun SessionListScreen(
         )
     }
 
-    sessionToDelete?.let { summary ->
-        ConfirmDialog(
-            title = stringResource(R.string.session_delete_title),
-            // Une seance vide a son propre texte : « contient 0 bloc » n'annoncerait rien.
-            message = if (summary.blocCount == 0) {
-                stringResource(R.string.session_delete_message_empty)
-            } else {
-                pluralStringResource(R.plurals.session_delete_message, summary.blocCount, summary.blocCount)
-            },
-            confirmLabel = stringResource(R.string.session_delete_confirm),
-            onConfirm = {
-                viewModel.deleteSession(summary.session.id)
-                sessionToDelete = null
-            },
-            onDismiss = { sessionToDelete = null },
-        )
-    }
 }
 
 /**
@@ -160,7 +141,6 @@ private fun SessionRow(
     number: Int,
     summary: SessionSummary,
     onClick: () -> Unit,
-    onDelete: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = TopoTheme.colors
@@ -178,17 +158,20 @@ private fun SessionRow(
                 TopoText(summary.session.locationName, style = TopoTheme.type.heading)
                 UppercaseText(summary.session.date.formatAsDate(), style = TopoTheme.type.cote, color = colors.ink2)
                 TopoText(summary.describeProgress(), style = TopoTheme.type.bodySmall, color = colors.ink2)
-                if (summary.blocCount > 0) Tally(summary.completedCount, summary.blocCount)
+                if (summary.blocCount > 0) Tally(summary.sentColors, summary.completedCount, summary.blocCount)
             }
-            IconAction(TopoIcons.Delete, stringResource(R.string.session_card_delete), onDelete, tint = colors.ink2)
         }
         Rule(color = colors.rule)
     }
 }
 
-/** Un trait par bloc : plein s'il est reussi, hachure sinon. Plafonne pour tenir sur la ligne. */
+/**
+ * Un trait par bloc : plein dans la couleur du circuit s'il est reussi, a l'encre
+ * sans couleur, hachure sinon. Un filet d'encre garde le blanc lisible sur papier.
+ * Plafonne pour tenir sur la ligne.
+ */
 @Composable
-private fun Tally(completed: Int, total: Int) {
+private fun Tally(sentColors: List<Int?>, completed: Int, total: Int) {
     val colors = TopoTheme.colors
     val shown = total.coerceAtMost(MAX_TALLY)
     Row(
@@ -197,7 +180,14 @@ private fun Tally(completed: Int, total: Int) {
     ) {
         repeat(shown) { i ->
             val mark = Modifier.width(4.dp).height(14.dp)
-            Spacer(if (i < completed) mark.background(colors.ink) else mark.hatched(colors.ink2, spacing = 3.dp))
+            Spacer(
+                if (i < completed) {
+                    val fill = sentColors.getOrNull(i)?.let(::Color) ?: colors.ink
+                    mark.background(fill).border(1.dp, colors.ink)
+                } else {
+                    mark.hatched(colors.ink2, spacing = 3.dp)
+                },
+            )
         }
     }
 }
@@ -238,12 +228,14 @@ private fun CreateSessionDialog(
     }
 }
 
+/** Toujours « reussis / blocs », pour que les lignes se comparent d'un coup d'oeil. */
 @Composable
-private fun SessionSummary.describeProgress(): String = when {
-    blocCount == 0 -> stringResource(R.string.session_card_no_bloc)
-    completedCount == 0 -> pluralStringResource(R.plurals.session_card_bloc_count, blocCount, blocCount)
-    else -> pluralStringResource(R.plurals.session_card_sent_count, completedCount, completedCount, blocCount)
-}
+private fun SessionSummary.describeProgress(): String =
+    if (blocCount == 0) {
+        stringResource(R.string.session_card_no_bloc)
+    } else {
+        pluralStringResource(R.plurals.session_card_sent_count, completedCount, completedCount, blocCount)
+    }
 
 /** Conversion en date LOCALE : l'instant est stocke en UTC (cf. `Session.date`). */
 internal fun Long.formatAsDate(): String = DateTimeFormatter
