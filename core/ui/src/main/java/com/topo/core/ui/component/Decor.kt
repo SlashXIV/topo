@@ -15,6 +15,7 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
@@ -22,11 +23,29 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.topo.core.ui.theme.TopoTheme
+import androidx.compose.ui.text.style.Hyphens
+import androidx.compose.ui.text.style.LineBreak
 
 /** Filet d'encre : ce qui separe les choses, a la place des ombres et des cartes. */
 @Composable
 fun Rule(modifier: Modifier = Modifier, color: Color = TopoTheme.colors.ink, thickness: Dp = 1.dp) {
     Box(modifier.fillMaxWidth().height(thickness).background(color))
+}
+
+/**
+ * Deborde de [horizontal] de chaque cote : annule la marge laterale d'une liste
+ * pour un element qui doit aller bord a bord, comme l'en-tete de page place dans
+ * la liste pour defiler avec elle.
+ */
+fun Modifier.bleed(horizontal: Dp): Modifier = layout { measurable, constraints ->
+    val extra = horizontal.roundToPx() * 2
+    val placeable = measurable.measure(
+        constraints.copy(
+            minWidth = constraints.minWidth + extra,
+            maxWidth = if (constraints.hasBoundedWidth) constraints.maxWidth + extra else constraints.maxWidth,
+        ),
+    )
+    layout(placeable.width - extra, placeable.height) { placeable.place(-extra / 2, 0) }
 }
 
 /** Fiche : un bord d'encre fin, sans coin arrondi ni ombre. */
@@ -81,10 +100,28 @@ fun NumberMark(
     }
 }
 
-/** Petite ligne en capitales au-dessus d'un titre : cote, date, contexte. */
+/**
+ * Petite ligne en capitales au-dessus d'un titre : cote, date, contexte.
+ *
+ * Cesure automatique : dans une case de chiffre a 320 dp ou en grande police, un
+ * mot trop long se coupait n'importe ou (« REUSSI/S ») ; il se coupe desormais a
+ * une syllabe, avec un tiret. Pas de mesure en sous-composition : les cases
+ * l'utilisent sous une hauteur intrinseque, que BoxWithConstraints refuse.
+ */
 @Composable
-fun Eyebrow(text: String, modifier: Modifier = Modifier, color: Color = TopoTheme.colors.accent) {
-    UppercaseText(text, modifier, style = TopoTheme.type.cote, color = color, maxLines = 2)
+fun Eyebrow(
+    text: String,
+    modifier: Modifier = Modifier,
+    color: Color = TopoTheme.colors.accent,
+    maxLines: Int = 2,
+) {
+    UppercaseText(
+        text,
+        modifier,
+        style = TopoTheme.type.cote.copy(hyphens = Hyphens.Auto, lineBreak = LineBreak.Paragraph),
+        color = color,
+        maxLines = maxLines,
+    )
 }
 
 /**

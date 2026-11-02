@@ -2,7 +2,6 @@ package com.topo.core.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,6 +20,9 @@ import com.topo.core.domain.model.GradeScale
 import com.topo.core.ui.R
 import com.topo.core.ui.text.labelRes
 import com.topo.core.ui.theme.TopoTheme
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 
 // Selecteurs de difficulte d'un bloc : couleur du circuit (celle des fleches de
 // depart) et cotation chiffree. Partages par la fiche de progression de la seance
@@ -76,11 +77,12 @@ fun GradePicker(
             stringResource(R.string.difficulty_grade, stringResource(gradeScale.labelRes)),
             color = TopoTheme.colors.ink2,
         )
-        Row(
-            modifier = Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            gradeScale.grades.forEach { grade ->
+        // Ouverte sur la cotation choisie, avec deux crans avant elle : sur un ecran
+        // etroit, un 7A tombait hors champ et rien ne disait que la rangee defile.
+        val selectedIndex = gradeScale.grades.indexOf(selectedGrade)
+        val listState = rememberLazyListState(initialFirstVisibleItemIndex = (selectedIndex - 2).coerceAtLeast(0))
+        LazyRow(state = listState, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            items(gradeScale.grades) { grade ->
                 Tag(
                     text = grade,
                     selected = grade == selectedGrade,

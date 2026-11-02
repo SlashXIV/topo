@@ -42,6 +42,8 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.topo.core.ui.theme.BetaColors
 import java.io.File
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 
 /**
  * Vignette d'un bloc dans une grille.
@@ -60,7 +62,7 @@ import java.io.File
  * vignette encombrerait une grille dont l'action principale est d'ouvrir le bloc,
  * et placerait une action destructrice a portee de pouce dans une liste defilante.
  */
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun BlocThumbnail(
     imageFile: File,
@@ -137,28 +139,29 @@ fun BlocThumbnail(
         // Legende de la fiche : ce que les reglages mettent en avant, puis le
         // statut en tampon. L'appelant decide : la vignette ne connait pas les
         // preferences, elle affiche ce qu'on lui donne.
-        Row(
+        // En rangee qui se replie : sur une fiche etroite (deux colonnes a 320 dp),
+        // le tampon passe sous le nom au lieu de le reduire a « ... ».
+        FlowRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 34.dp)
                 .padding(horizontal = 8.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            itemVerticalAlignment = Alignment.CenterVertically,
         ) {
             if (circuitColor != null) {
-                ColorDot(circuitColor)
-                TopoText(
-                    circuitName.orEmpty(),
-                    style = TopoTheme.type.label,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                    ColorDot(circuitColor)
+                    TopoText(
+                        circuitName.orEmpty(),
+                        style = TopoTheme.type.label,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             } else if (grade != null) {
                 GradeChip(grade, isCompleted = isCompleted)
-                Spacer(Modifier.weight(1f))
-            } else {
-                Spacer(Modifier.weight(1f))
             }
             if (statusLabel != null) {
                 StatusStamp(statusLabel, statusColor.takeOrElse { TopoTheme.colors.ink2 })

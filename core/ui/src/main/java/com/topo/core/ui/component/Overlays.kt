@@ -110,6 +110,11 @@ fun TopoDialog(
 fun TopoSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Actions epinglees sous le contenu, hors du defilement : sur un petit ecran,
+     * le bouton qui termine l'etape restait a moitie cache sous le bord.
+     */
+    actions: (@Composable ColumnScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val colors = TopoTheme.colors
@@ -175,10 +180,21 @@ fun TopoSheet(
                     Spacer(Modifier.width(36.dp).height(3.dp).background(colors.ink2, RoundedCornerShape(2.dp)))
                 }
                 Column(
-                    Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 20.dp),
+                    Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp)
+                        .padding(bottom = if (actions == null) 20.dp else 12.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     content = content,
                 )
+                if (actions != null) {
+                    Column(
+                        Modifier.padding(horizontal = 20.dp).padding(bottom = 20.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        content = actions,
+                    )
+                }
             }
         }
     }
