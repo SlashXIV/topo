@@ -15,7 +15,7 @@
 
     <!-- Mode d'emploi, une phrase par mode -->
     <string name="annotator_hint_add_hold">Appuie sur le mur pour poser une prise, sur une prise pour la retirer.</string>
-    <string name="annotator_hint_trace_beta">Choisis un membre, puis FAIS GLISSER ton doigt d\'une prise à l\'autre : le trait s\'aimante aux prises.</string>
+    <string name="annotator_hint_trace_beta">Choisis un membre, puis fais glisser ton doigt d\'une prise à l\'autre : le trait s\'aimante aux prises.</string>
     <string name="annotator_hint_replay">Rejoue la séquence mouvement par mouvement.</string>
     <string name="annotator_hint_pick_color">Appuie sur une prise de ton bloc : seules les prises de sa couleur resteront, avec les volumes et les prises de ton beta.</string>
 
